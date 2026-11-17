@@ -19,9 +19,33 @@ Registro de problemas reales que han aparecido al montar el entorno, con el mét
 | 13 | 17/11 | TrueNas | Las copias salían con la hora de EE. UU. y una hora de más | Zona horaria por defecto + reloj de la VM en hora local (Linux espera UTC) | `date` en el NAS vs. el PC | Zona `Europe/Madrid` y `VBoxManage modifyvm --rtc-use-utc on` en las VMs Linux | Hora correcta |
 | 14 | 17/11 | Repo Git | El comprobador de contraseñas no revisaba un commit con logs de Windows | `grep` trataba el diff como binario (caracteres no UTF-8) y no devolvía líneas | Aviso *"coincidencia en fichero binario"* | `git diff --text` + `grep -a`; auditoría de todo el historial: **0 contraseñas** | Comprobación fiable |
 
-## Incidencia provocada (Tasca 5.5)
+## Incidencia provocada (Tasca 5.5) — fallo de arranque por `/etc/fstab`
 
-⬜ Pendiente: se provocará en una VM desechable (clon de `DEB13-CLI`) un fallo de arranque y se documentará con el mismo método.
+**VM desechable**: `DEB13-DESECHABLE`, **clon enlazado** de DEB13-CLI (instantánea `base-antes-de-clonar`), sin cable de red para no chocar con la IP del original. Si algo sale mal, se borra el clon y el original no se toca.
+
+**Fallo provocado**: se añade al final de `/etc/fstab` un disco que no existe:
+
+```
+UUID=0bad0bad-dead-beef-0000-000000000000 /datos ext4 defaults 0 2
+```
+
+![fstab con el error](../evidencies/captures/incidencia/01-fstab-con-error.png)
+
+| Paso | Qué se hizo | Evidencia |
+|---|---|---|
+| **Síntoma** | Al reiniciar, el sistema se queda en **modo de emergencia** y pide la contraseña de root | `[ TIME ] Timed out waiting for device ...0bad0bad...` · `Dependency failed for datos.mount` · `Dependency failed for local-fs.target` · *"You are in emergency mode"* |
+| **Hipótesis** | Una línea de `/etc/fstab` apunta a un disco que no está; como el último campo es `2` (comprobar al arrancar) y no tiene `nofail`, systemd considera que el arranque no puede seguir | |
+| **Comprobación** | `blkid` (discos que existen) vs. `grep datos /etc/fstab` (lo que se pide) + `journalctl -xb` | Solo existen `sda1` (ext4) y `sda5` (swap); el UUID `0bad0bad…` **no existe** → hipótesis confirmada |
+| **Solución** | Comentar la línea, `systemctl daemon-reload`, `mount -a` (sin errores) y `findmnt --verify` (0 errores) | ![solución](../evidencies/captures/incidencia/04-solucion-fstab.png) |
+| **Vuelta al estado normal** | `systemctl reboot` → arranca hasta la pantalla de inicio de sesión | ![arranque normal](../evidencies/captures/incidencia/05-arranque-normal.png) |
+
+![Modo de emergencia](../evidencies/captures/incidencia/02-sintoma-modo-emergencia.png)
+*Síntoma: el arranque espera 90 s al disco inexistente y entra en modo de emergencia.*
+
+![Comprobación](../evidencies/captures/incidencia/03-comprobacion-blkid-fstab.png)
+*Comprobación: `blkid` no muestra el UUID que pide la línea 16 de `fstab`.*
+
+**Cómo evitarlo**: probar siempre con `mount -a` (o `findmnt --verify`) **antes** de reiniciar, y en discos que no son imprescindibles (USB, discos de datos) usar la opción `nofail`, para que si falta el disco el sistema arranque igual.
 
 | # | Fecha | Máquina | Síntoma | Hipótesis | Comprobación | Solución | Estado final |
 |---|---|---|---|---|---|---|---|

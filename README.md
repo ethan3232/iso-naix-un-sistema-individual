@@ -115,7 +115,8 @@ Máscara `255.255.255.0` · Asignación **fija** en todos (no hay DHCP en LAN23)
 | 📈 | [08 · Rendimiento](docs/08-rendiment.md) | Línea base, carga y optimizaciones |
 | 🚑 | [09 · Contingencia](docs/09-contingencia.md) | RTO/RPO y recuperaciones probadas |
 | 🐞 | [10 · Incidencias](docs/10-incidencies.md) | 16 problemas reales y cómo se resolvieron |
-| 🤖 
+| 🤖 | 🎯 | [12 · Defensa](docs/12-defensa.md) | Guía de intervención para la Tasca 8 y banco de preguntas |
+
 <details>
 <summary><b>⚙️ Guías de instalación por máquina</b></summary>
 

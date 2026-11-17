@@ -1,0 +1,5 @@
+== Mikrotik-IND (16:35:42)
+Mikrotik-IND-solo        | host CPU media  4.5% (máx  9.3%) · iowait medio  0.0% (máx  0.0%) · RAM disp. mín 11909 MB · swap máx 0 MB
+                         | VM CPU media   9.0% (máx  79.0% = 0.8 hilos de 12) · RSS máx   150 MB · disco:      0 MB leídos,      0 MB escritos (pico 0 MB/s) · arranque calmado: 8 s
+  Mikrotik-IND apagada (ACPI, 6 s)
+== DEB13-SRV2 (16:38:02)

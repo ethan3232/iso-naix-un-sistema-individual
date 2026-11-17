@@ -18,9 +18,9 @@ Log completo: [`inventari-casa.txt`](../evidencies/logs/inventari-casa.txt) (17/
 | Placa base | Gigabyte **B560M DS3H V2** | Chipset Intel B560 (socket LGA1200) |
 | CPU | Intel **Core i5-11400F** · 6 núcleos / 12 hilos · hasta 4,4 GHz · L3 12 MiB | **VT-x** activo (`vmx`, `/dev/kvm`) → apta para virtualizar. La "F" = sin gráfica integrada |
 | RAM | **16 GB** (15,5 GiB útiles) | + 8 GB de swap en fichero + 3,9 GB de zram |
-| Disco 1 (Linux + VMs) | **Kingston A400 960 GB** (SSD SATA) **dentro de una caja USB** (puente JMicron JMS583, driver `uas`) a **5 Gb/s** | `/` 58 GB + `/home` 388 GB (68 % usado). **Aquí están todas las VMs** |
+| Disco 1 (Linux + VMs) | **Kingston A400 960 GB** (SSD SATA) **dentro de una caja USB** (puente JMicron JMS583, driver `uas`) a **5 Gb/s** | Es **el mismo SSD del PC de clase**: me lo llevo a casa y arranco desde él por USB. `/` 58 GB + `/home` 388 GB (68 % usado). **Aquí están todas las VMs** |
 | Disco 2 | Kingston A400 480 GB (SSD SATA interno) | NTFS (datos de Windows) |
-| Disco 3 | **WD_BLACK SN7100 1 TB (NVMe PCIe)** | NTFS · Windows. **El disco más rápido del equipo y no lo usa Linux** |
+| Disco 3 | **WD_BLACK SN7100 1 TB (NVMe PCIe)** | NTFS · Windows de casa. **No se puede usar** para el proyecto: el entorno tiene que ir en el SSD de clase |
 | Gráfica | NVIDIA GeForce **RTX 3060** | No interviene en la virtualización con VirtualBox |
 | Red | Realtek RTL8111 Gigabit · `enp4s0` a **1000 Mb/s** | IP 192.168.1.101 (router de casa) |
 | Periféricos | Teclado Apple (ANSI), ratón inalámbrico, auriculares Logitech G435, controlador RGB | Teclado **ANSI** (distribución de EE. UU.) |
@@ -34,7 +34,7 @@ Log completo: [`inventari-casa.txt`](../evidencies/logs/inventari-casa.txt) (17/
 |---|---|---|---|
 | CPU | Core Ultra 5 125H · **18 hilos** | i5-11400F · **12 hilos** | En casa caben menos vCPU repartidas sin que se pisen |
 | RAM | **30 GiB** | **16 GB** | **El límite principal en casa**: unos 10 GB para VMs → un escenario cada vez y no el clúster de 3 nodos + NAS |
-| Disco de las VMs | SSD SATA interno | **SSD SATA por USB 5 Gb/s** | Misma unidad (A400), pero en casa pasa además por el puente USB |
+| Disco de las VMs | El SSD A400 por **SATA interno** | **El mismo SSD**, por **USB 5 Gb/s** | Mismo disco y mismas VMs; en casa pasa además por el puente USB, así que **las medidas de disco de casa son peores que en clase** |
 | Red | 1 Gb/s | 1 Gb/s | Igual. La red de las VMs es interna (no sale del PC) |
 | Diagnóstico de disco | ⬜ | 303 MB/s escr. · 351 MB/s lect. · **347 IOPS** 4K sync | |
 | Diagnóstico de RAM | ⬜ | 3,3 GB/s (copia en Python, sin errores) | |
@@ -44,12 +44,12 @@ Log completo: [`inventari-casa.txt`](../evidencies/logs/inventari-casa.txt) (17/
 
 | # | Cuello de botella | Evidencia | Solución propuesta | Coste |
 |---|---|---|---|---|
-| 1 | **Disco de las VMs por USB** | `lsblk` → `TRAN=usb`; el puente va a 5 Gb/s; **347 IOPS** en escritura 4K síncrona; en la Tasca 6 las escrituras caían a ~15 MB/s en **todos** los discos virtuales | Mover la carpeta `~/VirtualBox VMs` a un **disco interno**. Lo ideal es el **NVMe**, que es hasta ~10 veces más rápido. Como mínimo, conectar la caja a un puerto USB de **10 Gb/s** | 0 € (reorganizar discos) |
+| 1 | **Disco de las VMs por USB** | `lsblk` → `TRAN=usb`; el puente va a 5 Gb/s; **347 IOPS** en escritura 4K síncrona; en la Tasca 6 las escrituras caían a ~15 MB/s en **todos** los discos virtuales | El entorno **tiene que ir en el SSD de clase** (el NVMe de casa no se puede usar). Lo que sí se puede hacer: (a) conectar la caja a un puerto USB de **10 Gb/s** (el puente JMS583 lo admite); (b) hacer las pruebas de disco pesadas **en clase**, donde va por SATA; (c) reducir escrituras: VMs sin escritorio y un escenario cada vez | 0 € |
 | 2 | **SSD Kingston A400** (sin DRAM, caché SLC pequeña) | En la Tasca 6 la escritura sostenida bajaba de ~400 a ~15–25 MB/s | Para muchas VMs a la vez, un SSD con DRAM o NVMe | ~60 € (NVMe de 1 TB) |
 | 3 | **RAM de 16 GB** | Escenarios limitados a ~10 GB de VMs | Ampliar a 32 GB (la B560M tiene 4 ranuras DDR4) | ~50 € |
 | 4 | CPU con 12 hilos | Con Proxmox anidado, cada nodo consume vCPU | Suficiente para 1 escenario; no es el límite principal | — |
 
-> **Pregunta probable de defensa:** *"¿Cuál es el cuello de botella de tu equipo y cómo lo has demostrado?"* → En casa, el **disco**: las VMs están en un SSD SATA metido en una caja USB. Lo demuestran `lsblk` (`TRAN=usb`), las 347 IOPS y el comportamiento irregular de `fio` en la Tasca 6. La solución más barata es mover las VMs al NVMe interno.
+> **Pregunta probable de defensa:** *"¿Cuál es el cuello de botella de tu equipo y cómo lo has demostrado?"* → En casa, el **disco**: las VMs están en el SSD de clase metido en una caja USB. Lo demuestran `lsblk` (`TRAN=usb`), las 347 IOPS y el comportamiento irregular de `fio` en la Tasca 6. No puedo moverlas a otro disco, así que uso un puerto USB más rápido, hago las pruebas pesadas en clase y reduzco lo que escriben las VMs.
 
 ## Diagnósticos (Apte+)
 

@@ -56,7 +56,7 @@ flowchart TB
 | 192.168.23.1 | Mikrotik-IND | MikroTik RouterOS 7.24.5 · gateway por defecto | Fija | ✅ |
 | 192.168.23.2 | OPNsense | OPNsense 26.7 · comunicaciones alternativo | Fija | ⬜ |
 | 192.168.23.3 | DEB13-SRV | Debian 13 + nftables · comunicaciones alternativo | Fija | ✅ |
-| 192.168.23.10 | TrueNas | TrueNAS SCALE 25.10.7 · destino de las copias | Fija | 🟡 instalado |
+| 192.168.23.10 | TrueNas | TrueNAS SCALE 25.10.7 · destino de las copias | Fija | ✅ |
 | 192.168.23.11 | PMX1 | Proxmox VE 9.2 · nodo 1 del clúster | Fija | 🟡 instalado |
 | 192.168.23.20 | WS2025-DC | Windows Server 2025 · AD DS + DNS | Fija | 🟡 instalando |
 | 192.168.23.30–49 | — | VMs y contenedores de Proxmox | Fija | ⬜ |

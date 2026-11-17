@@ -1,0 +1,51 @@
+# TrueNAS — estado (vía SSH como izan)
+mar 17 nov 2026 10:21:11 CET
+
+# hostname / version
+truenas
+25.10.7
+# ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+enp0s3           UNKNOWN        192.168.23.10/24 fe80::a00:27ff:fe77:f36c/64 
+
+# ip route
+default via 192.168.23.1 dev enp0s3 proto static 
+192.168.23.0/24 dev enp0s3 proto kernel scope link src 192.168.23.10 
+
+# zpool status copias
+  pool: copias
+ state: ONLINE
+config:
+
+	NAME                                      STATE     READ WRITE CKSUM
+	copias                                    ONLINE       0     0     0
+	  mirror-0                                ONLINE       0     0     0
+	    7ed32874-cdb4-496e-9699-5aed6211a854  ONLINE       0     0     0
+	    4c3f216b-24eb-43ab-a420-1142cf342ec8  ONLINE       0     0     0
+
+errors: No known data errors
+
+# zfs list
+NAME                                                      USED  AVAIL  COMPRESS        MOUNTPOINT
+copias                                                   2.70M  18.9G  lz4             /mnt/copias
+copias/.system                                           1.74M  18.9G  lz4             legacy
+copias/.system/configs-ae32c386e13840b2bf9c0083275e7941    96K  18.9G  lz4             legacy
+copias/.system/cores                                       96K  1024M  lz4             legacy
+copias/.system/netdata-ae32c386e13840b2bf9c0083275e7941  1.10M  18.9G  lz4             legacy
+copias/.system/nfs                                        104K  18.9G  lz4             legacy
+copias/.system/samba4                                     164K  18.9G  lz4             legacy
+copias/.system/vm                                          96K  18.9G  lz4             legacy
+copias/configs                                            160K  18.9G  lz4             /mnt/copias/configs
+copias/sistemas                                            96K  18.9G  lz4             /mnt/copias/sistemas
+
+# Copias guardadas
+/mnt/copias/configs/.bash_logout
+/mnt/copias/configs/.bashrc
+/mnt/copias/configs/.profile
+/mnt/copias/configs/copias.log
+/mnt/copias/configs/mikrotik/2026-11-17_1120/mikrotik-export.rsc
+/mnt/copias/configs/mikrotik/2026-11-17_1120/mikrotik.backup
+
+2026-11-17 11:20:13 === Inicio de copias (2026-11-17_1120) ===
+2026-11-17 11:20:16 OK mikrotik -> /mnt/copias/configs/mikrotik/2026-11-17_1120 (1.5K)
+2026-11-17 11:20:16 === Fin de copias: 0 equipo(s) con error ===

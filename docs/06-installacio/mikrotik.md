@@ -112,6 +112,33 @@ Prueba desde el cliente `DEB13-CLI` (192.168.23.54) con gateway .1 — salida co
 
 **Diferencia entre `/export` y `/system backup`**: el *export* es texto (se puede leer, comparar y aplicar en otro router) pero no incluye contraseñas; el *backup* es binario, incluye usuarios y contraseñas, y solo se restaura en el mismo modelo de equipo.
 
+## 7. Fallo provocado y recuperación ([log](../../evidencies/logs/fallo-recuperacion-mikrotik.txt))
+
+**Escenario**: un administrador borra por error la IP de la LAN (`192.168.23.1/24`) y la regla de NAT. Toda la empresa se queda sin gateway.
+
+| Paso | Hora | Qué pasa |
+|---|---|---|
+| Estado inicial | 13:50:39 | `ether2` = 192.168.23.1/24, NAT activo |
+| **Fallo** | 13:50:39 | Se borran la IP de la LAN y el NAT → los clientes pierden Internet |
+| Detección | 13:50:54 | El bucle de comprobación del cliente marca *SIN-INTERNET* |
+| **Recuperación** | 13:50:54 | `/system backup load name=copia-nas.backup` (desde la WAN, que sigue funcionando) |
+| Router operativo | 13:51:14 | 20 s (incluye el reinicio del router) |
+
+| Resultado | Valor |
+|---|---|
+| **Tiempo sin servicio medido en el cliente** | **26 s** |
+| Datos/configuración perdidos | **Ninguno** (la copia era de un minuto antes) |
+
+### Primer intento: el plan tenía un fallo
+
+En el primer intento la idea era bajar la copia **del NAS**. No se pudo: desde el PC se llega al NAS **a través del propio MikroTik** (redirección de puertos), y con la LAN del router borrada la copia era **inaccesible**. Lección: **la copia tiene que poder alcanzarse sin el equipo que ha fallado**. Mejora aplicada — tres copias en tres sitios:
+
+1. `copia-nas.backup` **en el propio router** (la refresca el NAS en cada copia) → recuperación en segundos.
+2. `/export` en **Git** (`configs/mikrotik/`) → se puede pegar a mano desde la consola aunque no haya red.
+3. Copia en el **NAS** → por si se estropea el disco del router.
+
+Vía de emergencia si todo falla: **consola de VirtualBox** (no depende de la red) + `/import` del export de Git.
+
 ## Preguntas probables de la defensa
 
 - **¿Por qué la WAN es NAT de VirtualBox y no puente?** Porque la red del aula (172.16.222.0/24) es compartida: con puente, mi router aparecería en ella y podría causar conflictos. El enunciado permite NAT con IP por DHCP.

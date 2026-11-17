@@ -1,0 +1,33 @@
+### Fallo provocado y recuperación — MikroTik (Mikrotik-IND, 192.168.23.1)
+Escenario: un administrador borra por error la IP de la LAN y la regla de NAT de salida.
+Copia usada: copia-nas.backup (la genera el NAS en el propio router en cada copia nocturna; la misma copia se guarda en el NAS)
+
+# 13:50:39 ESTADO INICIAL
+   192.168.23.1/24 ether2
+   10.0.2.15/24 ether1
+
+# 13:50:39 FALLO
+   10.0.2.15/24 ether1
+
+# 13:50:54 DETECCIÓN y RECUPERACIÓN: /system backup load name=copia-nas.backup
+# 13:51:14 router operativo (20 s desde que se lanza la restauración)
+
+# ESTADO FINAL
+   192.168.23.1/24 ether2
+   10.0.2.15/24 ether1
+   masquerade | NAT LAN23 -> Internet
+
+# Medido desde el cliente DEB13-CLI (curl HTTPS, límite 4 s): 63 comprobaciones OK, sin Internet desde 13:35:02 hasta 13:35:28 = 26 s
+# Primeras y últimas líneas del bucle:
+13:34:51 OK
+13:34:53 OK
+  ...
+13:34:57 OK
+13:35:02 SIN-INTERNET
+13:35:28 SIN-INTERNET
+13:35:29 OK
+13:36:50 OK
+
+# PRIMER INTENTO (fallido) — lección aprendida
+La recuperación desde el NAS falló porque el PC llega al NAS a través del propio MikroTik (redirección 127.0.0.1:2210 -> .10:22).
+Con la LAN del router borrada, la copia del NAS era inaccesible. Mejora aplicada: copia local en el router + export en Git + el NAS es la copia externa.

@@ -48,11 +48,12 @@ copia_debian_srv() { # Debian SRV nftables — 192.168.23.3
   log "OK debian-srv -> $d ($(du -sh "$d" | cut -f1))"
 }
 
-copia_opnsense() {   # OPNsense — 192.168.23.2
+copia_opnsense() {   # OPNsense — 192.168.23.2 (por su API; la clave está en ~/.opnsense-apikey, permisos 600)
   local ip=192.168.23.2 d="$BASE/opnsense/$FECHA"
-  vivo $ip || { log "AVISO opnsense ($ip) no responde: copia omitida"; return 1; }
+  timeout 3 bash -c "</dev/tcp/$ip/443" 2>/dev/null || { log "AVISO opnsense ($ip) no responde: copia omitida"; return 1; }
   mkdir -p "$d"
-  $SCP izan@$ip:/conf/config.xml "$d/config.xml" || return 1
+  curl -sk -m 30 -u "$(cat "$HOME/.opnsense-apikey")" -o "$d/config.xml" "https://$ip/api/core/backup/download/this" || return 1
+  grep -q "<opnsense>" "$d/config.xml" || { log "ERROR opnsense: la descarga no es un config.xml"; return 1; }
   log "OK opnsense -> $d ($(du -sh "$d" | cut -f1))"
 }
 

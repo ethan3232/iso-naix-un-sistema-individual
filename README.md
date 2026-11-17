@@ -27,11 +27,16 @@
 |---|---|
 | 🌐 **Red** | LAN interna `LAN23` (192.168.23.0/24), dominio **`asix23.lan`**. 3 routers intercambiables (.1/.2/.3) con NAT y cortafuegos probados |
 | 🗄️ **Datos** | TrueNAS con pool **espejo** `copias` → recibe cada noche las configuraciones de los equipos y las imágenes de las VMs |
-| 🧱 **Virtualización** | Clúster Proxmox **`asix23`** de 2 nodos: contenedor `srv-infra` (intranet) y VM de prueba. Migración en caliente con **8 ms** de corte |
+| 🧱 **Virtualización** | Clúster Proxmox **`asix23`** de 3 nodos: contenedor `srv-infra` (intranet) y VM de prueba. Migración en caliente con **8 ms** de corte |
 | 👥 **Identidades** | Windows Server 2025 como **DC + DNS**, OUs por departamento, Windows 11 unido al dominio |
 | 🔒 **Seguridad** | Credenciales fuera del repo + *hook* que bloquea cualquier commit con contraseñas |
 
 ## 🗺️ Esquema de red
+
+<div align="center"><img src="diagrames/esquema-red.png" alt="Esquema de red" width="780"></div>
+
+<details>
+<summary>Ver versión Mermaid</summary>
 
 ```mermaid
 flowchart TB
@@ -45,12 +50,16 @@ flowchart TB
     SW --- NAS[🗄️ TrueNas<br/><b>.10</b>]
     SW --- PVE1[🧱 PMX1 <b>.11</b>]
     SW --- PVE2[🧱 PMX2 <b>.12</b>]
+    SW --- PVE3[🧱 PMX3 <b>.13</b>]
     PVE1 <-. clúster asix23 .-> PVE2
+    PVE2 <-. clúster .-> PVE3
     PVE2 --- CT[📦 srv-infra LXC<br/>intranet <b>.30</b>]
     SW --- DC[🏢 WS2025-DC<br/>AD DS + DNS <b>.20</b>]
     SW --- C1[💻 W11-CLI<br/>Administración <b>.51</b>]
     SW --- C2[🐧 DEB13-CLI<br/>Informática <b>.54</b>]
 ```
+
+</details>
 
 <sub>Línea gruesa: gateway activo · línea discontinua: gateways alternativos (se prueban de uno en uno con `scripts/canvi-gw.sh`).</sub>
 
@@ -64,6 +73,7 @@ flowchart TB
 | `192.168.23.10` | TrueNas | TrueNAS SCALE 25.10.7 · destino de las copias | ✅ |
 | `192.168.23.11` | PMX1 | Proxmox VE 9.2 · nodo 1 del clúster `asix23` | ✅ |
 | `192.168.23.12` | PMX2 | Proxmox VE 9.2 · nodo 2 del clúster `asix23` | ✅ |
+| `192.168.23.13` | PMX3 | Proxmox VE 9.2 · nodo 3 del clúster `asix23` | 🟡 instalando |
 | `192.168.23.20` | WS2025-DC | Windows Server 2025 · AD DS + DNS (`asix23.lan`) | ✅ |
 | `192.168.23.30` | srv-infra (LXC) | Servidor de infraestructura · intranet nginx | ✅ |
 | `192.168.23.51` | W11-CLI | Windows 11 Pro · Administración · en el dominio | ✅ |
@@ -78,8 +88,8 @@ Máscara `255.255.255.0` · Asignación **fija** en todos (no hay DHCP en LAN23)
 |---|---|:---:|
 | **Tasca 0** | Entorno de pruebas + repositorio Git | ✅ |
 | **Tasca 2** | Inventario, diagnósticos y cuellos de botella | 🟡 cuello de botella medido · falta inventario completo |
-| **Tasca 4** | Diseño físico y lógico, recursos | 🟡 recursos ✅ · faltan diagramas |
-| **Tasca 5** | Instalación y comunicaciones | 🟡 todas las máquinas ✅ · faltan fallo + recuperación |
+| **Tasca 4** | Diseño físico y lógico, recursos | ✅ |
+| **Tasca 5** | Instalación y comunicaciones | 🟡 todo ✅ salvo la incidencia de arranque provocada · 3.er Proxmox instalando |
 | **Tasca 6** | RAID 0/1/5 | ⬜ |
 | **Tasca 7** | Rendimiento y optimizaciones | ⬜ |
 | **Contingencia** | RTO/RPO y recuperaciones | ⬜ |

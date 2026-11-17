@@ -1,0 +1,34 @@
+// Esquema de red del entorno individual — LAN23 192.168.23.0/24
+// Exportar: dot -Tpng esquema-red.dot -o esquema-red.png ; dot -Tsvg esquema-red.dot -o esquema-red.svg
+digraph LAN23 {
+  graph [rankdir=TB, fontname="Helvetica", fontsize=12, bgcolor="white", pad=0.3, nodesep=0.35, ranksep=0.55,
+         label="Entorno de pruebas individual · puesto 23 · dominio asix23.lan", labelloc=t, fontsize=16];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#f2f4f8", color="#5b6b82"];
+  edge  [color="#5b6b82", arrowhead=none, fontname="Helvetica", fontsize=9];
+
+  inet [label="Internet", shape=ellipse, fillcolor="#dbeafe"];
+  aula [label="Red del aula\n172.16.222.0/24 (compartida)", fillcolor="#fde68a"];
+  subgraph cluster_host { label="PC eth4n · Linux Mint 22.3 · VirtualBox 7.0"; style="rounded,dashed"; color="#9aa5b5";
+    nat [label="NAT de VirtualBox\n10.0.2.0/24 · gw 10.0.2.2", fillcolor="#e0e7ff"];
+    subgraph cluster_com { label="Comunicaciones (un gateway activo)"; style=rounded; color="#e57000";
+      mk  [label="Mikrotik-IND\nRouterOS 7.24\n192.168.23.1", fillcolor="#fed7aa", penwidth=2];
+      opn [label="OPNsense 26.7\n192.168.23.2", fillcolor="#ffedd5"];
+      deb [label="DEB13-SRV\nnftables\n192.168.23.3", fillcolor="#ffedd5"];
+    }
+    sw [label="Red interna LAN23\n192.168.23.0/24", shape=hexagon, fillcolor="#d1fae5", color="#059669", penwidth=2];
+    nas [label="TrueNas\nNAS · pool espejo\n192.168.23.10", fillcolor="#cffafe"];
+    subgraph cluster_pve { label="Clúster Proxmox 'asix23'"; style=rounded; color="#e57000";
+      p1 [label="PMX1\n192.168.23.11"]; p2 [label="PMX2\n192.168.23.12"]; p3 [label="PMX3\n192.168.23.13"];
+      ct [label="srv-infra (LXC)\nintranet nginx\n192.168.23.30", fillcolor="#fef3c7"];
+    }
+    dc  [label="WS2025-DC\nAD DS + DNS\n192.168.23.20", fillcolor="#dbeafe"];
+    w11 [label="W11-CLI\nAdministración\n192.168.23.51", fillcolor="#e0f2fe"];
+    dcl [label="DEB13-CLI\nInformática\n192.168.23.54", fillcolor="#fce7f3"];
+  }
+  inet -> aula -> nat;
+  nat -> mk [label=" WAN DHCP", penwidth=2]; nat -> opn [style=dashed]; nat -> deb [style=dashed];
+  mk -> sw [penwidth=2, label=" gateway activo"]; opn -> sw [style=dashed]; deb -> sw [style=dashed];
+  sw -> nas; sw -> p1; sw -> p2; sw -> p3; sw -> dc; sw -> w11; sw -> dcl;
+  p2 -> ct [style=dotted, label=" aloja"];
+  p1 -> p2 [style=dotted, constraint=false]; p2 -> p3 [style=dotted, constraint=false];
+}

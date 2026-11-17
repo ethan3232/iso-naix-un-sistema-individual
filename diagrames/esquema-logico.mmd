@@ -1,0 +1,32 @@
+flowchart TB
+    subgraph EXT["🌍 Exterior"]
+        INET((Internet))
+        AULA["Red del aula 172.16.222.0/24<br/>(compartida, NO se toca)"]
+    end
+    subgraph HOST["💻 PC eth4n · Linux Mint · VirtualBox 7.0"]
+        NAT["NAT de VirtualBox<br/>10.0.2.0/24 · gw 10.0.2.2 · DNS 10.0.2.3"]
+        subgraph LAN["🔌 Red interna LAN23 · 192.168.23.0/24 · dominio asix23.lan"]
+            subgraph COM["Comunicaciones (solo uno activo)"]
+                MK["Mikrotik-IND .1<br/>RouterOS"]
+                OPN["OPNsense .2"]
+                DEB["DEB13-SRV .3<br/>nftables"]
+            end
+            NAS["TrueNas .10<br/>pool espejo 'copias'"]
+            subgraph CL["Clúster Proxmox 'asix23'"]
+                P1["PMX1 .11"]
+                P2["PMX2 .12"]
+                P3["PMX3 .13"]
+                CT["srv-infra .30<br/>LXC · intranet"]
+            end
+            DC["WS2025-DC .20<br/>AD DS + DNS"]
+            W11["W11-CLI .51<br/>Administración"]
+            DCLI["DEB13-CLI .54<br/>Informática"]
+        end
+    end
+    INET --- AULA --- NAT
+    NAT ---|WAN DHCP| MK & OPN & DEB
+    MK ==>|gateway activo| LAN
+    P1 --- CT
+    NAS -. NFS copias VMs .- CL
+    NAS -. pull SSH/API copias config .- COM
+    DC -. DNS + autenticación .- W11

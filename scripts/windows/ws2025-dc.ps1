@@ -41,15 +41,14 @@ switch ($Fase) {
     #    Internet al gateway.
     Set-DnsClientServerAddress -InterfaceAlias $If -ServerAddresses 127.0.0.1
     Set-DnsServerForwarder -IPAddress 192.168.23.1
-    # Unidades organizativas por departamento (estructura del enunciado)
-    $base = 'DC=asix23,DC=lan'
+    # Unidades organizativas por departamento (estructura del enunciado).
+    # Se usa dsadd (LDAP directo) porque funciona también en sesiones remotas
+    # donde los cmdlets de AD no llegan a los Servicios web de AD (ADWS).
     foreach ($ou in 'Direccion','Administracion','Comercial','Produccion','Informatica') {
-        if (-not (Get-ADOrganizationalUnit -Filter "Name -eq '$ou'" -ErrorAction SilentlyContinue)) {
-            New-ADOrganizationalUnit -Name $ou -Path $base -ProtectedFromAccidentalDeletion $true
-        }
+        dsadd ou "OU=$ou,DC=asix23,DC=lan" -desc "Departamento $ou"
     }
-    Get-ADDomain | Select-Object DNSRoot, NetBIOSName, DomainMode, PDCEmulator
-    Get-ADOrganizationalUnit -Filter * | Select-Object Name, DistinguishedName
+    dsquery ou -limit 0
+    netdom query fsmo
     Resolve-DnsName ws2025-dc.asix23.lan
     Resolve-DnsName deb.debian.org -Type A | Select-Object -First 1
   }

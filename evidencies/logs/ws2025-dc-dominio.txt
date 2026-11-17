@@ -1,0 +1,38 @@
+
+Name      Status DisplayName                             
+----      ------ -----------                             
+ADWS     Running Servicios web de Active Directory       
+DNS      Running Servidor DNS                            
+Netlogon Running Net Logon                               
+NTDS     Running Servicios de dominio de Active Directory
+
+
+
+# Dominio (dsquery/netdom)
+Maestro de esquema          WS2025-DC.asix23.lan
+Maestro nomencl. dominios   WS2025-DC.asix23.lan
+PDC                         WS2025-DC.asix23.lan
+Administrador de grupos RID WS2025-DC.asix23.lan
+Maestro de infraestructura  WS2025-DC.asix23.lan
+El comando se complet¢ correctamente.
+
+# Unidades organizativas
+"OU=Domain Controllers,DC=asix23,DC=lan"
+"OU=Direccion,DC=asix23,DC=lan"
+"OU=Administracion,DC=asix23,DC=lan"
+"OU=Comercial,DC=asix23,DC=lan"
+"OU=Produccion,DC=asix23,DC=lan"
+"OU=Informatica,DC=asix23,DC=lan"
+# Reenviadores DNS
+192.168.23.1
+# ipconfig
+   Nombre de host. . . . . . . . . : WS2025-DC
+   Sufijo DNS principal  . . . . . : asix23.lan
+   Lista de b?squeda de sufijos DNS: asix23.lan
+   Sufijo DNS espec?fico para la conexi?n. . : 
+   Direcci?n IPv4. . . . . . . . . . . . . . : 192.168.23.20(Preferido) 
+   M?scara de subred . . . . . . . . . . . . : 255.255.255.0
+   Puerta de enlace predeterminada . . . . . : 192.168.23.1
+   Servidores DNS. . . . . . . . . . . . . . : ::1
+"CN=WS2025-DC,OU=Domain Controllers,DC=asix23,DC=lan"
+"CN=W11-CLI,OU=Administracion,DC=asix23,DC=lan"

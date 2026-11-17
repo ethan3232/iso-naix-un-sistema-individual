@@ -1,3 +1,32 @@
-base                     | host CPU media  4.6% (máx  6.3%) · iowait medio  0.0% (máx  0.0%) · RAM disp. mín 12126 MB · swap máx 0 MB
-Mikrotik-IND-solo        | host CPU media  4.5% (máx  9.3%) · iowait medio  0.0% (máx  0.0%) · RAM disp. mín 11909 MB · swap máx 0 MB
-                         | VM CPU media   9.0% (máx  79.0% = 0.8 hilos de 12) · RSS máx   150 MB · disco:      0 MB leídos,      0 MB escritos (pico 0 MB/s) · arranque calmado: 8 s
+base                     | host CPU media  3.7% (máx  5.2%) · iowait medio  0.0% (máx  0.0%) · RAM disp. mín 12635 MB · swap máx 0 MB
+                         | disco SSD:      1 MB leídos,      2 MB escritos (pico 0 MB/s)
+Mikrotik-IND-solo        | host CPU media  4.5% (máx  7.8%) · iowait medio  0.0% (máx  0.2%) · RAM disp. mín 12502 MB · swap máx 0 MB
+                         | disco SSD:     29 MB leídos,      9 MB escritos (pico 13 MB/s)
+                         | VM CPU media   6.1% (máx  73.5% = 0.7 hilos de 12) · RSS máx   141 MB · arranque calmado: 8 s
+DEB13-SRV1-NFT-solo      | host CPU media  4.7% (máx 10.2%) · iowait medio  0.0% (máx  0.4%) · RAM disp. mín 11556 MB · swap máx 0 MB
+                         | disco SSD:    469 MB leídos,     26 MB escritos (pico 70 MB/s)
+                         | VM CPU media  16.1% (máx 105.5% = 1.1 hilos de 12) · RSS máx   888 MB · arranque calmado: 22 s
+DEB13-SRV2-solo          | host CPU media  6.1% (máx 18.1%) · iowait medio  0.3% (máx  6.9%) · RAM disp. mín 11503 MB · swap máx 0 MB
+                         | disco SSD:    487 MB leídos,    186 MB escritos (pico 157 MB/s)
+                         | VM CPU media  11.1% (máx 101.5% = 1.0 hilos de 12) · RSS máx   318 MB · arranque calmado: 20 s
+DEB13-SRV3-solo          | host CPU media  4.1% (máx 11.0%) · iowait medio  0.0% (máx  0.2%) · RAM disp. mín 12311 MB · swap máx 0 MB
+                         | disco SSD:    126 MB leídos,     13 MB escritos (pico 22 MB/s)
+                         | VM CPU media  10.9% (máx 102.0% = 1.0 hilos de 12) · RSS máx   222 MB · arranque calmado: 16 s
+DEB13-CLI-solo           | host CPU media  5.3% (máx 14.2%) · iowait medio  4.6% (máx 81.9%) · RAM disp. mín 11293 MB · swap máx 0 MB
+                         | disco SSD:    532 MB leídos,     51 MB escritos (pico 68 MB/s)
+                         | VM CPU media  22.9% (máx 512.5% = 5.1 hilos de 12) · RSS máx   873 MB · arranque calmado: 30 s
+OPNsense-solo            | host CPU media  5.5% (máx 11.7%) · iowait medio  0.2% (máx 10.8%) · RAM disp. mín 10337 MB · swap máx 0 MB
+                         | disco SSD:    251 MB leídos,     43 MB escritos (pico 33 MB/s)
+                         | VM CPU media  15.8% (máx 105.5% = 1.1 hilos de 12) · RSS máx   482 MB · arranque calmado: 30 s
+TrueNas-solo             | host CPU media 12.4% (máx 60.7%) · iowait medio  2.0% (máx 35.3%) · RAM disp. mín  9327 MB · swap máx 0 MB
+                         | disco SSD:    735 MB leídos,    378 MB escritos (pico 132 MB/s)
+                         | VM CPU media  50.8% (máx 104.0% = 1.0 hilos de 12) · RSS máx   452 MB · arranque calmado: 20 s
+PMX1-solo                | host CPU media  8.1% (máx 23.0%) · iowait medio  0.2% (máx  1.8%) · RAM disp. mín  9074 MB · swap máx 0 MB
+                         | disco SSD:    357 MB leídos,    129 MB escritos (pico 56 MB/s)
+                         | VM CPU media  22.8% (máx 148.0% = 1.5 hilos de 12) · RSS máx  1019 MB · arranque calmado: 32 s
+WS2025-DC-solo           | host CPU media  9.3% (máx 20.4%) · iowait medio  1.0% (máx  5.1%) · RAM disp. mín  8045 MB · swap máx 0 MB
+                         | disco SSD:   1140 MB leídos,    218 MB escritos (pico 71 MB/s)
+                         | VM CPU media  52.2% (máx 184.0% = 1.8 hilos de 12) · RSS máx  2588 MB · arranque calmado: 22 s
+W11-CLI-solo             | host CPU media  8.5% (máx 22.0%) · iowait medio  1.1% (máx  6.3%) · RAM disp. mín  6442 MB · swap máx 0 MB
+                         | disco SSD:   1763 MB leídos,    340 MB escritos (pico 143 MB/s)
+                         | VM CPU media  49.8% (máx 200.5% = 2.0 hilos de 12) · RSS máx  2859 MB · arranque calmado: 68 s

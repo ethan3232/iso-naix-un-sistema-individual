@@ -6,6 +6,7 @@
 # Salida: evidencies/logs/inventari-<nombre>.txt
 # Pensado para Linux (Mint/Ubuntu/Debian). En el PC de casa: copiar el repo y ejecutarlo igual.
 # =============================================================================
+export LC_NUMERIC=C   # punto decimal en awk/printf (con sudo la coma rompía la velocidad de descarga)
 NOM=${1:-$(hostname)}
 DIR=$(cd "$(dirname "$0")/.." && pwd)/evidencies/logs
 OUT="$DIR/inventari-$NOM.txt"; mkdir -p "$DIR"

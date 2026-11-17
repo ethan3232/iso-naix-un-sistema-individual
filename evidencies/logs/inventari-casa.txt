@@ -1,4 +1,4 @@
-# INVENTARIO DEL EQUIPO: casa — 17/11/2026 16:27 — usuario batoi
+# INVENTARIO DEL EQUIPO: casa — 17/11/2026 19:28 — usuario root (root)
 
 ==================================================================
 ## 1. Sistema y firmware
@@ -26,6 +26,19 @@ Arranque: UEFI
 $ mokutil --sb-state 2>/dev/null || echo 'Secure Boot: N/C (mokutil no disponible)'
 SecureBoot disabled
 
+$ dmidecode -t system -t bios -t baseboard | grep -E 'Manufacturer|Product|Version|Release Date|Serial' | grep -v 'Not Specified'
+	Version: F7
+	Release Date: 03/25/2022
+		Serial services are supported (int 14h)
+	Manufacturer: Gigabyte Technology Co., Ltd.
+	Product Name: B560M DS3H V2
+	Version: Default string
+	Serial Number: Default string
+	Manufacturer: Gigabyte Technology Co., Ltd.
+	Product Name: B560M DS3H V2
+	Version: x.x
+	Serial Number: Default string
+
 ==================================================================
 ## 2. CPU y virtualización
 ==================================================================
@@ -33,10 +46,11 @@ SecureBoot disabled
 $ lscpu | grep -E 'Nombre del modelo|Model name|^CPU\(s\)|Núcleo|Core|Hilo|Thread|Socket|MHz máx|max MHz|Virtualiz|L2|L3'
 CPU(s):                                   12
 Nombre del modelo:                        11th Gen Intel(R) Core(TM) i5-11400F @ 2.60GHz
+Nombre del modelo de BIOS:                11th Gen Intel(R) Core(TM) i5-11400F @ 2.60GHz To Be Filled By O.E.M. CPU @ 2.5GHz
 Hilo(s) de procesamiento por núcleo:      2
 Núcleo(s) por «socket»:                   6
 «Socket(s)»:                              1
-CPU(s) factor de escala MHz:              19%
+CPU(s) factor de escala MHz:              95%
 CPU MHz máx.:                             4400,0000
 Virtualización:                           VT-x
 Caché L2:                                 3 MiB (6 instancias)
@@ -47,7 +61,7 @@ $ echo "Flags de virtualización (vmx=Intel VT-x, svm=AMD-V): $(grep -oE 'vmx|sv
 Flags de virtualización (vmx=Intel VT-x, svm=AMD-V): vmx 
 
 $ ls -l /dev/kvm 2>&1 | head -1
-crw-rw----+ 1 root kvm 10, 232 nov 17 15:14 /dev/kvm
+crw-rw----+ 1 root kvm 10, 232 nov 17 18:47 /dev/kvm
 
 ==================================================================
 ## 3. Memoria RAM
@@ -55,17 +69,48 @@ crw-rw----+ 1 root kvm 10, 232 nov 17 15:14 /dev/kvm
 
 $ free -h
                total       usado       libre  compartido   búf/caché  disponible
-Mem:            15Gi       3,7Gi       8,8Gi       129Mi       3,5Gi        11Gi
-Inter:          11Gi          0B        11Gi
+Mem:            15Gi       5,8Gi       4,1Gi       199Mi       6,1Gi       9,7Gi
+Inter:          11Gi       512Ki        11Gi
 
 $ grep -E 'MemTotal|SwapTotal' /proc/meminfo
-MemTotal:       16240336 kB
-SwapTotal:      12448684 kB
+MemTotal:       16240340 kB
+SwapTotal:      12448688 kB
 
 $ swapon --show
 NAME       TYPE      SIZE USED PRIO
 /swapfile  file        8G   0B   -2
-/dev/zram0 partition 3,9G   0B  100
+/dev/zram0 partition 3,9G 512K  100
+
+$ dmidecode -t memory | grep -E 'Size:|Type:|Speed:|Locator:|Maximum Capacity|Number Of Devices' | grep -v 'No Module'
+	Error Correction Type: None
+	Maximum Capacity: 64 GB
+	Number Of Devices: 4
+	Locator: Controller0-ChannelA-DIMM0
+	Bank Locator: BANK 0
+	Type: Unknown
+	Size: 8 GB
+	Locator: Controller0-ChannelA-DIMM1
+	Bank Locator: BANK 0
+	Type: DDR4
+	Speed: 2133 MT/s
+	Configured Memory Speed: 2133 MT/s
+	Non-Volatile Size: None
+	Volatile Size: 8 GB
+	Cache Size: None
+	Logical Size: None
+	Locator: Controller0-ChannelB-DIMM0
+	Bank Locator: BANK 1
+	Type: Unknown
+	Size: 8 GB
+	Locator: Controller0-ChannelB-DIMM1
+	Bank Locator: BANK 1
+	Type: DDR4
+	Speed: 2133 MT/s
+	Configured Memory Speed: 2133 MT/s
+	Non-Volatile Size: None
+	Volatile Size: 8 GB
+	Cache Size: None
+	Logical Size: None
 
 ==================================================================
 ## 4. Discos y almacenamiento
@@ -89,14 +134,34 @@ nvme0n1     931,5G disk    0 nvme   WD_BLACK SN7100 1TB
 
 $ df -h -x tmpfs -x devtmpfs -x squashfs -x efivarfs
 S.ficheros     Tamaño Usados  Disp Uso% Montado en
-/dev/sdb2         58G    27G   29G  49% /
+/dev/sdb2         58G    26G   29G  47% /
 /dev/sdb3        381G   244G  118G  68% /home
 /dev/sdb1        508M    17M  492M   4% /boot/efi
 sda: rotacional=0 scheduler=none [mq-deadline] 
 sdb: rotacional=1 scheduler=none [mq-deadline] 
 nvme0n1: rotacional=0 scheduler=[none] mq-deadline 
 
-(SMART: ejecutar con sudo y con smartmontools instalado)
+$ { smartctl -H -A /dev/sda || smartctl -d sat -H -A /dev/sda; } | grep -E 'overall-health|SMART Health|Power_On_Hours|Reallocated|Wear_Leveling|Percentage Used|Temperature|Media_Wearout|Data Units Written'
+SMART overall-health self-assessment test result: PASSED
+  9 Power_On_Hours          0x0032   100   100   000    Old_age   Always       -       8067
+194 Temperature_Celsius     0x0022   028   028   000    Old_age   Always       -       28 (Min/Max 22/28)
+196 Reallocated_Event_Count 0x0032   100   100   000    Old_age   Always       -       0
+
+$ { smartctl -H -A /dev/sdb || smartctl -d sat -H -A /dev/sdb; } | grep -E 'overall-health|SMART Health|Power_On_Hours|Reallocated|Wear_Leveling|Percentage Used|Temperature|Media_Wearout|Data Units Written'
+SMART overall-health self-assessment test result: PASSED
+  9 Power_On_Hours          0x0032   100   100   000    Old_age   Always       -       2466
+194 Temperature_Celsius     0x0022   031   043   000    Old_age   Always       -       31 (Min/Max 9/43)
+196 Reallocated_Event_Count 0x0032   100   100   000    Old_age   Always       -       0
+
+$ { smartctl -H -A /dev/nvme0n1 || smartctl -d sat -H -A /dev/nvme0n1; } | grep -E 'overall-health|SMART Health|Power_On_Hours|Reallocated|Wear_Leveling|Percentage Used|Temperature|Media_Wearout|Data Units Written'
+SMART overall-health self-assessment test result: PASSED
+Temperature:                        43 Celsius
+Percentage Used:                    0%
+Data Units Written:                 7.651.834 [3,91 TB]
+Warning  Comp. Temperature Time:    0
+Critical Comp. Temperature Time:    0
+Temperature Sensor 1:               65 Celsius
+Temperature Sensor 2:               44 Celsius
 
 ==================================================================
 ## 5. Red
@@ -105,7 +170,7 @@ nvme0n1: rotacional=0 scheduler=[none] mq-deadline
 $ ip -br link
 lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
 enp4s0           UP             d8:5e:d3:81:f5:60 <BROADCAST,MULTICAST,UP,LOWER_UP> 
-docker0          DOWN           6a:da:a2:b0:60:ee <NO-CARRIER,BROADCAST,MULTICAST,UP> 
+docker0          DOWN           4a:c4:09:1c:c6:a3 <NO-CARRIER,BROADCAST,MULTICAST,UP> 
 
 $ ip -br addr
 lo               UNKNOWN        127.0.0.1/8 ::1/128 
@@ -152,7 +217,7 @@ $ for z in /sys/class/thermal/thermal_zone*; do echo "$(cat $z/type): $(($(cat $
 acpitz: 16 ºC
 acpitz: 16 ºC
 acpitz: 27 ºC
-x86_pkg_temp: 45 ºC
+x86_pkg_temp: 54 ºC
 
 ==================================================================
 ## 8. Software de virtualización
@@ -168,10 +233,10 @@ vboxnetadp vboxnetflt vboxdrv kvm_intel kvm
 ## 9. DIAGNÓSTICO — Disco (escritura y lectura secuencial, 1 GiB, sin caché)
 ==================================================================
 Herramienta: dd con oflag=direct / iflag=direct · Fichero de prueba en $HOME · Condiciones: equipo en reposo
-Escritura secuencial: 303 MB/s (3,4 s)
-Lectura secuencial:   351 MB/s (2,9 s)
+Escritura secuencial: 344 MB/s (3,0 s)
+Lectura secuencial:   363 MB/s (2,8 s)
 Escritura aleatoria 4K (2000 bloques, sync):
-  347 IOPS (5,8 s)
+  350 IOPS (5,7 s)
 
 ==================================================================
 ## 10. DIAGNÓSTICO — Memoria (ancho de banda y prueba de patrón)
@@ -195,22 +260,19 @@ Herramientas: ping (latencia/pérdida al gateway y a Internet), curl (velocidad 
 
 $ ping -c 10 -i 0.2 192.168.1.1 | tail -2
 10 packets transmitted, 10 received, 0% packet loss, time 1808ms
-rtt min/avg/max/mdev = 1.233/1.700/2.078/0.248 ms
+rtt min/avg/max/mdev = 1.308/1.973/2.633/0.421 ms
 
 $ ping -c 5 1.1.1.1 | tail -2
 5 packets transmitted, 5 received, 0% packet loss, time 4005ms
-rtt min/avg/max/mdev = 14.445/16.925/23.671/3.543 ms
+rtt min/avg/max/mdev = 15.656/16.086/16.728/0.368 ms
 
-$ curl -s -o /dev/null -m 30 -w 'Descarga de 10 MB: %{speed_download} B/s (%{time_total} s)\n' http://speedtest.tele2.net/10MB.zip | awk '{printf "%s %s %s %s %.1f MB/s %s %s\n",$1,$2,$3,$4,$5/1048576,$7,$8}'
-Descarga de 10 MB: 0,0 MB/s (30.001614 s)
+$ curl -s -o /dev/null -m 30 -w 'Descarga de 50 MB (Cloudflare): %{speed_download} B/s (%{time_total} s)\n' https://speed.cloudflare.com/__down?bytes=50000000 | awk '{printf "%s %s %s %s %.1f MB/s %s %s\n",$1,$2,$3,$4,$5/1048576,$7,$8}'
+Descarga de 50 MB 0,0 MB/s B/s (2.983925
 
 $ ip -s link show enp4s0 | sed -n '3,6p'
     RX:  bytes packets errors dropped  missed   mcast           
-     774376195  614128      0       0       0    2169 
+     699583000  520835      0       0       0    1433 
     TX:  bytes packets errors dropped carrier collsns           
-      17621075  128820      0       0       0       0 
+      17676510   87462      0       0       0       0 
 
 # FIN DEL INVENTARIO
-Descarga de 50 MB (Cloudflare): 25,1 MB/s = 211 Mb/s (1,0 s)
-Descarga de 50 MB (Cloudflare): 28,2 MB/s = 237 Mb/s (1,0 s)
-Descarga de 50 MB (Cloudflare): 30,9 MB/s = 260 Mb/s (1,0 s)

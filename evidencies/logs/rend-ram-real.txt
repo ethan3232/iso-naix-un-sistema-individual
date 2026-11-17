@@ -1,0 +1,12 @@
+# RAM y CPU por VM (cada VM arrancada SOLA, 120 s desde el arranque). caida_RAM = MemAvailable del 1er segundo - mínimo
+VM                asignada caida_RAM  RSS_max  pico_CPU  disco_MB
+DEB13-CLI             4096      1334      873      512%       556
+DEB13-SRV1-NFT        2048      1134      888      105%       470
+DEB13-SRV2            1024      1162      318      101%       648
+DEB13-SRV3            1024       349      222      102%       124
+Mikrotik-IND           512       108      141       73%        28
+OPNsense              2048      2177      482      105%       258
+PMX1                  4096      2738     1019      148%       418
+TrueNas               4096      3144      452      104%      1042
+W11-CLI               4096      2257     2859      200%      2030
+WS2025-DC             4096      2785     2588      184%      1280

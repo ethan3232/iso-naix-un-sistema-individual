@@ -37,7 +37,7 @@ Estado: 🟡 en curso (falta añadir el tiempo real del fallo de disco del RAID,
 | **Cliente** — W11-CLI o DEB13-CLI estropeado | Puesto de un departamento | 1 h | 0 en datos del servidor | — | Solo lo guardado en local | 🧪 Simulado: reinstalar desde ISO y volver a unir al dominio; los datos viven en el servidor |
 | **Host** — el PC anfitrión se rompe | **Todo** el sistema (punto único de fallo) | 1 día | 24 h | — | Hasta 24 h | 🧪 Simulado: otro PC con VirtualBox + copias del NAS. En la empresa real: varios hosts físicos y el NAS fuera del host |
 | **Almacenamiento** — falla un disco del NAS | Copias de seguridad | 0 (sigue funcionando) | 0 | — | 0 | 🧪 Simulado: espejo `copias` (ZFS mirror) |
-| **Almacenamiento** — falla un disco de un RAID 1/5 | Datos del servidor de ficheros | 0 (modo degradado) | 0 | ⬜ Pendiente (Tasca 6, mdadm) | ⬜ | ⬜ Se probará |
+| **Almacenamiento** — falla un disco de un RAID 1/5 | Datos del servidor de ficheros | 0 (modo degradado) | 0 | **0 s** sin servicio (0 lecturas fallidas) · reconstrucción RAID 1: **54,3 s** · RAID 5: **14,6 s** · con disco de reserva: **21,2 s** automática | 0 (SHA256 iguales) | ✅ Probado ([07 §3](07-emmagatzematge-raid.md)) |
 
 ## 3 bis. Fichas por escenario
 
@@ -157,4 +157,14 @@ Responsable en todos los casos: **izan** (único administrador del entorno indiv
 
 ## Valoración personal
 
-> ✍️ *A completar por izan: ¿considero que el plan es adecuado o tiene que mejorar? ¿Por qué? (lo pide el enunciado).*
+**¿Es adecuado el plan? Para un entorno de pruebas, sí; para la empresa real, tiene que mejorar en tres puntos.**
+
+Lo que me convence es que **casi todos los escenarios están probados de verdad, no solo escritos**: he borrado la configuración del MikroTik, he roto nftables, he metido una regla errónea en OPNsense, he migrado servicios entre nodos y he arrancado los RAID sin un disco. Todos los tiempos reales quedan **muy por debajo del RTO** que me había puesto (26 s frente a 5 min en el peor router) y en ninguna prueba se han perdido datos. Además, las pruebas me sirvieron para **corregir el propio plan**: la primera versión de la recuperación del MikroTik confiaba en el NAS y no funcionaba, porque el camino al NAS pasaba por el router roto. Si no lo hubiera probado, lo habría descubierto en el peor momento.
+
+Lo que tiene que mejorar:
+
+1. **El host es un punto único de fallo.** Todo vive en un solo PC y en un solo SSD (incluido el NAS que guarda las copias). En la empresa pondría el NAS en otro equipo físico y una segunda copia fuera de la oficina (regla 3-2-1). Aquí lo compenso en parte con las configuraciones en Git.
+2. **El RPO de 24 h de los routers es largo** para un equipo que cambia a menudo. Haría una copia tras cada cambio (como ya hace OPNsense con su historial).
+3. **Quedan escenarios solo simulados**: la recuperación del DC desde la copia IFM y la restauración de una VM desde `vzdump` en otro nodo. Están preparados y las copias verificadas, pero no los he ejecutado de principio a fin, así que su tiempo real no lo conozco. Serían las siguientes pruebas que haría.
+
+En resumen: el plan es **fiable para lo que se ha probado** y **honesto con lo que no**, que es lo que más me importa, porque un plan de contingencia que nunca se ha ensayado solo es una suposición.

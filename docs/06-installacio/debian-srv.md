@@ -114,6 +114,26 @@ DEB13-SRV kernel: BLOQUEADO-TELNET IN=enp0s8 OUT=enp0s3 SRC=192.168.23.54 DST=64
 
 Si una regla deja sin acceso por SSH: la **consola de VirtualBox** no depende de la red → `sudo nft flush ruleset` deja pasar todo.
 
+## 7. Fallo provocado y recuperación ([log](../../evidencies/logs/fallo-recuperacion-debian-srv.txt))
+
+**Escenario**: alguien edita `/etc/nftables.conf`, deja un error de sintaxis y el servidor se reinicia (corte de luz, actualización…).
+
+| Paso | Hora | Evidencia |
+|---|---|---|
+| Estado inicial | 13:54:44 | `oifname "enp0s3" masquerade` cargado |
+| **Fallo** | 13:54:44 | Línea rota al final del fichero + `systemctl reboot` |
+| Arranque | 13:55:08 | `nftables: failed` · **0 reglas cargadas** |
+| **Diagnóstico** | 13:55:08 | `journalctl -u nftables`: `/etc/nftables.conf:49:1-1: Error: syntax error, unexpected end of file` |
+| **Recuperación** | 13:55:08 | Se extrae `etc/nftables.conf` de la última copia del NAS (`etc.tgz`), se comprueba con `nft -c -f` y se aplica |
+| Servicio OK | 13:55:09 | `active` + regla de NAT cargada (**1 s**) |
+
+| Resultado | Valor |
+|---|---|
+| Tiempo sin Internet medido en el cliente | **21 s** (casi todo es el reinicio del servidor) |
+| Configuración perdida | **Ninguna** |
+
+**¿Por qué es peligroso este fallo?** Sin reglas, nftables deja de **filtrar** (el servidor queda expuesto) y de hacer **NAT** (la LAN se queda sin Internet), y el servicio solo avisa en el log. Por eso siempre se comprueba con `nft -c -f fichero` **antes** de aplicar.
+
 ## Preguntas probables de la defensa
 
 - **¿Qué diferencia hay entre `input` y `forward`?** `input` = paquetes dirigidos al propio Debian; `forward` = paquetes que pasan a través de él de una red a otra.

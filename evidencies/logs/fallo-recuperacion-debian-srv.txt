@@ -1,0 +1,27 @@
+### Fallo provocado y recuperación — Debian SRV nftables (DEB13-SRV, 192.168.23.3)
+Escenario: se edita /etc/nftables.conf, queda un error de sintaxis y el servidor se reinicia.
+
+# 13:54:44 ESTADO INICIAL (cliente con gateway .3)
+		oifname "enp0s3" masquerade
+
+# 13:54:44 FALLO: error de sintaxis en nftables.conf + reinicio
+# 13:55:08 servidor arrancado de nuevo
+nftables: failed
+reglas cargadas: 0
+nov 17 13:55:00 DEB13-SRV nft[603]: /etc/nftables.conf:49:1-1: Error: syntax error, unexpected end of file
+nov 17 13:55:00 DEB13-SRV systemd[1]: nftables.service: Failed with result 'exit-code'.
+nov 17 13:55:00 DEB13-SRV systemd[1]: Failed to start nftables.service - nftables.
+
+# 13:55:08 DIAGNÓSTICO: nftables falló al arrancar -> 0 reglas -> sin NAT -> la LAN no sale a Internet
+# 13:55:08 RECUPERACIÓN: /etc/nftables.conf de la última copia del NAS
+  copia: /mnt/copias/configs/debian-srv/2026-11-17_1324/etc.tgz
+sintaxis-ok
+active
+		oifname "enp0s3" masquerade
+# 13:55:09 recuperado en 1 s desde el diagnóstico
+
+# Medido desde el cliente DEB13-CLI (bucle con nohup, curl HTTPS límite 4 s): 33 OK · sin Internet desde 13:54:50 hasta 13:55:11 = 21 s (incluye el reinicio del servidor)
+13:54:45 OK
+13:54:50 SIN-INTERNET
+13:55:11 SIN-INTERNET
+13:55:13 OK

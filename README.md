@@ -34,36 +34,36 @@ Simulación en VirtualBox del sistema informático de la empresa: comunicaciones
 ```mermaid
 flowchart TB
     INET((Internet)) --- NAT[NAT de VirtualBox<br/>WAN por DHCP]
-    NAT --- MK[mk-gw · MikroTik CHR<br/>192.168.23.1]
-    NAT -.- OPN[opn-gw · OPNsense<br/>192.168.23.2]
-    NAT -.- DEB[deb-srv · Debian nftables<br/>192.168.23.3]
+    NAT --- MK[Mikrotik-IND · RouterOS<br/>192.168.23.1]
+    NAT -.- OPN[OPNsense<br/>192.168.23.2]
+    NAT -.- DEB[DEB13-SRV · nftables<br/>192.168.23.3]
     MK --- SW{{Red interna LAN23<br/>192.168.23.0/24}}
     OPN -.- SW
     DEB -.- SW
-    SW --- NAS[truenas<br/>.10]
-    SW --- PVE1[pve1<br/>.11]
-    SW --- PVE2[pve2<br/>.12]
-    SW --- DC[win-dc · AD DS + DNS<br/>.20]
-    SW --- INF[deb-infra<br/>.21]
-    SW --- C1[cli-admin · Win 11<br/>.51]
-    SW --- C2[cli-info · Debian<br/>.54]
+    SW --- NAS[TrueNas<br/>.10]
+    SW --- PVE1[PMX1 · Proxmox<br/>.11]
+    SW --- DC[WS2025-DC · AD DS + DNS<br/>.20]
+    SW --- C1[W11-CLI · Windows 11<br/>.51]
+    SW --- C2[DEB13-CLI · Debian<br/>.54]
 ```
 
 *Línea continua: gateway activo. Línea discontinua: gateways alternativos (se prueban de uno en uno).*
 
 ## Direccionamiento — `192.168.23.0/24`
 
-| IP | Máquina | Función | Asignación |
-|---|---|---|---|
-| 192.168.23.1 | mk-gw | MikroTik CHR · gateway por defecto | Fija |
-| 192.168.23.2 | opn-gw | OPNsense · comunicaciones alternativo | Fija |
-| 192.168.23.3 | deb-srv | Debian + nftables · comunicaciones alternativo | Fija |
-| 192.168.23.10 | truenas | NAS · destino de las copias | Fija |
-| 192.168.23.11–12 | pve1, pve2 | Clúster Proxmox VE | Fija |
-| 192.168.23.20 | win-dc | Windows Server 2025 · AD DS + DNS | Fija |
-| 192.168.23.21 | deb-infra | Servidor de infraestructura Debian | Fija |
-| 192.168.23.30–49 | — | VMs y contenedores de Proxmox | Fija |
-| 192.168.23.51 / .54 | cli-admin / cli-info | Clientes Windows 11 / Debian | Fija |
+| IP | VM (VirtualBox) | Función | Asignación | Estado |
+|---|---|---|---|---|
+| 192.168.23.1 | Mikrotik-IND | MikroTik RouterOS 7.24.5 · gateway por defecto | Fija | ✅ |
+| 192.168.23.2 | OPNsense | OPNsense 26.7 · comunicaciones alternativo | Fija | ⬜ |
+| 192.168.23.3 | DEB13-SRV | Debian 13 + nftables · comunicaciones alternativo | Fija | ✅ |
+| 192.168.23.10 | TrueNas | TrueNAS SCALE 25.10.7 · destino de las copias | Fija | 🟡 instalado |
+| 192.168.23.11 | PMX1 | Proxmox VE 9.2 · nodo 1 del clúster | Fija | 🟡 instalado |
+| 192.168.23.20 | WS2025-DC | Windows Server 2025 · AD DS + DNS | Fija | 🟡 instalando |
+| 192.168.23.30–49 | — | VMs y contenedores de Proxmox | Fija | ⬜ |
+| 192.168.23.51 | W11-CLI | Cliente Windows 11 Pro | Fija | 🟡 instalando |
+| 192.168.23.54 | DEB13-CLI | Cliente Debian 13 | Fija | ✅ |
+
+WAN de los routers: adaptador NAT de VirtualBox con IP por DHCP. LAN: red interna de VirtualBox `LAN23`. Máscara 255.255.255.0 · dominio `asix23.lan`.
 
 ## Estado de las tareas
 
@@ -72,7 +72,7 @@ flowchart TB
 | Tasca 0 | Entorno de pruebas y repositorio | 🟡 en curso |
 | Tasca 2 | Inventario y diagnóstico | ⬜ pendiente |
 | Tasca 4 | Diseño físico y lógico | ⬜ pendiente |
-| Tasca 5 | Instalación y comunicaciones | ⬜ pendiente |
+| Tasca 5 | Instalación y comunicaciones | 🟡 en curso — MikroTik ✅ · Debian nftables ✅ · cliente Debian ✅ |
 | Tasca 6 | RAID | ⬜ pendiente |
 | Tasca 7 | Rendimiento | ⬜ pendiente |
 | Contingencia | Plan y recuperaciones | ⬜ pendiente |

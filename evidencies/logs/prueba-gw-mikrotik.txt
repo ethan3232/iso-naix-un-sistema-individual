@@ -1,0 +1,42 @@
+### Prueba de comunicaciones — cliente cli-info (192.168.23.54) con gateway MikroTik 192.168.23.1
+mar 17 nov 2026 09:57:15 CET
+
+# ip route
+default via 192.168.23.1 dev enp0s3 proto static metric 100 
+192.168.23.0/24 dev enp0s3 proto kernel scope link src 192.168.23.54 metric 100 
+
+# ping -c2 192.168.23.1 (gateway)
+2 packets transmitted, 2 received, 0% packet loss, time 1026ms
+rtt min/avg/max/mdev = 0.226/0.364/0.502/0.138 ms
+
+# ping -c2 192.168.23.3 (deb-srv, misma LAN)
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 0.406/0.539/0.672/0.133 ms
+
+# getent hosts deb.debian.org (DNS a traves del gateway)
+2a04:4e42:600::644 debian.map.fastlydns.net deb.debian.org
+2a04:4e42:400::644 debian.map.fastlydns.net deb.debian.org
+2a04:4e42:200::644 debian.map.fastlydns.net deb.debian.org
+2a04:4e42::644  debian.map.fastlydns.net deb.debian.org
+
+# traceroute TCP 443 a deb.debian.org
+traceroute to deb.debian.org (151.101.130.132), 6 hops max, 60 byte packets
+ 1  _gateway (192.168.23.1)  0.807 ms  0.773 ms  0.759 ms
+ 2  10.0.2.2 (10.0.2.2)  1.530 ms  1.517 ms  1.505 ms
+ 3  151.101.130.132 (151.101.130.132)  209.025 ms  208.667 ms  208.997 ms
+
+# PERMITIDA: curl -sI https://deb.debian.org
+HTTP/2 200 
+
+# BLOQUEADA: nc -zv -w5 telehack.com 23 (Telnet)
+nc: connect to telehack.com (64.13.139.230) port 23 (tcp) timed out: Operation now in progress
+nc: connect to telehack.com (2001:470:67:c0::1337) port 23 (tcp) failed: Network is unreachable
+codigo de salida: 1
+
+# Registro de MikroTik (/log print where topics~"firewall")
+2026-11-17 09:57:22 PERMITIDO-HTTPS forward: in:ether2 out:ether1, connection-state:new src-mac 08:00:27:3C:94:7B, proto TCP (SYN), 192.168.23.54:49688->151.101.66.132:443, len 60
+2026-11-17 09:57:26 BLOQUEADO-TELNET forward: in:ether2 out:ether1, connection-state:new src-mac 08:00:27:3C:94:7B, proto TCP (SYN), 192.168.23.54:37528->64.13.139.230:23, len 60
+2026-11-17 09:57:27 BLOQUEADO-TELNET forward: in:ether2 out:ether1, connection-state:new src-mac 08:00:27:3C:94:7B, proto TCP (SYN), 192.168.23.54:37528->64.13.139.230:23, len 60
+2026-11-17 09:57:28 BLOQUEADO-TELNET forward: in:ether2 out:ether1, connection-state:new src-mac 08:00:27:3C:94:7B, proto TCP (SYN), 192.168.23.54:37528->64.13.139.230:23, len 60
+2026-11-17 09:57:29 BLOQUEADO-TELNET forward: in:ether2 out:ether1, connection-state:new src-mac 08:00:27:3C:94:7B, proto TCP (SYN), 192.168.23.54:37528->64.13.139.230:23, len 60
+2026-11-17 09:57:30 BLOQUEADO-TELNET forward: in:ether2 out:ether1, connection-state:new src-mac 08:00:27:3C:94:7B, proto TCP (SYN), 192.168.23.54:37528->64.13.139.230:23, len 60

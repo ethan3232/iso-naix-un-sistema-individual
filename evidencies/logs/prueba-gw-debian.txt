@@ -1,0 +1,33 @@
+### Prueba de comunicaciones — cliente cli-info (192.168.23.54) con gateway Debian nftables 192.168.23.3
+mar 17 nov 2026 09:57:58 CET
+
+# ip route
+default via 192.168.23.3 dev enp0s3 proto static metric 100 
+192.168.23.0/24 dev enp0s3 proto kernel scope link src 192.168.23.54 metric 100 
+
+# ping -c2 192.168.23.3 (gateway)
+2 packets transmitted, 2 received, 0% packet loss, time 1016ms
+rtt min/avg/max/mdev = 0.273/0.389/0.505/0.116 ms
+
+# getent hosts deb.debian.org
+151.101.66.132  STREAM debian.map.fastlydns.net
+
+# traceroute TCP 443 a deb.debian.org
+traceroute to deb.debian.org (151.101.2.132), 6 hops max, 60 byte packets
+ 1  _gateway (192.168.23.3)  0.390 ms  0.380 ms  0.345 ms
+ 2  10.0.2.2 (10.0.2.2)  0.710 ms  0.682 ms  0.675 ms
+ 3  151.101.2.132 (151.101.2.132)  190.307 ms  189.735 ms  190.749 ms
+
+# PERMITIDA: curl -sI https://deb.debian.org
+HTTP/2 200 
+
+# BLOQUEADA: nc -4 -zv -w5 telehack.com 23 (Telnet)
+nc: connect to telehack.com (64.13.139.230) port 23 (tcp) timed out: Operation now in progress
+codigo de salida: 1
+
+# Registro del kernel en deb-srv (journalctl -k | grep PERMITIDO/BLOQUEADO)
+nov 17 09:58:05 DEB13-SRV kernel: BLOQUEADO-TELNET IN=enp0s8 OUT=enp0s3 MAC=08:00:27:75:19:c5:08:00:27:3c:94:7b:08:00 SRC=192.168.23.54 DST=64.13.139.230 LEN=60 TOS=0x00 PREC=0x00 TTL=63 ID=56154 DF PROTO=TCP SPT=44890 DPT=23 WINDOW=64240 RES=0x00 SYN URGP=0 
+nov 17 09:58:06 DEB13-SRV kernel: BLOQUEADO-TELNET IN=enp0s8 OUT=enp0s3 MAC=08:00:27:75:19:c5:08:00:27:3c:94:7b:08:00 SRC=192.168.23.54 DST=64.13.139.230 LEN=60 TOS=0x00 PREC=0x00 TTL=63 ID=56155 DF PROTO=TCP SPT=44890 DPT=23 WINDOW=64240 RES=0x00 SYN URGP=0 
+nov 17 09:58:07 DEB13-SRV kernel: BLOQUEADO-TELNET IN=enp0s8 OUT=enp0s3 MAC=08:00:27:75:19:c5:08:00:27:3c:94:7b:08:00 SRC=192.168.23.54 DST=64.13.139.230 LEN=60 TOS=0x00 PREC=0x00 TTL=63 ID=56156 DF PROTO=TCP SPT=44890 DPT=23 WINDOW=64240 RES=0x00 SYN URGP=0 
+nov 17 09:58:08 DEB13-SRV kernel: BLOQUEADO-TELNET IN=enp0s8 OUT=enp0s3 MAC=08:00:27:75:19:c5:08:00:27:3c:94:7b:08:00 SRC=192.168.23.54 DST=64.13.139.230 LEN=60 TOS=0x00 PREC=0x00 TTL=63 ID=56157 DF PROTO=TCP SPT=44890 DPT=23 WINDOW=64240 RES=0x00 SYN URGP=0 
+nov 17 09:58:02 DEB13-SRV kernel: PERMITIDO-HTTPS IN=enp0s8 OUT=enp0s3 MAC=08:00:27:75:19:c5:08:00:27:3c:94:7b:08:00 SRC=192.168.23.54 DST=151.101.134.132 LEN=60 TOS=0x00 PREC=0x00 TTL=63 ID=8387 DF PROTO=TCP SPT=56232 DPT=443 WINDOW=64240 RES=0x00 SYN URGP=0 

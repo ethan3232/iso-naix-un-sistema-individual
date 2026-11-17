@@ -1,0 +1,58 @@
+# hostname
+DEB13-SRV
+
+# ip -br a
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+enp0s8           UP             192.168.23.3/24 
+enp0s3           UP             10.0.2.15/24 
+
+# ip route
+default via 10.0.2.2 dev enp0s3 proto dhcp src 10.0.2.15 metric 103 
+10.0.2.0/24 dev enp0s3 proto kernel scope link src 10.0.2.15 metric 103 
+192.168.23.0/24 dev enp0s8 proto kernel scope link src 192.168.23.3 metric 104 
+
+# nmcli con show
+NAME   UUID                                  TYPE      DEVICE 
+WAN    61198517-964e-4b79-92a5-4573baec69df  ethernet  enp0s3 
+LAN23  b29fa1e3-c672-47b2-b148-859028ac8f4a  ethernet  enp0s8 
+lo     b378dae5-037a-4da5-9c9b-a6333c75b109  loopback  lo     
+
+# sysctl net.ipv4.ip_forward
+net.ipv4.ip_forward = 1
+
+# nft list ruleset
+table inet filtro {
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iif "lo" accept
+		ct state established,related accept
+		ct state invalid drop
+		meta l4proto { icmp, ipv6-icmp } accept
+		iifname "enp0s8" ip saddr 192.168.23.0/24 accept comment "Gestion desde LAN23"
+		iifname "enp0s3" ip saddr 10.0.2.2 tcp dport 22 accept comment "SSH desde el host (NAT VirtualBox)"
+		log prefix "IN-DROP " drop
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+		ct state established,related accept
+		ct state invalid drop
+		iifname "enp0s8" tcp dport 23 log prefix "BLOQUEADO-TELNET " drop comment "PRUEBA BLOQUEADA: Telnet"
+		iifname "enp0s8" tcp dport 443 ct state new log prefix "PERMITIDO-HTTPS " accept comment "PRUEBA PERMITIDA: HTTPS"
+		iifname "enp0s8" oifname "enp0s3" accept comment "LAN23 -> Internet"
+		log prefix "FWD-DROP " drop
+	}
+
+	chain output {
+		type filter hook output priority filter; policy accept;
+	}
+}
+table ip nat {
+	chain postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+		oifname "enp0s3" masquerade
+	}
+}
+
+# curl -sI https://deb.debian.org
+HTTP/2 200 

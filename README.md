@@ -73,7 +73,7 @@ flowchart TB
 | `192.168.23.10` | TrueNas | TrueNAS SCALE 25.10.7 · destino de las copias | ✅ |
 | `192.168.23.11` | PMX1 | Proxmox VE 9.2 · nodo 1 del clúster `asix23` | ✅ |
 | `192.168.23.12` | PMX2 | Proxmox VE 9.2 · nodo 2 del clúster `asix23` | ✅ |
-| `192.168.23.13` | PMX3 | Proxmox VE 9.2 · nodo 3 del clúster `asix23` | 🟡 instalando |
+| `192.168.23.13` | PMX3 | Proxmox VE 9.2 · nodo 3 del clúster `asix23` | ✅ |
 | `192.168.23.20` | WS2025-DC | Windows Server 2025 · AD DS + DNS (`asix23.lan`) | ✅ |
 | `192.168.23.30` | srv-infra (LXC) | Servidor de infraestructura · intranet nginx | ✅ |
 | `192.168.23.51` | W11-CLI | Windows 11 Pro · Administración · en el dominio | ✅ |
@@ -89,7 +89,7 @@ Máscara `255.255.255.0` · Asignación **fija** en todos (no hay DHCP en LAN23)
 | **Tasca 0** | Entorno de pruebas + repositorio Git | ✅ |
 | **Tasca 2** | Inventario, diagnósticos y cuellos de botella | 🟡 cuello de botella medido · falta inventario completo |
 | **Tasca 4** | Diseño físico y lógico, recursos | ✅ |
-| **Tasca 5** | Instalación y comunicaciones | 🟡 todo ✅ salvo la incidencia de arranque provocada · 3.er Proxmox instalando |
+| **Tasca 5** | Instalación y comunicaciones | 🟡 todo ✅ salvo la incidencia de arranque provocada · 3 nodos Proxmox ✅ |
 | **Tasca 6** | RAID 0/1/5 | ⬜ |
 | **Tasca 7** | Rendimiento y optimizaciones | ⬜ |
 | **Contingencia** | RTO/RPO y recuperaciones | ⬜ |

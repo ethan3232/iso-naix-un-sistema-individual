@@ -1,14 +1,14 @@
-# Proxmox VE — clúster de virtualización `asix23` (192.168.23.11 y .12)
+# Proxmox VE — clúster de virtualización `asix23` (192.168.23.11, .12 y .13)
 
-| Dato | PMX1 | PMX2 |
-|---|---|---|
-| VM en VirtualBox | `PMX1` | `PMX2` |
-| Sistema | Proxmox VE **9.2** (pve-manager 9.2.2, Debian 13) | igual |
-| Hostname | `pmx1.asix23.lan` | `pmx2.asix23.lan` |
-| Red (`vmbr0` sobre `nic0`) | 192.168.23.11/24 · gw .1 · DNS .1 · **fija** | 192.168.23.12/24 |
-| Recursos | 2 vCPU · 4 GB · 20 GB · **VT-x anidado** | 2 vCPU · 4 GB · 32 GB · VT-x anidado |
-| Web | `https://127.0.0.1:8411` (desde el PC) | `https://127.0.0.1:8412` |
-| Estado | ✅ Clúster, contenedor, VM, migraciones y copias | ✅ |
+| Dato | PMX1 | PMX2 | PMX3 |
+|---|---|---|---|
+| VM en VirtualBox | `PMX1` | `PMX2` | `PMX3` |
+| Sistema | Proxmox VE **9.2** (pve-manager 9.2.2, Debian 13) | igual | igual |
+| Hostname | `pmx1.asix23.lan` | `pmx2.asix23.lan` | `pmx3.asix23.lan` |
+| Red (`vmbr0` sobre `nic0`) | 192.168.23.11/24 · gw .1 · DNS .1 · **fija** | 192.168.23.12/24 | 192.168.23.13/24 |
+| Recursos | 2 vCPU · 4 GB · 20 GB · **VT-x anidado** | 2 vCPU · 4 GB · 32 GB | 2 vCPU · 4 GB · 32 GB |
+| Web | `https://127.0.0.1:8411` (desde el PC) | `https://127.0.0.1:8412` | `https://127.0.0.1:8413` |
+| Estado | ✅ Clúster, contenedor, VM, migraciones y copias | ✅ | ✅ |
 
 ## 1. Requisitos, licencia e imagen
 
@@ -23,7 +23,7 @@ VBoxManage modifyvm PMX1 --nicpromisc1 allow-all # las VMs internas usan sus pro
 
 ## 2. Instalación
 
-PMX1 ya estaba instalado, pero **no se conocía la contraseña de root** → se reinstaló (decisión de izan, [incidencia 10](../10-incidencies.md)). PMX2 se instaló nuevo. Instalador **Terminal UI** con:
+PMX1 ya estaba instalado, pero **no se conocía la contraseña de root** → se reinstaló (decisión de izan, [incidencia 10](../10-incidencies.md)). PMX2 y PMX3 se instalaron nuevos (el 3.er nodo se añadió después, a petición del profesorado: el diseño de referencia tiene **tres nodos**). Instalador **Terminal UI** con:
 
 | Opción | Valor | Por qué |
 |---|---|---|
@@ -44,9 +44,21 @@ PMX1 ya estaba instalado, pero **no se conocía la contraseña de root** → se 
 ```bash
 # en PMX1
 pvecm create asix23
-# en PMX2
+# en PMX2 y en PMX3
 pvecm add 192.168.23.11 --use_ssh
 ```
+
+PMX3 se unió en **12 s**. Estado final ([log](../../evidencies/logs/proxmox-cluster.txt)): `Expected votes: 3 · Total votes: 3 · Quorum: 2 · Quorate`.
+
+### Prueba de quórum: se apaga un nodo
+
+| | Antes | PMX3 apagado |
+|---|---|---|
+| Votos | 3 de 3 | **2 de 3** |
+| Quórum necesario | 2 | 2 |
+| Estado | Quorate | **Quorate ✅** — el clúster sigue gestionando |
+
+Con **2 nodos** esto no pasaba: al caer uno quedaba 1 de 2 votos y el clúster se bloqueaba. **Por eso se usan 3 nodos** (o 2 + un QDevice): siempre queda mayoría con un nodo caído.
 
 > El primer `pvecm add` falló con *"cluster not ready - no quorum?"* porque se lanzó justo mientras PMX1 reiniciaba corosync. Al repetirlo, se unió en **14 s**.
 
@@ -57,7 +69,7 @@ pvecm add 192.168.23.11 --use_ssh
 
 | Concepto | En nuestro clúster |
 |---|---|
-| **Quórum** | Mayoría de votos para que el clúster acepte cambios. Con 2 nodos el quórum es 2: **si cae un nodo, el otro pierde el quórum** y no deja crear/arrancar VMs (para evitar el *split-brain*). Solución real: un 3.º nodo o un **QDevice** (voto externo). Lo dejamos como mejora 🧪 |
+| **Quórum** | Mayoría de votos (más de la mitad) para que el clúster acepte cambios y evitar el *split-brain*. Con **3 nodos** el quórum es 2: **aguanta la caída de un nodo** (probado). Con 2 nodos no aguantaba ninguna |
 | **Red del clúster (corosync)** | Comparte la red de gestión LAN23. En producción va en una red separada, porque corosync necesita latencia baja |
 | **Almacenamiento** | Cada nodo tiene su `local-lvm` (**local**, no compartido) + `nas-copias` (NFS del NAS, **compartido**, solo para copias) |
 | Gestión conjunta | ✅ Una sola web para los dos nodos |
@@ -131,6 +143,6 @@ $ curl -s http://192.168.23.30 | grep h1        (desde PMX2)
 ## Preguntas probables de la defensa
 
 - **¿Por qué hace falta virtualización anidada?** Proxmox necesita VT-x para ejecutar VMs con KVM, y como él mismo es una VM de VirtualBox, VirtualBox tiene que "pasarle" VT-x.
-- **¿Qué pasa si apago PMX2?** PMX1 se queda con 1 voto de 2 → sin quórum. Las VMs que ya funcionan siguen, pero no puedo arrancar ni cambiar nada. Solución de emergencia: `pvecm expected 1`.
+- **¿Qué pasa si apago un nodo?** Quedan 2 votos de 3 → sigue habiendo quórum y todo funciona (probado). Si caen **dos**, el que queda pierde el quórum y no deja cambiar nada; emergencia: `pvecm expected 1`.
 - **¿Por qué la VM migra sin cortes y el contenedor no?** KVM puede copiar la RAM en caliente mientras la VM sigue funcionando y solo la para unos milisegundos al final. LXC no tiene esa función en Proxmox: hay que parar, copiar y arrancar.
 - **¿Por qué el contenedor tardó más si es más ligero?** Porque tenía un disco de 4 GB que se copió entero; la VM de prueba tenía 2 GB y casi todo ceros.

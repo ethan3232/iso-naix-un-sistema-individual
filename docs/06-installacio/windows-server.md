@@ -105,7 +105,17 @@ Un **dominio** es un grupo de equipos y usuarios que comparten **una base de dat
 | Script de configuración | Ya está en Git |
 | **No** hace falta: el sistema operativo completo | Se reinstala; lo valioso es AD |
 
-⬜ Pendiente de ejecutar: copia del AD con `ntdsutil "ifm" "create full"` y envío al NAS.
+✅ **Copia hecha** con [`scripts/windows/copia-ad.ps1`](../../scripts/windows/copia-ad.ps1):
+
+```powershell
+ntdsutil "activate instance ntds" "ifm" "create sysvol full C:\copias\ifm-<fecha>" quit quit
+Compress-Archive ... C:\copias\ad-asix23-<fecha>.zip
+```
+
+- `ifm` (*Install From Media*) crea una **copia coherente** de la base de datos `ntds.dit`, el registro y SYSVOL mientras el DC sigue funcionando.
+- Resultado: `ad-asix23-2026-11-17_1154.zip` (**4,9 MB**) → NAS `/mnt/copias/configs/ws2025-dc/`.
+- La copia se borra del PC intermedio porque contiene los *hashes* de las contraseñas del dominio: solo debe estar en el NAS.
+- Con esta copia se puede **reconstruir el DC** (o promover uno nuevo desde el medio IFM sin replicar por red).
 
 ## Preguntas probables de la defensa
 

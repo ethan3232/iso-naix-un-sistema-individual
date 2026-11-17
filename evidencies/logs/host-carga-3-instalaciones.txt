@@ -1,0 +1,26 @@
+# Carga del host durante: instalacion WS2025 + Windows 11 + OPNsense (+ MikroTik y TrueNAS encendidos)
+mar 17 nov 2026 10:20:39 CET
+
+# VMs encendidas
+"Mikrotik-IND" {1966c211-5ff6-4f8c-9d74-6517e2b78406}
+"TrueNas" {7f560266-de26-4a5c-8aa0-c9dc1a8e39f0}
+"WS2025-DC" {9654f289-cd25-441e-8add-3dca4a40c9da}
+"W11-CLI" {fb623bda-bbae-4ef5-8f45-980f3fb5cbb3}
+"OPNsense" {ad934678-0b6d-4830-8f6d-24275f8ad3d4}
+
+# vmstat 2 5 (columna wa = % de CPU esperando al disco)
+procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+ r  b   swpd  libre   búf caché   si   so    bi    bo   in   cs us sy id wa st gu
+ 1  3  56832 483356  96496 10824804    0    7  5875  5272 5357    5  1  2 94  3  0  0
+ 0  3  56832 482728  96504 10826488    0    0   804 15950 10346 18269  1  2 81 16  0  0
+ 3  1  56832 469724  96504 10833720    0    0  2937 22259 13161 19146  1  3 83 13  0  0
+ 0  3  56832 462704  96520 10841836    0    0  3639 13402 11274 19209  1  3 80 16  0  0
+ 0  3  56832 452604  96520 10849432    0    0  2776 15822 11726 19208  1  3 82 14  0  0
+
+# free -h
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:            30Gi        21Gi       441Mi       1,2Gi        10Gi       9,2Gi
+Inter:          15Gi        55Mi        15Gi
+
+# Uso de disco de las VMs (/proc/diskstats de sda)
+  566405    29192 93606365  4213841   350306   335400 84199320  6513531        3  1279843 10887892        0        0        0        0    85759   160519

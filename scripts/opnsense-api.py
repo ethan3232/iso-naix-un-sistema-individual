@@ -31,7 +31,11 @@ def call(method, path, body=None, token=None):
     req.add_header("X-CSRFToken", token)
     if body is not None:
         req.add_header("Content-Type", "application/json"); req.data = body.encode()
-    return op.open(req).read()
+    import http.client
+    try:
+        return op.open(req).read()
+    except http.client.IncompleteRead as e:   # respuestas grandes troceadas: nos quedamos con lo recibido
+        return e.partial
 
 if __name__ == "__main__":
     method, path = sys.argv[1].upper(), sys.argv[2]
@@ -40,5 +44,6 @@ if __name__ == "__main__":
         open(sys.argv[3], "wb").write(call("GET", path, token=tok)); print("guardado", sys.argv[3])
     else:
         out = call(method, path, sys.argv[3] if len(sys.argv) > 3 else ("{}" if method == "POST" else None), tok)
+        if os.environ.get("OPN_RAW"): sys.stdout.write(out.decode(errors="replace")); sys.exit(0)
         try: print(json.dumps(json.loads(out), indent=1, ensure_ascii=False)[:4000])
         except Exception: print(out[:2000].decode(errors="replace"))

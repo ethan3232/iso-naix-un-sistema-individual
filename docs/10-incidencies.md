@@ -22,3 +22,8 @@ Registro de problemas reales que han aparecido al montar el entorno, con el mét
 ## Incidencia provocada (Tasca 5.5)
 
 ⬜ Pendiente: se provocará en una VM desechable (clon de `DEB13-CLI`) un fallo de arranque y se documentará con el mismo método.
+
+| # | Fecha | Máquina | Síntoma | Hipótesis | Comprobación | Solución | Estado final |
+|---|---|---|---|---|---|---|---|
+| 15 | 17/11 | OPNsense | Con .2 de gateway los clientes no resuelven nombres | Unbound hace resolución recursiva a los servidores raíz y la red del aula no lo deja | `curl` por IP sí funciona; Unbound *running* | Unbound en **modo reenvío** (usa el DNS de la WAN) | DNS correcto |
+| 16 | 17/11 | OPNsense | El Telnet no aparecía bloqueado en el log | "Default allow LAN to any" (secuencia 1, `quick`) se evaluaba antes que mi bloqueo (secuencia 10) | Lista de reglas por la API; `grep` del log: 0 entradas de la LAN | Reglas por defecto pasadas a secuencia 50/51 (copia previa `01-antes-de-reordenar.xml`) | Bloqueo registrado (`block,in` regla a1f994e5) |

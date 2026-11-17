@@ -1,0 +1,40 @@
+### Prueba de comunicaciones — cliente cli-info (192.168.23.54) con gateway OPNsense 192.168.23.2
+mar 17 nov 2026 12:07:19 CET
+# (Unbound pasado a modo reenvío: la resolución recursiva a los servidores raíz no funciona desde la red del aula — ver incidencia 15)
+
+# ip route
+default via 192.168.23.2 dev enp0s3 proto static metric 100 
+192.168.23.0/24 dev enp0s3 proto kernel scope link src 192.168.23.54 metric 100 
+
+# ping -c2 192.168.23.2 (gateway)
+2 packets transmitted, 2 received, 0% packet loss, time 1019ms
+rtt min/avg/max/mdev = 0.535/0.644/0.754/0.109 ms
+
+# DNS a traves de OPNsense (Unbound)
+199.232.34.132  STREAM debian.map.fastlydns.net
+
+# traceroute TCP 443 a deb.debian.org
+traceroute to deb.debian.org (199.232.34.132), 6 hops max, 60 byte packets
+ 1  _gateway (192.168.23.2)  0.588 ms  0.569 ms  0.557 ms
+ 2  10.0.2.2 (10.0.2.2)  1.090 ms  1.077 ms  1.194 ms
+ 3  199.232.34.132 (199.232.34.132)  167.931 ms  166.588 ms  165.006 ms
+
+# PERMITIDA: curl -sI https://deb.debian.org
+HTTP/2 200 
+
+# BLOQUEADA: nc -4 -zv -w5 telehack.com 23 (Telnet)
+nc: connect to telehack.com (64.13.139.230) port 23 (tcp) timed out: Operation now in progress
+codigo de salida: 1
+
+# Registro del cortafuegos de OPNsense (/api/diagnostics/firewall/log), filtrado por el cliente .54
+
+# --- Repetición tras reordenar las reglas (el bloqueo no actuaba: 'Default allow LAN' tenía secuencia 1 y era quick) ---
+# PERMITIDA: curl -sI https://deb.debian.org
+HTTP/2 200 
+# BLOQUEADA: nc -4 -zv -w5 telehack.com 23
+nc: connect to telehack.com (64.13.139.230) port 23 (tcp) timed out: Operation now in progress
+codigo de salida: 1
+
+# Registro de OPNsense (/var/log/filter/latest.log) tras reordenar
+PERMITIDO  regla c460fc24 (HTTPS)  em1,match,pass,in  192.168.23.54 -> 151.101.134.132:443
+BLOQUEADO  regla a1f994e5 (Telnet) em1,match,block,in 192.168.23.54 -> 64.13.139.230:23  (se repite por los reintentos del SYN)

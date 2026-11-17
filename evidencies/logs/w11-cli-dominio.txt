@@ -1,0 +1,17 @@
+Name         : W11-CLI
+Domain       : asix23.lan
+PartOfDomain : True
+# Canal seguro con el DC
+True
+# DC encontrado
+           DC: \\WS2025-DC.asix23.lan
+      Direcci¢n: \\192.168.23.20
+ Nombre de sitio DC: Default-First-Site-Name
+# Hora
+11:32
+# Red
+IPv4Address        : {192.168.23.51}
+IPv4DefaultGateway : {MSFT_NetRoute (InstanceID = ":8:8:8:9:55?55;C?8;@B8??8;55;")}
+DNSServer          : {MSFT_DNSClientServerAddress (Name = "5", CreationClassName = "", SystemCreationClassName = "", 
+                     SystemName = "23"), MSFT_DNSClientServerAddress (Name = "5", CreationClassName = "", 
+                     SystemCreationClassName = "", SystemName = "2")}

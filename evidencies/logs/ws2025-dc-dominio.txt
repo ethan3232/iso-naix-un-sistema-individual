@@ -36,3 +36,17 @@ El comando se complet¢ correctamente.
    Servidores DNS. . . . . . . . . . . . . . : ::1
 "CN=WS2025-DC,OU=Domain Controllers,DC=asix23,DC=lan"
 "CN=W11-CLI,OU=Administracion,DC=asix23,DC=lan"
+En l¡nea: 1 Car cter: 43
++ powershell -NoProfile -Command foreach($r in @(@("intranet","192.168. ...
++                                           ~~
+Token 'in' inesperado en la expresi¢n o la instrucci¢n.
+En l¡nea: 1 Car cter: 42
++ powershell -NoProfile -Command foreach($r in @(@("intranet","192.168. ...
++                                          ~
+Falta el par‚ntesis de cierre ')' en la expresi¢n.
+En l¡nea: 1 Car cter: 307
++ ... "),@("pmx2","192.168.23.12"),@("deb13-cli","192.168.23.54"))){ Add-Dn ...
++                                                                 ~
+Token ')' inesperado en la expresi¢n o la instrucci¢n.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : UnexpectedToken

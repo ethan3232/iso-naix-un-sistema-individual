@@ -15,9 +15,9 @@ fi
 # 2) Ninguna contraseña puede aparecer en las líneas añadidas
 mapfile -t claves < <(awk -F'|' '/^\| /{gsub(/^ +| +$/,"",$6); print $6}' "$priv" \
   | grep -vE '^(Contraseña|-+|)$' | sort -u)
-anadido=$(git diff --cached -U0 | grep '^+' | grep -v '^+++' || true)
+anadido=$(git diff --cached -U0 --text | grep -a '^+' | grep -av '^+++' || true)
 for c in "${claves[@]}"; do
-  if grep -qwF -- "$c" <<<"$anadido"; then
+  if grep -aqwF -- "$c" <<<"$anadido"; then
     echo "❌ El commit contiene una contraseña de CREDENCIALES-PRIVADAS.md. Cámbiala por ******** y vuelve a intentarlo."
     exit 1
   fi

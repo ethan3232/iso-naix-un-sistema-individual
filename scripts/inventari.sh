@@ -39,7 +39,7 @@ c "lsblk -o NAME,SIZE,TYPE,ROTA,TRAN,MODEL,FSTYPE,MOUNTPOINT"
 c "df -h -x tmpfs -x devtmpfs -x squashfs -x efivarfs"
 for d in /sys/block/sd* /sys/block/nvme*n*; do [ -e "$d" ] && echo "$(basename $d): rotacional=$(cat $d/queue/rotational) scheduler=$(cat $d/queue/scheduler 2>/dev/null)"; done
 if [ $EUID -eq 0 ] && command -v smartctl >/dev/null; then
-  for d in $(lsblk -dno NAME | grep -vE 'loop|zram|sr'); do c "smartctl -H -A /dev/$d | grep -E 'overall-health|SMART Health|Power_On_Hours|Reallocated|Wear_Leveling|Percentage Used|Temperature|Media_Wearout|Data Units Written'"; done
+  for d in $(lsblk -dno NAME | grep -vE 'loop|zram|sr'); do c "{ smartctl -H -A /dev/$d || smartctl -d sat -H -A /dev/$d; } | grep -E 'overall-health|SMART Health|Power_On_Hours|Reallocated|Wear_Leveling|Percentage Used|Temperature|Media_Wearout|Data Units Written'"; done
 else echo; echo "(SMART: ejecutar con sudo y con smartmontools instalado)"; fi
 
 s "5. Red"
@@ -88,7 +88,7 @@ echo "Herramientas: ping (latencia/pérdida al gateway y a Internet), curl (velo
 GW=$(ip route | awk '/default/{print $3; exit}')
 c "ping -c 10 -i 0.2 $GW | tail -2"
 c "ping -c 5 1.1.1.1 | tail -2"
-c "curl -s -o /dev/null -m 30 -w 'Descarga de 10 MB: %{speed_download} B/s (%{time_total} s)\n' http://speedtest.tele2.net/10MB.zip | awk '{printf \"%s %s %s %s %.1f MB/s %s %s\n\",\$1,\$2,\$3,\$4,\$5/1048576,\$7,\$8}'"
+c "curl -s -o /dev/null -m 30 -w 'Descarga de 50 MB (Cloudflare): %{speed_download} B/s (%{time_total} s)\n' https://speed.cloudflare.com/__down?bytes=50000000 | awk '{printf \"%s %s %s %s %.1f MB/s %s %s\n\",\$1,\$2,\$3,\$4,\$5/1048576,\$7,\$8}'"
 c "ip -s link show $(ip route | awk '/default/{print $5; exit}') | sed -n '3,6p'"
 echo; echo "# FIN DEL INVENTARIO"
 } > "$OUT" 2>&1

@@ -1,0 +1,216 @@
+# INVENTARIO DEL EQUIPO: casa — 17/11/2026 16:27 — usuario batoi
+
+==================================================================
+## 1. Sistema y firmware
+==================================================================
+
+$ hostnamectl 2>/dev/null | grep -vE 'Machine ID|Boot ID'
+ Static hostname: eth4n
+       Icon name: computer-desktop
+         Chassis: desktop 🖥️
+Operating System: Linux Mint 22.3
+          Kernel: Linux 6.8.0-138-generic
+    Architecture: x86-64
+ Hardware Vendor: Gigabyte Technology Co., Ltd.
+  Hardware Model: B560M DS3H V2
+Firmware Version: F7
+   Firmware Date: Fri 2022-03-25
+    Firmware Age: 4y 7month 3w 3d
+
+$ cat /sys/class/dmi/id/sys_vendor /sys/class/dmi/id/product_name /sys/class/dmi/id/board_name /sys/class/dmi/id/bios_vendor /sys/class/dmi/id/bios_version /sys/class/dmi/id/bios_date 2>/dev/null | paste -sd' | '
+Gigabyte Technology Co., Ltd. B560M DS3H V2|B560M DS3H V2 American Megatrends International, LLC. F7|03/25/2022
+
+$ [ -d /sys/firmware/efi ] && echo 'Arranque: UEFI' || echo 'Arranque: BIOS (Legacy)'
+Arranque: UEFI
+
+$ mokutil --sb-state 2>/dev/null || echo 'Secure Boot: N/C (mokutil no disponible)'
+SecureBoot disabled
+
+==================================================================
+## 2. CPU y virtualización
+==================================================================
+
+$ lscpu | grep -E 'Nombre del modelo|Model name|^CPU\(s\)|Núcleo|Core|Hilo|Thread|Socket|MHz máx|max MHz|Virtualiz|L2|L3'
+CPU(s):                                   12
+Nombre del modelo:                        11th Gen Intel(R) Core(TM) i5-11400F @ 2.60GHz
+Hilo(s) de procesamiento por núcleo:      2
+Núcleo(s) por «socket»:                   6
+«Socket(s)»:                              1
+CPU(s) factor de escala MHz:              19%
+CPU MHz máx.:                             4400,0000
+Virtualización:                           VT-x
+Caché L2:                                 3 MiB (6 instancias)
+Caché L3:                                 12 MiB (1 instancia)
+CPU(s) del nodo NUMA 0:                   0-11
+
+$ echo "Flags de virtualización (vmx=Intel VT-x, svm=AMD-V): $(grep -oE 'vmx|svm' /proc/cpuinfo | sort -u | tr '\n' ' ')"
+Flags de virtualización (vmx=Intel VT-x, svm=AMD-V): vmx 
+
+$ ls -l /dev/kvm 2>&1 | head -1
+crw-rw----+ 1 root kvm 10, 232 nov 17 15:14 /dev/kvm
+
+==================================================================
+## 3. Memoria RAM
+==================================================================
+
+$ free -h
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:            15Gi       3,7Gi       8,8Gi       129Mi       3,5Gi        11Gi
+Inter:          11Gi          0B        11Gi
+
+$ grep -E 'MemTotal|SwapTotal' /proc/meminfo
+MemTotal:       16240336 kB
+SwapTotal:      12448684 kB
+
+$ swapon --show
+NAME       TYPE      SIZE USED PRIO
+/swapfile  file        8G   0B   -2
+/dev/zram0 partition 3,9G   0B  100
+
+==================================================================
+## 4. Discos y almacenamiento
+==================================================================
+
+$ lsblk -o NAME,SIZE,TYPE,ROTA,TRAN,MODEL,FSTYPE,MOUNTPOINT
+NAME          SIZE TYPE ROTA TRAN   MODEL                 FSTYPE MOUNTPOINT
+sda         447,1G disk    0 sata   KINGSTON SA400S37480G        
+├─sda1        100M part    0                              vfat   
+├─sda2         16M part    0                                     
+├─sda3      446,1G part    0                              ntfs   
+└─sda4        903M part    0                              ntfs   
+sdb         894,3G disk    1 usb    KINGSTON SA400S37960G        
+├─sdb1        509M part    1                              vfat   /boot/efi
+├─sdb2       58,6G part    1                              ext4   /
+└─sdb3        388G part    1                              ext4   /home
+zram0         3,9G disk    0                                     [SWAP]
+nvme0n1     931,5G disk    0 nvme   WD_BLACK SN7100 1TB          
+├─nvme0n1p1    16M part    0 nvme                                
+└─nvme0n1p2 931,5G part    0 nvme                         ntfs   
+
+$ df -h -x tmpfs -x devtmpfs -x squashfs -x efivarfs
+S.ficheros     Tamaño Usados  Disp Uso% Montado en
+/dev/sdb2         58G    27G   29G  49% /
+/dev/sdb3        381G   244G  118G  68% /home
+/dev/sdb1        508M    17M  492M   4% /boot/efi
+sda: rotacional=0 scheduler=none [mq-deadline] 
+sdb: rotacional=1 scheduler=none [mq-deadline] 
+nvme0n1: rotacional=0 scheduler=[none] mq-deadline 
+
+(SMART: ejecutar con sudo y con smartmontools instalado)
+
+==================================================================
+## 5. Red
+==================================================================
+
+$ ip -br link
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+enp4s0           UP             d8:5e:d3:81:f5:60 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+docker0          DOWN           6a:da:a2:b0:60:ee <NO-CARRIER,BROADCAST,MULTICAST,UP> 
+
+$ ip -br addr
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+enp4s0           UP             192.168.1.101/24 fe80::370b:f355:8131:e133/64 
+docker0          DOWN           172.17.0.1/16 
+
+$ ip route
+default via 192.168.1.1 dev enp4s0 proto dhcp src 192.168.1.101 metric 100 
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown 
+192.168.1.0/24 dev enp4s0 proto kernel scope link src 192.168.1.101 metric 100 
+enp4s0: velocidad=1000 Mb/s, MAC=d8:5e:d3:81:f5:60
+
+$ lspci | grep -iE 'ethernet|network|wireless'
+04:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168/8211/8411 PCI Express Gigabit Ethernet Controller (rev 16)
+
+==================================================================
+## 6. Gráfica, USB y otros periféricos
+==================================================================
+
+$ lspci | grep -iE 'vga|3d|display|audio'
+00:17.0 SATA controller: Intel Corporation Device 43d2 (rev 11)
+00:1f.3 Audio device: Intel Corporation Tiger Lake-H HD Audio Controller (rev 11)
+01:00.0 VGA compatible controller: NVIDIA Corporation GA104 [GeForce RTX 3060] (rev a1)
+01:00.1 Audio device: NVIDIA Corporation GA104 High Definition Audio Controller (rev a1)
+
+$ lsusb 2>/dev/null | grep -viE 'root hub'
+Bus 001 Device 002: ID 05ac:024f Apple, Inc. Aluminium Keyboard (ANSI)
+Bus 001 Device 003: ID 3554:f58a Compx VXE NordicMouse 1K Dongle
+Bus 001 Device 004: ID 046d:0acb Logitech, Inc. G435 Wireless Gaming Headset
+Bus 001 Device 005: ID 05e3:0608 Genesys Logic, Inc. Hub
+Bus 001 Device 006: ID 048d:5702 Integrated Technology Express, Inc. RGB LED Controller
+Bus 002 Device 002: ID 152d:0583 JMicron Technology Corp. / JMicron USA Technology Corp. JMS583Gen 2 to PCIe Gen3x2 Bridge
+
+$ cat /sys/class/power_supply/BAT*/capacity /sys/class/power_supply/BAT*/status 2>/dev/null | paste -sd' ' | sed 's/^/Batería: /' || echo 'Sin batería'
+Batería: 
+
+$ cat /sys/class/power_supply/BAT*/energy_full_design /sys/class/power_supply/BAT*/energy_full 2>/dev/null | paste -sd' ' | awk '{if($1) printf "Salud de la batería: %.0f%% de la capacidad original\n", $2/$1*100}'
+
+==================================================================
+## 7. Sensores y temperaturas
+==================================================================
+
+$ for z in /sys/class/thermal/thermal_zone*; do echo "$(cat $z/type): $(($(cat $z/temp)/1000)) ºC"; done 2>/dev/null | head -8
+acpitz: 16 ºC
+acpitz: 16 ºC
+acpitz: 27 ºC
+x86_pkg_temp: 45 ºC
+
+==================================================================
+## 8. Software de virtualización
+==================================================================
+
+$ VBoxManage --version 2>/dev/null || echo 'VirtualBox no instalado'
+7.0.20r163906
+
+$ lsmod | grep -E '^(kvm|vbox)' | awk '{print $1}' | paste -sd' '
+vboxnetadp vboxnetflt vboxdrv kvm_intel kvm
+
+==================================================================
+## 9. DIAGNÓSTICO — Disco (escritura y lectura secuencial, 1 GiB, sin caché)
+==================================================================
+Herramienta: dd con oflag=direct / iflag=direct · Fichero de prueba en $HOME · Condiciones: equipo en reposo
+Escritura secuencial: 303 MB/s (3,4 s)
+Lectura secuencial:   351 MB/s (2,9 s)
+Escritura aleatoria 4K (2000 bloques, sync):
+  347 IOPS (5,8 s)
+
+==================================================================
+## 10. DIAGNÓSTICO — Memoria (ancho de banda y prueba de patrón)
+==================================================================
+Herramienta: python3 (copia de 512 MiB en memoria) · sin sudo. Para un test completo: memtest86+ desde GRUB.
+
+$ python3 -c '
+import time
+n=512*1024*1024; a=bytearray(b"\x55")*n
+t=time.time(); b=bytes(a); d=time.time()-t
+print(f"Copia de 512 MiB: {d:.2f} s -> {n/d/1e9:.1f} GB/s")
+ok = b.count(b"\x55")==n
+print("Patrón 0x55 verificado sin errores" if ok else "ERROR: el patrón no coincide")'
+Copia de 512 MiB: 0.16 s -> 3.3 GB/s
+Patrón 0x55 verificado sin errores
+
+==================================================================
+## 11. DIAGNÓSTICO — Red
+==================================================================
+Herramientas: ping (latencia/pérdida al gateway y a Internet), curl (velocidad de descarga)
+
+$ ping -c 10 -i 0.2 192.168.1.1 | tail -2
+10 packets transmitted, 10 received, 0% packet loss, time 1808ms
+rtt min/avg/max/mdev = 1.233/1.700/2.078/0.248 ms
+
+$ ping -c 5 1.1.1.1 | tail -2
+5 packets transmitted, 5 received, 0% packet loss, time 4005ms
+rtt min/avg/max/mdev = 14.445/16.925/23.671/3.543 ms
+
+$ curl -s -o /dev/null -m 30 -w 'Descarga de 10 MB: %{speed_download} B/s (%{time_total} s)\n' http://speedtest.tele2.net/10MB.zip | awk '{printf "%s %s %s %s %.1f MB/s %s %s\n",$1,$2,$3,$4,$5/1048576,$7,$8}'
+Descarga de 10 MB: 0,0 MB/s (30.001614 s)
+
+$ ip -s link show enp4s0 | sed -n '3,6p'
+    RX:  bytes packets errors dropped  missed   mcast           
+     774376195  614128      0       0       0    2169 
+    TX:  bytes packets errors dropped carrier collsns           
+      17621075  128820      0       0       0       0 
+
+# FIN DEL INVENTARIO
+Descarga de 50 MB (Cloudflare): 25,1 MB/s = 211 Mb/s (1,0 s)
+Descarga de 50 MB (Cloudflare): 28,2 MB/s = 237 Mb/s (1,0 s)
+Descarga de 50 MB (Cloudflare): 30,9 MB/s = 260 Mb/s (1,0 s)

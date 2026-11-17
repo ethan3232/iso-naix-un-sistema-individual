@@ -1,0 +1,29 @@
+### Copias de Proxmox al NAS (vzdump -> nas-copias = TrueNAS NFS /mnt/copias/sistemas) — 17/11/2026 11:52
+
+INFO: Starting Backup of VM 100 (lxc)
+INFO: backup mode: snapshot
+INFO: creating vzdump archive '/mnt/pve/nas-copias/dump/vzdump-lxc-100-2026_11_17-11_52_01.tar.zst'
+INFO: archive file size: 205MB
+INFO: Finished Backup of VM 100 (00:00:47)
+INFO: Starting Backup of VM 101 (qemu)
+INFO: backup mode: snapshot
+INFO: creating vzdump archive '/mnt/pve/nas-copias/dump/vzdump-qemu-101-2026_11_17-11_52_48.vma.zst'
+INFO: transferred 2.00 GiB in 2 seconds (1.0 GiB/s)
+INFO: archive file size: 73KB
+INFO: Finished Backup of VM 101 (00:00:02)
+
+real	0m50.848s
+user	0m3.926s
+sys	0m2.526s
+
+# Tarea programada (copia automática diaria a las 02:30)
+┌──────────────────────────────────────┬─────┬─────────┬──────────────────────────────────────────────┬──────────┬─────────┬─────────┬─────────┬──────────────┬──────────┬────────┬──────────┬──────────────────┬────────┬──────────┬────────────┬──────┬────────────────┬───────────────────┬───────────────────────────┬─────────────┬──────┬──────┬───────────┬───────────────┬───────┬────────┬───────────────┬──────────┬────────┬─────────────┬──────┬──────────┬────────────┬────────┬─────────┬──────┐
+│ id                                   │ all │ bwlimit │ comment                                      │ compress │ dumpdir │ enabled │ exclude │ exclude-path │ fleecing │ ionice │ lockwait │ mailnotification │ mailto │ mode     │   next-run │ node │ notes-template │ notification-mode │ pbs-change-detection-mode │ performance │ pigz │ pool │ protected │ prune-backups │ quiet │ remove │ repeat-missed │ schedule │ script │ stdexcludes │ stop │ stopwait │ storage    │ tmpdir │ vmid    │ zstd │
+╞══════════════════════════════════════╪═════╪═════════╪══════════════════════════════════════════════╪══════════╪═════════╪═════════╪═════════╪══════════════╪══════════╪════════╪══════════╪══════════════════╪════════╪══════════╪════════════╪══════╪════════════════╪═══════════════════╪═══════════════════════════╪═════════════╪══════╪══════╪═══════════╪═══════════════╪═══════╪════════╪═══════════════╪══════════╪════════╪═════════════╪══════╪══════════╪════════════╪════════╪═════════╪══════╡
+│ 68c8de6c-5ca5-4eae-a247-ee36ac477665 │     │         │ Copia diaria de srv-infra y vm-prueba al NAS │ zstd     │         │ 1       │         │              │          │        │          │                  │        │ snapshot │ 1794965400 │      │                │                   │                           │             │      │      │           │               │       │        │               │ 02:30    │        │             │      │          │ nas-copias │        │ 100,101 │      │
+└──────────────────────────────────────┴─────┴─────────┴──────────────────────────────────────────────┴──────────┴─────────┴─────────┴─────────┴──────────────┴──────────┴────────┴──────────┴──────────────────┴────────┴──────────┴────────────┴──────┴────────────────┴───────────────────┴───────────────────────────┴─────────────┴──────┴──────┴───────────┴───────────────┴───────┴────────┴───────────────┴──────────┴────────┴─────────────┴──────┴──────────┴────────────┴────────┴─────────┴──────┘
+
+# Contenido del almacenamiento nas-copias
+Volid                                                         Format  Type           Size VMID
+nas-copias:backup/vzdump-lxc-100-2026_11_17-11_52_01.tar.zst  tar.zst backup    215947753 100
+nas-copias:backup/vzdump-qemu-101-2026_11_17-11_52_48.vma.zst vma.zst backup        75677 101

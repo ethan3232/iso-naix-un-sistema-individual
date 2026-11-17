@@ -1,0 +1,106 @@
+=== PRUEBAS DE FALLO Y RECONSTRUCCIÓN — 17/11/2026 16:21:21 ===
+
+## 0. Datos de prueba (100 MB aleatorios por RAID + huella SHA256)
+5fc381502211fd0624525b91372ece992e76502d8302a03aea283b853ad90693  datos.bin
+bd2d5088e87a9e0f6b4fbd9a39519b5fe585e627c2f35439c551e145748b8686  datos.bin
+ee361b87a5fe477ee571233def5a6d78bf95b8abbc72a0fa3328a3c1ed156147  datos.bin
+
+## 1. RAID 0 — ¿funciona con un disco menos?
+mdadm: stopped /dev/md0
+$ mdadm --assemble --run /dev/md0 /dev/sdb   (solo uno de los dos discos)
+mdadm: failed to RUN_ARRAY /dev/md0: Invalid argument
+mdadm: Not enough devices to start the array.
+código de salida: 1
+(md0 no existe: el RAID 0 NO arranca sin todos sus discos)
+$ mdadm --assemble /dev/md0 /dev/sdb /dev/sdc   (los dos discos otra vez)
+mdadm: /dev/md0 has been started with 2 drives.
+datos.bin: La suma coincide
+
+## RAID raid1 (md1) — falla sde, se sustituye por sdi
+[16:22:05] $ mdadm /dev/md1 --fail /dev/sde
+md1 : active raid1 sde[1](F) sdd[0]
+      1046528 blocks super 1.2 [2/1] [U_]
+             State : clean, degraded 
+    Active Devices : 1
+    Failed Devices : 1
+       1       8       64        -      faulty   /dev/sde
+   Datos en modo degradado: datos.bin: La suma coincide
+[16:22:06] $ mdadm /dev/md1 --remove /dev/sde
+mdadm: hot removed /dev/sde from /dev/md1
+   Lecturas durante el fallo: 22 correctas, 0 fallidas
+[16:22:23] $ mdadm /dev/md1 --add /dev/sdi   (disco nuevo)
+mdadm: added /dev/sdi
+md1 : active raid1 sdi[2] sdd[0]
+      1046528 blocks super 1.2 [2/1] [U_]
+      [=>...................]  recovery =  6.2% (65472/1046528) finish=0.9min speed=16368K/sec
+[16:23:18] Reconstrucción terminada en 54,3 s
+md1 : active raid1 sdi[2] sdd[0]
+      1046528 blocks super 1.2 [2/2] [UU]
+             State : clean 
+    Active Devices : 2
+datos.bin: La suma coincide
+
+## RAID raid5 (md5) — falla sdg, se sustituye por sde
+[16:23:21] $ mdadm /dev/md5 --fail /dev/sdg
+md5 : active raid5 sdh[3] sdg[1](F) sdf[0]
+      2093056 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/2] [U_U]
+             State : clean, degraded 
+    Active Devices : 2
+    Failed Devices : 1
+       1       8       96        -      faulty   /dev/sdg
+   Datos en modo degradado: datos.bin: La suma coincide
+[16:23:25] $ mdadm /dev/md5 --remove /dev/sdg
+mdadm: hot removed /dev/sdg from /dev/md5
+   Lecturas durante el fallo: 7 correctas, 0 fallidas
+[16:23:41] $ mdadm /dev/md5 --add /dev/sde   (disco nuevo)
+mdadm: added /dev/sde
+md5 : active raid5 sde[4] sdh[3] sdf[0]
+      2093056 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/2] [U_U]
+      [=>...................]  recovery =  6.9% (72768/1046528) finish=0.2min speed=72768K/sec
+[16:23:56] Reconstrucción terminada en 14,6 s
+md5 : active raid5 sde[4] sdh[3] sdf[0]
+      2093056 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3] [UUU]
+             State : clean 
+    Active Devices : 3
+datos.bin: La suma coincide
+
+## RAID 5 con disco de reserva (hot spare): sdg (el disco 'reparado') queda de reserva y falla sdf
+mdadm: added /dev/sdg
+     Spare Devices : 1
+       5       8       96        -      spare   /dev/sdg
+[16:24:13] $ mdadm /dev/md5 --fail /dev/sdf   (nadie toca nada más)
+md5 : active raid5 sdg[5] sde[4] sdh[3] sdf[0](F)
+      2093056 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/2] [_UU]
+      [=>...................]  recovery =  8.0% (84444/1046528) finish=0.1min speed=84444K/sec
+[16:24:34] El disco de reserva ha sustituido al roto AUTOMÁTICAMENTE en 21,2 s
+mdadm: hot removed /dev/sdf from /dev/md5
+md5 : active raid5 sdg[5] sde[4] sdh[3]
+      2093056 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3] [UUU]
+datos.bin: La suma coincide
+
+## Configuración final guardada en /etc/mdadm/mdadm.conf
+ARRAY /dev/md1 metadata=1.2 UUID=6e23480c:05563c97:da9127d3:e446ba17
+ARRAY /dev/md5 metadata=1.2 UUID=b44a1345:2d664766:43feba16:4e0d6fc4
+ARRAY /dev/md0 metadata=1.2 UUID=655f5f6a:f6dfdec1:a86698f2:c528e721
+[16:24:45] Reinicio para comprobar que los RAID arrancan y se montan solos
+Connection to 127.0.0.1 closed by remote host.
+
+## Tras el reinicio (16:25:11)
+Personalities : [raid0] [raid1] [raid6] [raid5] [raid4] [raid10] 
+md1 : active raid1 sdi[2] sdd[0]
+      1046528 blocks super 1.2 [2/2] [UU]
+      
+md5 : active raid5 sdg[5] sdh[3] sde[4]
+      2093056 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3] [UUU]
+      
+md0 : active raid0 sdb[0] sdc[1]
+      2093056 blocks super 1.2 512k chunks
+      
+unused devices: <none>
+S.ficheros     Tamaño Usados  Disp Uso% Montado en
+/dev/md0         2,0G   101M  1,8G   6% /srv/raid0
+/dev/md1         988M   101M  821M  11% /srv/raid1
+/dev/md5         2,0G   101M  1,8G   6% /srv/raid5
+raid0: datos.bin: La suma coincide
+raid1: datos.bin: La suma coincide
+raid5: datos.bin: La suma coincide

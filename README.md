@@ -53,6 +53,8 @@ flowchart TB
     SW --- PVE3[🧱 PMX3 <b>.13</b>]
     PVE1 <-. clúster asix23 .-> PVE2
     PVE2 <-. clúster .-> PVE3
+    SW --- S2[🐧 DEB13-SRV2<br/>ficheros + RAID <b>.21</b>]
+    SW --- S3[🐧 DEB13-SRV3<br/>web <b>.22</b>]
     PVE2 --- CT[📦 srv-infra LXC<br/>intranet <b>.30</b>]
     SW --- DC[🏢 WS2025-DC<br/>AD DS + DNS <b>.20</b>]
     SW --- C1[💻 W11-CLI<br/>Administración <b>.51</b>]
@@ -75,6 +77,8 @@ flowchart TB
 | `192.168.23.12` | PMX2 | Proxmox VE 9.2 · nodo 2 del clúster `asix23` | ✅ |
 | `192.168.23.13` | PMX3 | Proxmox VE 9.2 · nodo 3 del clúster `asix23` | ✅ |
 | `192.168.23.20` | WS2025-DC | Windows Server 2025 · AD DS + DNS (`asix23.lan`) | ✅ |
+| `192.168.23.21` | DEB13-SRV2 | Debian 13 · ficheros + **RAID 0/1/5** (mdadm) | ✅ |
+| `192.168.23.22` | DEB13-SRV3 | Debian 13 · web Apache | ✅ |
 | `192.168.23.30` | srv-infra (LXC) | Servidor de infraestructura · intranet nginx | ✅ |
 | `192.168.23.51` | W11-CLI | Windows 11 Pro · Administración · en el dominio | ✅ |
 | `192.168.23.54` | DEB13-CLI | Debian 13 · Informática · cliente de pruebas | ✅ |
@@ -89,10 +93,10 @@ Máscara `255.255.255.0` · Asignación **fija** en todos (no hay DHCP en LAN23)
 | **Tasca 0** | Entorno de pruebas + repositorio Git | ✅ |
 | **Tasca 2** | Inventario, diagnósticos y cuellos de botella | 🟡 cuello de botella medido · falta inventario completo |
 | **Tasca 4** | Diseño físico y lógico, recursos | ✅ |
-| **Tasca 5** | Instalación y comunicaciones | 🟡 todo ✅ · faltan los 2 Debian servidor (web + ficheros) |
-| **Tasca 6** | RAID 0/1/5 | ⬜ |
+| **Tasca 5** | Instalación y comunicaciones | ✅ |
+| **Tasca 6** | RAID 0/1/5 | ✅ Apte · ⬜ Apte+ (espejo entre 2 equipos) |
 | **Tasca 7** | Rendimiento y optimizaciones | ⬜ |
-| **Contingencia** | RTO/RPO y recuperaciones | ⬜ |
+| **Contingencia** | RTO/RPO y recuperaciones | 🟡 plan hecho con tiempos reales |
 
 <sub>✅ hecho · 🟡 en curso · ⬜ pendiente · 🧪 simulado — detalle ítem a ítem en [PROGRESO.md](PROGRESO.md)</sub>
 

@@ -1,0 +1,18 @@
+Rendimiento con fio — 17/11/2026 16:11 — host de casa (i5-11400F, VDIs en SSD SATA Kingston A400)
+Pruebas: escritura y lectura secuencial (bloques de 1 MiB, 256 MiB) y escritura aleatoria 4 KiB (30 s máx), direct=1 (sin caché de la VM)
+Destino                  Escr. MB/s   Lect. MB/s  Escr. 4K IOPS
+1 disco (sdi)                    26          105           1785
+RAID 0 (2 discos)               201          412          27710
+RAID 1 (2 discos)               140          391          17374
+RAID 5 (3 discos)               152          400           1044
+
+--- Repetición del disco solo (sdi) con el VDI ya crecido (2.ª y 3.ª pasada) ---
+1 disco (pasada 2)              424          264           3126
+1 disco (pasada 3)               21          106           1565
+
+--- Medida definitiva: 3 rondas intercaladas, se da la MEDIANA (16:14) ---
+Destino              Escr. MB/s (med | 3 ronda) Lect. MB/s (med | rondas)  4K IOPS (med | rondas)    
+1 disco              25 | 25 391 14             370 | 370 397 106          5909 | 5909 35433 2897    
+RAID 0 (2)           17 | 17 436 15             110 | 108 424 110          2204 | 2204 13703 1828    
+RAID 1 (2)           15 | 15 15 8               117 | 339 98 117           1236 | 15645 1236 1143    
+RAID 5 (3)           15 | 156 15 10             248 | 412 248 97           1433 | 9061 1433 853      

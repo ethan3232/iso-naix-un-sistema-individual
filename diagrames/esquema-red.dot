@@ -8,7 +8,7 @@ digraph LAN23 {
 
   inet [label="Internet", shape=ellipse, fillcolor="#dbeafe"];
   aula [label="Red del aula\n172.16.222.0/24 (compartida)", fillcolor="#fde68a"];
-  subgraph cluster_host { label="PC eth4n · Linux Mint 22.3 · VirtualBox 7.0"; style="rounded,dashed"; color="#9aa5b5";
+  subgraph cluster_host { label="PC anfitrión (eth4n) · Linux Mint 22.3 · VirtualBox 7.0"; style="rounded,dashed"; color="#9aa5b5";
     nat [label="NAT de VirtualBox\n10.0.2.0/24 · gw 10.0.2.2", fillcolor="#e0e7ff"];
     subgraph cluster_com { label="Comunicaciones (un gateway activo)"; style=rounded; color="#e57000";
       mk  [label="Mikrotik-IND\nRouterOS 7.24\n192.168.23.1", fillcolor="#fed7aa", penwidth=2];
@@ -21,6 +21,8 @@ digraph LAN23 {
       p1 [label="PMX1\n192.168.23.11"]; p2 [label="PMX2\n192.168.23.12"]; p3 [label="PMX3\n192.168.23.13"];
       ct [label="srv-infra (LXC)\nintranet nginx\n192.168.23.30", fillcolor="#fef3c7"];
     }
+    s2  [label="DEB13-SRV2\nficheros + RAID 0/1/5\n192.168.23.21", fillcolor="#fce7f3"];
+    s3  [label="DEB13-SRV3\nweb Apache\n192.168.23.22", fillcolor="#fce7f3"];
     dc  [label="WS2025-DC\nAD DS + DNS\n192.168.23.20", fillcolor="#dbeafe"];
     w11 [label="W11-CLI\nAdministración\n192.168.23.51", fillcolor="#e0f2fe"];
     dcl [label="DEB13-CLI\nInformática\n192.168.23.54", fillcolor="#fce7f3"];
@@ -28,7 +30,7 @@ digraph LAN23 {
   inet -> aula -> nat;
   nat -> mk [label=" WAN DHCP", penwidth=2]; nat -> opn [style=dashed]; nat -> deb [style=dashed];
   mk -> sw [penwidth=2, label=" gateway activo"]; opn -> sw [style=dashed]; deb -> sw [style=dashed];
-  sw -> nas; sw -> p1; sw -> p2; sw -> p3; sw -> dc; sw -> w11; sw -> dcl;
+  sw -> nas; sw -> p1; sw -> p2; sw -> p3; sw -> dc; sw -> w11; sw -> dcl; sw -> s2; sw -> s3;
   p2 -> ct [style=dotted, label=" aloja"];
   p1 -> p2 [style=dotted, constraint=false]; p2 -> p3 [style=dotted, constraint=false];
 }

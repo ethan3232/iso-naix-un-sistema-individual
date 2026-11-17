@@ -1,0 +1,72 @@
++ date '+%d/%m/%Y %H:%M:%S'
+17/11/2026 16:10:25
++ mdadm --create /dev/md0 --run --level=0 --raid-devices=2 /dev/sdb /dev/sdc
+mdadm: Defaulting to version 1.2 metadata
+mdadm: array /dev/md0 started.
++ mdadm --create /dev/md1 --run --level=1 --raid-devices=2 /dev/sdd /dev/sde --metadata=1.2
+mdadm: array /dev/md1 started.
++ mdadm --create /dev/md5 --run --level=5 --raid-devices=3 /dev/sdf /dev/sdg /dev/sdh
+mdadm: Defaulting to version 1.2 metadata
+mdadm: array /dev/md5 started.
++ mdadm --wait /dev/md1 /dev/md5
++ cat /proc/mdstat
+Personalities : [raid0] [raid1] [raid6] [raid5] [raid4] [raid10] 
+md5 : active raid5 sdh[3] sdg[1] sdf[0]
+      2093056 blocks super 1.2 level 5, 512k chunk, algorithm 2 [3/3] [UUU]
+      
+md1 : active raid1 sde[1] sdd[0]
+      1046528 blocks super 1.2 [2/2] [UU]
+      
+md0 : active raid0 sdc[1] sdb[0]
+      2093056 blocks super 1.2 512k chunks
+      
+unused devices: <none>
++ for m in md0 md1 md5
++ mkfs.ext4 -q -L raid-0 /dev/md0
++ mkdir -p /srv/raid0
++ for m in md0 md1 md5
++ mkfs.ext4 -q -L raid-1 /dev/md1
++ mkdir -p /srv/raid1
++ for m in md0 md1 md5
++ mkfs.ext4 -q -L raid-5 /dev/md5
++ mkdir -p /srv/raid5
++ mdadm --detail --scan
++ cat /etc/mdadm/mdadm.conf.nuevo
+ARRAY /dev/md0 metadata=1.2 UUID=655f5f6a:f6dfdec1:a86698f2:c528e721
+ARRAY /dev/md1 metadata=1.2 UUID=6e23480c:05563c97:da9127d3:e446ba17
+ARRAY /dev/md5 metadata=1.2 UUID=b44a1345:2d664766:43feba16:4e0d6fc4
++ cp /etc/mdadm/mdadm.conf /etc/mdadm/mdadm.conf.antes-raid
++ grep -v '^ARRAY' /etc/mdadm/mdadm.conf.antes-raid
++ cat /etc/mdadm/mdadm.conf.nuevo
++ rm /etc/mdadm/mdadm.conf.nuevo
++ cp /etc/fstab /etc/fstab.antes-raid
++ for m in 0 1 5
++ echo 'LABEL=raid-0 /srv/raid0 ext4 defaults,nofail 0 2'
++ for m in 0 1 5
++ echo 'LABEL=raid-1 /srv/raid1 ext4 defaults,nofail 0 2'
++ for m in 0 1 5
++ echo 'LABEL=raid-5 /srv/raid5 ext4 defaults,nofail 0 2'
++ update-initramfs -u
++ systemctl daemon-reload
++ mount -a
++ df -h /srv/raid0 /srv/raid1 /srv/raid5
+S.ficheros     Tamaño Usados  Disp Uso% Montado en
+/dev/md0         2,0G   532K  1,9G   1% /srv/raid0
+/dev/md1         988M   276K  921M   1% /srv/raid1
+/dev/md5         2,0G   532K  1,9G   1% /srv/raid5
++ lsblk -o NAME,SIZE,TYPE,MOUNTPOINT /dev/sdb /dev/sdc /dev/sdd /dev/sde /dev/sdf /dev/sdg /dev/sdh
+NAME   SIZE TYPE  MOUNTPOINT
+sdb      1G disk  
+└─md0    2G raid0 /srv/raid0
+sdc      1G disk  
+└─md0    2G raid0 /srv/raid0
+sdd      1G disk  
+└─md1 1022M raid1 /srv/raid1
+sde      1G disk  
+└─md1 1022M raid1 /srv/raid1
+sdf      1G disk  
+└─md5    2G raid5 /srv/raid5
+sdg      1G disk  
+└─md5    2G raid5 /srv/raid5
+sdh      1G disk  
+└─md5    2G raid5 /srv/raid5

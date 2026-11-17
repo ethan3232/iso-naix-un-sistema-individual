@@ -9,7 +9,7 @@ flowchart TB
             subgraph COM["Comunicaciones (solo uno activo)"]
                 MK["Mikrotik-IND .1<br/>RouterOS"]
                 OPN["OPNsense .2"]
-                DEB["DEB13-SRV .3<br/>nftables"]
+                DEB["DEB13-SRV1-NFT .3<br/>nftables"]
             end
             NAS["TrueNas .10<br/>pool espejo 'copias'"]
             subgraph CL["Clúster Proxmox 'asix23'"]

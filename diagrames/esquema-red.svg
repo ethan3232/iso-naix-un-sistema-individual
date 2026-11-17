@@ -17,8 +17,8 @@
 </g>
 <g id="clust2" class="cluster">
 <title>cluster_com</title>
-<path fill="white" stroke="#e57000" d="M304,-315.26C304,-315.26 608,-315.26 608,-315.26 614,-315.26 620,-321.26 620,-327.26 620,-327.26 620,-389.26 620,-389.26 620,-395.26 614,-401.26 608,-401.26 608,-401.26 304,-401.26 304,-401.26 298,-401.26 292,-395.26 292,-389.26 292,-389.26 292,-327.26 292,-327.26 292,-321.26 298,-315.26 304,-315.26"/>
-<text text-anchor="middle" x="456" y="-384.46" font-family="Helvetica,sans-Serif" font-size="16.00">Comunicaciones (un gateway activo)</text>
+<path fill="white" stroke="#e57000" d="M304,-315.26C304,-315.26 638,-315.26 638,-315.26 644,-315.26 650,-321.26 650,-327.26 650,-327.26 650,-389.26 650,-389.26 650,-395.26 644,-401.26 638,-401.26 638,-401.26 304,-401.26 304,-401.26 298,-401.26 292,-395.26 292,-389.26 292,-389.26 292,-327.26 292,-327.26 292,-321.26 298,-315.26 304,-315.26"/>
+<text text-anchor="middle" x="471" y="-384.46" font-family="Helvetica,sans-Serif" font-size="16.00">Comunicaciones (un gateway activo)</text>
 </g>
 <g id="clust3" class="cluster">
 <title>cluster_pve</title>
@@ -84,15 +84,15 @@
 <!-- deb -->
 <g id="node6" class="node">
 <title>deb</title>
-<path fill="#ffedd5" stroke="#5b6b82" d="M600,-367.26C600,-367.26 544,-367.26 544,-367.26 538,-367.26 532,-361.26 532,-355.26 532,-355.26 532,-335.26 532,-335.26 532,-329.26 538,-323.26 544,-323.26 544,-323.26 600,-323.26 600,-323.26 606,-323.26 612,-329.26 612,-335.26 612,-335.26 612,-355.26 612,-355.26 612,-361.26 606,-367.26 600,-367.26"/>
-<text text-anchor="middle" x="572" y="-354.46" font-family="Helvetica,sans-Serif" font-size="11.00">DEB13&#45;SRV</text>
-<text text-anchor="middle" x="572" y="-342.46" font-family="Helvetica,sans-Serif" font-size="11.00">nftables</text>
-<text text-anchor="middle" x="572" y="-330.46" font-family="Helvetica,sans-Serif" font-size="11.00">192.168.23.3</text>
+<path fill="#ffedd5" stroke="#5b6b82" d="M630,-367.26C630,-367.26 544,-367.26 544,-367.26 538,-367.26 532,-361.26 532,-355.26 532,-355.26 532,-335.26 532,-335.26 532,-329.26 538,-323.26 544,-323.26 544,-323.26 630,-323.26 630,-323.26 636,-323.26 642,-329.26 642,-335.26 642,-335.26 642,-355.26 642,-355.26 642,-361.26 636,-367.26 630,-367.26"/>
+<text text-anchor="middle" x="587" y="-354.46" font-family="Helvetica,sans-Serif" font-size="11.00">DEB13&#45;SRV1&#45;NFT</text>
+<text text-anchor="middle" x="587" y="-342.46" font-family="Helvetica,sans-Serif" font-size="11.00">nftables</text>
+<text text-anchor="middle" x="587" y="-330.46" font-family="Helvetica,sans-Serif" font-size="11.00">192.168.23.3</text>
 </g>
 <!-- nat&#45;&gt;deb -->
 <g id="edge5" class="edge">
 <title>nat&#45;&gt;deb</title>
-<path fill="none" stroke="#5b6b82" stroke-dasharray="5,2" d="M478.84,-439.17C490.55,-428.44 505.82,-414.22 519,-401.26 530.16,-390.28 542.29,-377.74 552.13,-367.41"/>
+<path fill="none" stroke="#5b6b82" stroke-dasharray="5,2" d="M479.84,-439.07C502.17,-419.73 538.44,-388.31 562.51,-367.46"/>
 </g>
 <!-- sw -->
 <g id="node7" class="node">
@@ -115,7 +115,7 @@
 <!-- deb&#45;&gt;sw -->
 <g id="edge8" class="edge">
 <title>deb&#45;&gt;sw</title>
-<path fill="none" stroke="#5b6b82" stroke-dasharray="5,2" d="M547.42,-323.16C530.29,-308.46 507.37,-288.78 489.29,-273.27"/>
+<path fill="none" stroke="#5b6b82" stroke-dasharray="5,2" d="M559.13,-323.16C539.71,-308.46 513.71,-288.78 493.21,-273.27"/>
 </g>
 <!-- nas -->
 <g id="node8" class="node">

@@ -13,7 +13,7 @@ digraph LAN23 {
     subgraph cluster_com { label="Comunicaciones (un gateway activo)"; style=rounded; color="#e57000";
       mk  [label="Mikrotik-IND\nRouterOS 7.24\n192.168.23.1", fillcolor="#fed7aa", penwidth=2];
       opn [label="OPNsense 26.7\n192.168.23.2", fillcolor="#ffedd5"];
-      deb [label="DEB13-SRV\nnftables\n192.168.23.3", fillcolor="#ffedd5"];
+      deb [label="DEB13-SRV1-NFT\nnftables\n192.168.23.3", fillcolor="#ffedd5"];
     }
     sw [label="Red interna LAN23\n192.168.23.0/24", shape=hexagon, fillcolor="#d1fae5", color="#059669", penwidth=2];
     nas [label="TrueNas\nNAS · pool espejo\n192.168.23.10", fillcolor="#cffafe"];

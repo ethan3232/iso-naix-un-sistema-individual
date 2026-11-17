@@ -21,7 +21,7 @@ flowchart TB
             subgraph COM["Comunicaciones (solo uno activo)"]
                 MK["Mikrotik-IND .1<br/>RouterOS"]
                 OPN["OPNsense .2"]
-                DEB["DEB13-SRV .3<br/>nftables"]
+                DEB["DEB13-SRV1-NFT .3<br/>nftables"]
             end
             NAS["TrueNas .10<br/>pool espejo 'copias'"]
             subgraph CL["Clúster Proxmox 'asix23'"]
@@ -60,7 +60,7 @@ Todo corre en **un solo equipo físico**: el portátil de clase (eth4n). Los "ca
  ┌──────────────────────────────────────────────────────────────┐
  │  NAT VBox ──[nic1]── Mikrotik-IND ──[nic2]──┐                 │
  │  NAT VBox ──[nic1]── OPNsense     ──[nic2]──┤                 │
- │  NAT VBox ──[nic1]── DEB13-SRV    ──[nic2]──┤                 │
+ │  NAT VBox ──[nic1]── DEB13-SRV1-NFT    ──[nic2]──┤                 │
  │                                             │                 │
  │                     ════ red interna LAN23 ═╪═══════════════  │
  │                     │      │      │      │      │      │      │
@@ -79,8 +79,8 @@ Todo corre en **un solo equipo físico**: el portátil de clase (eth4n). Los "ca
 | Mikrotik-IND | ether2 (LAN) | LAN23 | **192.168.23.1/24** | — | (servidor DNS para la LAN) | — | Fija |
 | OPNsense | em0 (WAN) | NAT | 10.0.2.15/24 | 10.0.2.2 | 10.0.2.3 | — | DHCP |
 | OPNsense | em1 (LAN) | LAN23 | **192.168.23.2/24** | — | Unbound (reenvío) | — | Fija |
-| DEB13-SRV | enp0s3 (WAN) | NAT | 10.0.2.15/24 | 10.0.2.2 | 10.0.2.3 | — | DHCP |
-| DEB13-SRV | enp0s8 (LAN) | LAN23 | **192.168.23.3/24** | — (`never-default`) | — | — | Fija |
+| DEB13-SRV1-NFT | enp0s3 (WAN) | NAT | 10.0.2.15/24 | 10.0.2.2 | 10.0.2.3 | — | DHCP |
+| DEB13-SRV1-NFT | enp0s8 (LAN) | LAN23 | **192.168.23.3/24** | — (`never-default`) | — | — | Fija |
 | TrueNas | enp0s3 | LAN23 | 192.168.23.10/24 | 192.168.23.1 | 192.168.23.1 | asix23.lan | Fija |
 | PMX1 | vmbr0 (nic0) | LAN23 | 192.168.23.11/24 | 192.168.23.1 | 192.168.23.1 | asix23.lan | Fija |
 | PMX2 | vmbr0 (nic0) | LAN23 | 192.168.23.12/24 | 192.168.23.1 | 192.168.23.1 | asix23.lan | Fija |

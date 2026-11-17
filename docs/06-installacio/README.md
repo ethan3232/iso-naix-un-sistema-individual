@@ -6,7 +6,7 @@
 |---|---|---|
 | MikroTik RouterOS (Mikrotik-IND) | [mikrotik.md](mikrotik.md) | ✅ |
 | OPNsense | [opnsense.md](opnsense.md) | ⬜ |
-| Debian SRV nftables (DEB13-SRV) | [debian-srv.md](debian-srv.md) | ✅ |
+| Debian SRV nftables (DEB13-SRV1-NFT) | [debian-srv.md](debian-srv.md) | ✅ |
 | TrueNAS | [truenas.md](truenas.md) | ✅ |
 | Proxmox VE (clúster PMX1 + PMX2) | [proxmox.md](proxmox.md) | ✅ |
 | Windows Server 2025 (WS2025-DC) | [windows-server.md](windows-server.md) | ✅ |

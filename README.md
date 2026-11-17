@@ -43,7 +43,7 @@ flowchart TB
     INET((🌍 Internet)) --- NAT[NAT de VirtualBox<br/>WAN por DHCP 10.0.2.15]
     NAT ==> MK[🔀 Mikrotik-IND<br/>RouterOS · <b>.1</b><br/>gateway activo]
     NAT -.-> OPN[🛡️ OPNsense<br/><b>.2</b>]
-    NAT -.-> DEB[🐧 DEB13-SRV<br/>nftables · <b>.3</b>]
+    NAT -.-> DEB[🐧 DEB13-SRV1-NFT<br/>nftables · <b>.3</b>]
     MK ==> SW{{"🔌 LAN23 · 192.168.23.0/24"}}
     OPN -.-> SW
     DEB -.-> SW
@@ -69,7 +69,7 @@ flowchart TB
 |---|---|---|:---:|
 | `192.168.23.1` | Mikrotik-IND | RouterOS 7.24.5 · gateway por defecto · NAT + cortafuegos | ✅ |
 | `192.168.23.2` | OPNsense | OPNsense 26.7 · comunicaciones alternativo | ✅ |
-| `192.168.23.3` | DEB13-SRV | Debian 13 + nftables · comunicaciones alternativo | ✅ |
+| `192.168.23.3` | DEB13-SRV1-NFT | Debian 13 + nftables · comunicaciones alternativo | ✅ |
 | `192.168.23.10` | TrueNas | TrueNAS SCALE 25.10.7 · destino de las copias | ✅ |
 | `192.168.23.11` | PMX1 | Proxmox VE 9.2 · nodo 1 del clúster `asix23` | ✅ |
 | `192.168.23.12` | PMX2 | Proxmox VE 9.2 · nodo 2 del clúster `asix23` | ✅ |

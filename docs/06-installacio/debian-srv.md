@@ -2,7 +2,7 @@
 
 | Dato | Valor |
 |---|---|
-| VM en VirtualBox | `DEB13-SRV` (grupo `ISO-INDV`) |
+| VM en VirtualBox | `DEB13-SRV1-NFT` (antes `DEB13-SRV`) (grupo `ISO-INDV`) |
 | Sistema | Debian GNU/Linux **13 (trixie)**, kernel 6.12.117, con escritorio GNOME |
 | Función | Servidor de comunicaciones alternativo: router + NAT + cortafuegos `nftables` |
 | Recursos | 1 vCPU · 2 GB RAM · disco 20 GB |

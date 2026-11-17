@@ -1,0 +1,59 @@
+# /ip address print
+Flags: D - DYNAMIC
+Columns: ADDRESS, NETWORK, INTERFACE, VRF
+#   ADDRESS          NETWORK       INTERFACE  VRF 
+0 D 10.0.2.15/24     10.0.2.0      ether1     main
+;;; LAN23 - gateway .1
+1   192.168.23.1/24  192.168.23.0  ether2     main
+
+# /ip route print
+Flags: D - DYNAMIC; A - ACTIVE; c - CONNECT, d - DHCP
+Columns: DST-ADDRESS, GATEWAY, ROUTING-TABLE, DISTANCE
+    DST-ADDRESS      GATEWAY   ROUTING-TABLE  DISTANCE
+DAd 0.0.0.0/0        10.0.2.2  main                  1
+DAc 10.0.2.0/24      ether1    main                  0
+DAc 192.168.23.0/24  ether2    main                  0
+
+# /ip firewall nat print
+0  ;;; NAT LAN23 -> Internet
+   chain=srcnat action=masquerade out-interface-list=WAN
+
+# /ip firewall filter print
+ 0  ;;; IN: respuestas
+    chain=input action=accept connection-state=established,related
+ 
+ 1  ;;; IN: invalidos
+    chain=input action=drop connection-state=invalid
+ 
+ 2  ;;; IN: ping
+    chain=input action=accept protocol=icmp
+ 
+ 3  ;;; IN: gestion desde LAN23
+    chain=input action=accept in-interface-list=LAN
+ 
+ 4  ;;; IN: gestion desde el host (NAT VirtualBox)
+    chain=input action=accept protocol=tcp src-address=10.0.2.2
+    in-interface-list=WAN dst-port=22,80,8291
+ 
+ 5  ;;; IN: resto bloqueado
+    chain=input action=drop log=yes log-prefix="IN-DROP"
+ 
+ 6  ;;; FWD: respuestas
+    chain=forward action=accept connection-state=established,related
+ 
+ 7  ;;; FWD: invalidos
+    chain=forward action=drop connection-state=invalid
+ 
+ 8  ;;; PRUEBA BLOQUEADA: Telnet (contrasenas en claro)
+    chain=forward action=drop protocol=tcp in-interface-list=LAN dst-port=23
+    log=yes log-prefix="BLOQUEADO-TELNET"
+ 
+ 9  ;;; PRUEBA PERMITIDA: HTTPS
+    chain=forward action=accept connection-state=new protocol=tcp
+    in-interface-list=LAN dst-port=443 log=yes log-prefix="PERMITIDO-HTTPS"
+ 
+10  ;;; FWD: LAN23 -> Internet
+    chain=forward action=accept in-interface-list=LAN out-interface-list=WAN
+ 
+11  ;;; FWD: resto bloqueado
+    chain=forward action=drop log=yes log-prefix="FWD-DROP"

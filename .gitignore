@@ -1,0 +1,17 @@
+# Imágenes de disco y máquinas virtuales (demasiado pesadas para git)
+*.iso
+*.img
+*.vdi
+*.vmdk
+*.vhd
+*.vhdx
+*.qcow2
+*.ova
+*.ovf
+*.sav
+
+# Sistema
+.DS_Store
+Thumbs.db
+*~
+*.swp

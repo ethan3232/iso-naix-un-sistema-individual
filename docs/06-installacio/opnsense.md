@@ -89,6 +89,24 @@ a1f994e5-...,em1,match,block,in,4,...,tcp,60,192.168.23.54,64.13.139.230,42384,2
 
 **¿Por qué el `config.xml` no se sube a Git?** Contiene los *hashes* de las contraseñas y certificados privados.
 
+## 8. Fallo provocado y recuperación ([log](../../evidencies/logs/fallo-recuperacion-opnsense.txt))
+
+**Escenario**: un administrador desactiva por error las reglas que dejan salir a la LAN. Queda solo la **denegación por defecto** y nadie navega.
+
+| Paso | Hora | Qué pasa |
+|---|---|---|
+| **Fallo** | 13:56:49 | Se desactivan *Default allow LAN to any* y *PRUEBA PERMITIDA: HTTPS* y se aplican |
+| Detección | 13:57:06 | El cliente no sale a Internet |
+| **Recuperación** | 13:57:06 | *System → Configuration → History* → volver a la versión anterior (`revert_backup`) + aplicar reglas |
+| Servicio OK | 13:57:07 | Reglas otra vez activas (**1 s**) |
+
+| Resultado | Valor |
+|---|---|
+| Tiempo sin Internet medido en el cliente | **15 s** |
+| Configuración perdida | **Ninguna** |
+
+**Historial local vs. copia del NAS**: OPNsense guarda solo una copia de `config.xml` **cada vez que cambia algo** (las vimos en el historial: una por cada cambio hecho por la API). Es lo más rápido para deshacer un error. La copia del NAS sirve cuando se pierde el **disco entero**: se reinstala OPNsense y se carga el `config.xml` en *System → Configuration → Backups → Restore*.
+
 ## Preguntas probables de la defensa
 
 - **¿Qué diferencia hay entre MikroTik, OPNsense y Debian como router?** Los tres hacen lo mismo (NAT + filtrado); cambia la forma de gestionarlos: RouterOS por CLI o Winbox, OPNsense por web (basado en FreeBSD y pf) y Debian a mano con nftables.

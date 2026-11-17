@@ -1,0 +1,23 @@
+### Fallo provocado y recuperación — OPNsense (192.168.23.2)
+Escenario: se desactivan por error las reglas que permiten la salida de la LAN (queda la denegación por defecto).
+Configuración buena guardada en el historial: config-1794918281.8168.xml
+
+# 13:56:49 FALLO: se desactivan 'Default allow LAN to any' y 'PRUEBA PERMITIDA: HTTPS'
+{"result":"Disabled","changed":true}
+{"result":"Disabled","changed":true}
+{"status":"OK\n\n"}
+# 13:57:06 DETECCIÓN: el cliente no sale a Internet
+# 13:57:06 RECUPERACIÓN: volver a la configuración anterior del historial (System > Configuration > History)
+{"status":"reverted"}
+{"status":"OK\n\n"}
+# 13:57:07 recuperado en 1 s
+
+# Estado de las reglas después:
+   PRUEBA PERMITIDA: HTTPS -> enabled = 1
+   Default allow LAN to any rule -> enabled = 1
+
+# Medido desde el cliente DEB13-CLI: 34 OK · sin Internet desde 13:56:57 hasta 13:57:12 = 15 s
+13:56:52 OK
+13:56:57 SIN-INTERNET
+13:57:12 SIN-INTERNET
+13:57:13 OK

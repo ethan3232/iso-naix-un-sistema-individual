@@ -1,3 +1,10 @@
+# Credenciales: NUNCA al repositorio (regla del enunciado)
+CREDENCIALES-PRIVADAS.md
+*.env
+secrets*
+*.key
+*.pem
+
 # Imágenes de disco y máquinas virtuales (demasiado pesadas para git)
 *.iso
 *.img
@@ -9,6 +16,7 @@
 *.ova
 *.ovf
 *.sav
+*.backup
 
 # Sistema
 .DS_Store

@@ -38,6 +38,7 @@ Estado: 🟡 en curso (falta añadir el tiempo real del fallo de disco del RAID,
 | **Host** — el PC anfitrión se rompe | **Todo** el sistema (punto único de fallo) | 1 día | 24 h | — | Hasta 24 h | 🧪 Simulado: otro PC con VirtualBox + copias del NAS. En la empresa real: varios hosts físicos y el NAS fuera del host |
 | **Almacenamiento** — falla un disco del NAS | Copias de seguridad | 0 (sigue funcionando) | 0 | — | 0 | 🧪 Simulado: espejo `copias` (ZFS mirror) |
 | **Almacenamiento** — falla un disco de un RAID 1/5 | Datos del servidor de ficheros | 0 (modo degradado) | 0 | **0 s** sin servicio (0 lecturas fallidas) · reconstrucción RAID 1: **54,3 s** · RAID 5: **14,6 s** · con disco de reserva: **21,2 s** automática | 0 (SHA256 iguales) | ✅ Probado ([07 §3](07-emmagatzematge-raid.md)) |
+| **Almacenamiento** — se cae el **servidor de ficheros entero** (DEB13-SRV2) | Datos del espejo DRBD | 5 min | 0 | **~13 s** hasta tener los datos montados en SRV3 · reincorporación: 206 MB en 25 s | 0 (SHA256 iguales; protocolo C) | ✅ Probado ([07 §7](07-emmagatzematge-raid.md)) |
 
 ## 3 bis. Fichas por escenario
 

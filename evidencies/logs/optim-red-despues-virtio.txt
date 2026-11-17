@@ -1,0 +1,4 @@
+### despues-virtio · 17/11/2026 19:57 · NIC: virtio
+ronda 1: 12.7 Gbit/s · CPU del host 33,7 % · 2,7 % de CPU por cada Gbit/s
+ronda 2: 12.0 Gbit/s · CPU del host 38,7 % · 3,2 % de CPU por cada Gbit/s
+ronda 3: 12.2 Gbit/s · CPU del host 37,1 % · 3,0 % de CPU por cada Gbit/s

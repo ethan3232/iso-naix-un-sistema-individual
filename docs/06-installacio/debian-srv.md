@@ -3,6 +3,7 @@
 | Dato | Valor |
 |---|---|
 | VM en VirtualBox | `DEB13-SRV1-NFT` (antes `DEB13-SRV`) (grupo `ISO-INDV`) |
+| Hostname | `deb-srv` (registro DNS `deb-srv.asix23.lan` en el DC). **Se mantiene** aunque la VM se renombrara: cambiarlo obligaría a tocar el DNS del DC, el acceso SSH y los scripts de copia sin mejorar nada. La VM se llama `DEB13-SRV1-NFT` para que se vea en VirtualBox que es la de nftables |
 | Sistema | Debian GNU/Linux **13 (trixie)**, kernel 6.12.117, con escritorio GNOME |
 | Función | Servidor de comunicaciones alternativo: router + NAT + cortafuegos `nftables` |
 | Recursos | 1 vCPU · 2 GB RAM · disco 20 GB |

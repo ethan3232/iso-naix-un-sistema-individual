@@ -1,0 +1,27 @@
+### 17/11/2026 — escenario: Mikrotik-IND + DEB13-SRV2 + DEB13-SRV3
+== reposo (19:41:36) · carga en srv2: true
+DEB13-SRV2-reposo        | host CPU media  6.7% (máx 10.6%) · iowait medio  0.1% (máx  0.4%) · RAM disp. mín  5442 MB · swap máx 0 MB
+                         | disco SSD:      0 MB leídos,    119 MB escritos (pico 14 MB/s)
+                         | VM CPU media   2.4% (máx  12.5% = 0.1 hilos de 12) · RSS máx  1003 MB · arranque calmado: 2 s
+== carga-cpu (19:42:46) · carga en srv3: stress-ng --cpu 1 --cpu-method int64 --timeout 50s
+DEB13-SRV3-carga-cpu     | host CPU media 11.9% (máx 14.3%) · iowait medio  0.1% (máx  0.2%) · RAM disp. mín  5178 MB · swap máx 0 MB
+                         | disco SSD:      0 MB leídos,     58 MB escritos (pico 5 MB/s)
+                         | VM CPU media  83.8% (máx 100.5% = 1.0 hilos de 12) · RSS máx   942 MB · arranque calmado: no se calmó en 60 s s
+== carga-ram (19:43:57) · carga en srv2: stress-ng --vm 1 --vm-bytes 700M --vm-keep --vm-method write64 --timeout 50s
+DEB13-SRV2-carga-ram     | host CPU media 13.9% (máx 21.1%) · iowait medio  0.2% (máx  0.6%) · RAM disp. mín  4654 MB · swap máx 0 MB
+                         | disco SSD:      7 MB leídos,     98 MB escritos (pico 19 MB/s)
+                         | VM CPU media  84.9% (máx 101.0% = 1.0 hilos de 12) · RSS máx  1005 MB · arranque calmado: no se calmó en 60 s s
+== carga-disco (19:45:07) · carga en srv2: fio --name=sec --filename=/var/tmp/carga --size=2G --rw=write --bs=1M --direct=1 --runtime=45 --time_based --output-format=terse --terse-version=3 | cut -d";" -f48 > /var/tmp/fio.txt; rm -f /var/tmp/carga
+DEB13-SRV2-carga-disco   | host CPU media  6.4% (máx  9.5%) · iowait medio  2.3% (máx 11.2%) · RAM disp. mín  4389 MB · swap máx 0 MB
+                         | disco SSD:     28 MB leídos,   9913 MB escritos (pico 399 MB/s)
+                         | VM CPU media  10.0% (máx  35.0% = 0.3 hilos de 12) · RSS máx  1005 MB · arranque calmado: 26 s
+   fio escritura secuencial dentro de SRV2: 218 MB/s
+== carga-red (19:46:19) · carga en srv2: iperf3 -c 192.168.23.22 -t 45 > /var/tmp/iperf.txt
+DEB13-SRV2-carga-red     | host CPU media 19.1% (máx 25.7%) · iowait medio  0.6% (máx  6.3%) · RAM disp. mín  6882 MB · swap máx 0 MB
+                         | disco SSD:      3 MB leídos,     50 MB escritos (pico 1 MB/s)
+                         | VM CPU media  53.4% (máx  74.0% = 0.7 hilos de 12) · RSS máx  1004 MB · arranque calmado: 52 s
+   iperf3 SRV2→SRV3: [  5]   0.00-45.01  sec  25.9 GBytes  4.94 Gbits/sec                  receiver
+== carga-todo (19:47:30) · carga en srv2: stress-ng --cpu 1 --cpu-method int64 --vm 1 --vm-bytes 500M --vm-method write64 --timeout 50s & fio --name=t --filename=/var/tmp/c --size=1G --rw=write --bs=1M --direct=1 >/dev/null; rm -f /var/tmp/c; iperf3 -c 192.168.23.22 -t 20 >/dev/null; wait
+DEB13-SRV2-carga-todo    | host CPU media 19.0% (máx 32.0%) · iowait medio  5.2% (máx 19.0%) · RAM disp. mín  6418 MB · swap máx 0 MB
+                         | disco SSD:      4 MB leídos,   4802 MB escritos (pico 281 MB/s)
+                         | VM CPU media  97.0% (máx 135.0% = 1.4 hilos de 12) · RSS máx  1068 MB · arranque calmado: no se calmó en 60 s s

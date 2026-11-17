@@ -1,6 +1,6 @@
 # 07 · Almacenamiento y RAID
 
-**Tasca 6** · Estado: ✅ Apte (3 tipos de RAID creados, verificados con fallo real y reconstrucción) · ⬜ Apte+ (espejo entre 2 equipos)
+**Tasca 6** · Estado: ✅ Apte (3 tipos de RAID creados, verificados con fallo real y reconstrucción) · ✅ Apte+ (espejo entre 2 equipos con DRBD, caída de un servidor probada)
 
 | | |
 |---|---|
@@ -113,4 +113,80 @@ Se midió con `fio` (escritura y lectura secuencial de 1 MiB, escritura aleatori
 
 ## 7. (Apte+) RAID en espejo entre dos equipos
 
-⬜ Pendiente: solo si sobra tiempo (regla 1 del proyecto). Idea prevista: **DRBD** entre DEB13-SRV2 y DEB13-SRV3, o un disco iSCSI del TrueNAS en espejo `mdadm` con un disco local.
+✅ Hecho con **DRBD** (*Distributed Replicated Block Device*) entre **DEB13-SRV2** y **DEB13-SRV3**. Log completo: [`drbd-espejo-red.txt`](../evidencies/logs/drbd-espejo-red.txt) · configuración: [`configs/drbd/r0.res`](../configs/drbd/r0.res).
+
+### 7.1 Qué es y por qué DRBD
+
+Un RAID 1 normal copia cada escritura en **dos discos del mismo equipo**: si se rompe un disco, bien; si se rompe **el servidor** (placa, fuente, sistema), los dos discos se quedan dentro. DRBD hace un **RAID 1 por la red**: cada escritura va al disco local **y** al disco del otro servidor.
+
+```mermaid
+flowchart LR
+    APP[Servicio / ficheros<br/>/srv/espejo] --> D0
+    subgraph S2 [DEB13-SRV2 · .21 · PRIMARIO]
+      D0[/dev/drbd0/] --> L2[(disco 1 GB<br/>VB5c4301f8)]
+    end
+    subgraph S3 [DEB13-SRV3 · .22 · SECUNDARIO]
+      D1[/dev/drbd0/] --> L3[(disco 1 GB<br/>VB8435b78f)]
+    end
+    D0 == "LAN23 · TCP 7789<br/>protocolo C (síncrono)" ==> D1
+```
+
+| Alternativa | Por qué no |
+|---|---|
+| `mdadm` RAID 1 con un disco **iSCSI** del NAS | Funciona, pero el NAS pasa a ser imprescindible para el servidor de ficheros: un punto de fallo más |
+| Replicación de ZFS (TrueNAS) | No es en tiempo real: copia por instantáneas (pierdes lo escrito desde la última) |
+| **DRBD** ✅ | Viene en el kernel de Debian (módulo `drbd` 8.4.11), es **síncrono** y está pensado justo para esto: dos servidores, uno activo y otro de reserva |
+
+**Protocolo C** = una escritura no se da por terminada hasta que está en **los dos** discos → si cae el primario, el secundario tiene **exactamente** lo mismo (RPO = 0).
+
+### 7.2 Implementación
+
+1. VirtualBox: un disco nuevo de 1 GB en cada VM (`drbd-DEB13-SRV2.vdi`, `drbd-DEB13-SRV3.vdi`).
+2. En los dos: `apt install drbd-utils` y el mismo [`/etc/drbd.d/r0.res`](../configs/drbd/r0.res).
+3. Discos nombrados por **número de serie** (`/dev/disk/by-id/ata-VBOX_HARDDISK_VB…`): al añadir el disco nuevo, en SRV2 **las letras `sdX` de los RAID cambiaron** (el disco nuevo salió como `sdi` y `sdj` pasó a ser de `md1`). mdadm no se enteró porque usa sus superbloques; DRBD tampoco porque usa el número de serie.
+4. Comandos:
+
+```bash
+# en los dos servidores
+drbdadm create-md r0          # metadatos DRBD al final del disco
+drbdadm up r0                 # conecta con el otro nodo
+systemctl enable drbd         # se conecta solo al arrancar
+# solo en SRV2 (la primera vez)
+drbdadm primary --force r0    # "mis datos mandan" → sincronización inicial
+mkfs.ext4 -L drbd-espejo /dev/drbd0
+mount /dev/drbd0 /srv/espejo
+```
+
+### 7.3 Verificación: caída de un servidor entero
+
+| # | Prueba | Resultado | Tiempo |
+|---|---|---|---|
+| 1 | Sincronización inicial de 1 GB (SRV2 → SRV3) | `UpToDate/UpToDate` | **53 s** (19,8 MB/s: DRBD limita el ritmo para no ahogar la red; se ajusta con `resync-rate`) |
+| 2 | Escribir 100 MB aleatorios en SRV2 + SHA256 | `e293a9a2…ca6f99` | — |
+| 3 | Montar el disco en SRV3 mientras SRV2 es primario | ❌ *Can't open blockdev* — **correcto**: solo un nodo puede escribir a la vez (si no, se corrompe el ext4) | — |
+| 4 | **Apagado brusco de SRV2** (`VBoxManage controlvm poweroff`, como un corte de luz) → en SRV3: `drbdadm primary r0` + `mount` | ✅ Datos montados en SRV3, **SHA256 idéntico** | **~13 s** (casi todo es DRBD detectando que el otro no responde: `ping-int` 10 s) |
+| 5 | Escribir 50 MB nuevos en SRV3 con SRV2 apagado | ✅ DRBD apunta lo pendiente: `oos:51272` KB | — |
+| 6 | SRV2 vuelve | Entra como **secundario**, sin *split-brain*. Solo copia **206 MB** (50 MB nuevos + 156 MB que marca por precaución por haber caído siendo primario) | **25 s** (no el disco entero) |
+| 7 | Cambio controlado de vuelta: SRV3 `umount` + `secondary`, SRV2 `primary` + `mount` | ✅ Los 2 ficheros con su SHA256 correcto | **2,6 s** |
+| 8 | Reinicio de SRV3 | Se reconecta solo: `Connected Primary/Secondary UpToDate/UpToDate` | — |
+
+### 7.4 Caso de uso en la empresa
+
+El **servidor de ficheros** de los departamentos. Hoy, si DEB13-SRV2 se rompe (no un disco: **el equipo**), los RAID 1 y 5 no sirven de nada porque sus discos están dentro. Con DRBD, los datos ya están en DEB13-SRV3 y el servicio vuelve en segundos:
+
+| | RAID 1 local (`md1`) | Espejo por red (DRBD) |
+|---|---|---|
+| Se rompe un disco | ✅ sigue funcionando | ✅ sigue funcionando |
+| Se rompe **el servidor** | ❌ datos inaccesibles hasta repararlo | ✅ el otro servidor los monta en ~13 s |
+| Coste | 2 discos | 2 servidores + red |
+| Escritura | velocidad del disco | velocidad del disco **+ ida y vuelta por la red** |
+| ¿Es una copia de seguridad? | ❌ | ❌ — un borrado o un ransomware se replica al instante. Sigue haciendo falta la copia en el NAS |
+
+**Limitaciones de mi montaje:** el cambio de primario es **manual** (en producción lo haría **Pacemaker/Corosync** con una IP flotante, para que los clientes no tengan que cambiar de servidor), y las dos VMs están en el **mismo PC** (en la empresa serían dos máquinas físicas, idealmente con una red dedicada para la réplica).
+
+### 7.5 Preguntas probables de la defensa
+
+- *¿Qué diferencia hay entre DRBD y un RAID 1?* → El RAID 1 copia entre dos discos **del mismo equipo**; DRBD entre dos discos **de equipos distintos** por la red. DRBD protege también de la caída del servidor.
+- *¿Por qué no montas el disco en los dos a la vez?* → Porque ext4 no está pensado para que dos sistemas escriban a la vez: se corrompería. DRBD lo impide (solo un primario). Para dos activos haría falta un sistema de ficheros de clúster (GFS2, OCFS2).
+- *¿Qué es el split-brain?* → Que los dos nodos se crean primarios y escriban cosas distintas sin verse. Al reconectar, DRBD no sabe qué datos son los buenos y se para. Se evita con una regla de quórum o *fencing*; se resuelve a mano con `drbdadm connect --discard-my-data r0` en el nodo cuyos cambios se descartan.
+- *¿Qué RPO y RTO tiene?* → RPO **0** (protocolo C, síncrono). RTO **~13 s** medido, manual.

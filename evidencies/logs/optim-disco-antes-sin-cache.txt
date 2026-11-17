@@ -1,0 +1,16 @@
+### antes-sin-cache · 17/11/2026 19:59 · useHostIOCache=false
+-- ronda 1
+secuencial-escritura        334,6 MB/s      334 IOPS
+aleatoria-escritura-4k      125,0 MB/s    31992 IOPS
+aleatoria-lectura-4k         16,0 MB/s     4087 IOPS
+escritura-4k-con-fsync        0,7 MB/s      176 IOPS
+-- ronda 2
+secuencial-escritura         37,9 MB/s       37 IOPS
+aleatoria-escritura-4k       13,5 MB/s     3460 IOPS
+aleatoria-lectura-4k          9,0 MB/s     2303 IOPS
+escritura-4k-con-fsync        0,4 MB/s      109 IOPS
+-- ronda 3
+secuencial-escritura         25,4 MB/s       25 IOPS
+aleatoria-escritura-4k       37,5 MB/s     9609 IOPS
+aleatoria-lectura-4k         16,4 MB/s     4209 IOPS
+escritura-4k-con-fsync        0,7 MB/s      172 IOPS

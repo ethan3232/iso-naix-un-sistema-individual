@@ -1,0 +1,47 @@
+### DRBD r0 · DEB13-SRV2 (.21) ↔ DEB13-SRV3 (.22) · 17/11/2026 20:12
+== 1. Sincronización inicial (SRV2 primario --force)
+ 0: cs:Connected ro:Primary/Secondary ds:UpToDate/UpToDate C r-----
+    ns:1048508 nr:0 dw:0 dr:1048508 al:8 bm:0 lo:0 pe:0 ua:0 ap:0 ep:1 wo:f oos:0
+[   60.057653] drbd r0/0 drbd0: Began resync as SyncSource (will sync 1048508 KB [262127 bits set]).
+[  113.136632] drbd r0/0 drbd0: Resync done (total 53 sec; paused 0 sec; 19780 K/sec)
+== 2. Formato, montaje y datos de prueba en SRV2 (primario)
+e293a9a2f3a8d6ff30b4d16601b77b84667a7e2f6e73b9ff11fa00503fca6f99  /srv/espejo/datos-1.bin
+/dev/drbd0       990M   101M  822M  11% /srv/espejo
+ 0: cs:Connected ro:Primary/Secondary ds:UpToDate/UpToDate C r-----
+    ns:1151852 nr:0 dw:119860 dr:1049517 al:16 bm:0 lo:0 pe:0 ua:0 ap:0 ep:1 wo:f oos:0
+== 2b. En SRV3 (secundario) el disco NO se puede montar mientras SRV2 es primario
+mount: /srv/espejo: fsconfig() ha fallado/dev/drbd0: Can't open blockdev.
+Secondary/Primary
+== 3. FALLO: apagado brusco de DEB13-SRV2 (20:13:36)
+SRV3 detecta la caída:
+ 0: cs:Connected ro:Secondary/Primary ds:UpToDate/UpToDate C r-----
+SRV3 ahora: Primary/Unknown y montado
+e293a9a2f3a8d6ff30b4d16601b77b84667a7e2f6e73b9ff11fa00503fca6f99  /srv/espejo/datos-1.bin
+creado en SRV2 antes del fallo
+Tiempo desde el apagado hasta tener los datos montados en SRV3: 12941 ms
+SHA256 esperado: e293a9a2f3a8d6ff30b4d16601b77b84667a7e2f6e73b9ff11fa00503fca6f99
+== 4. Mientras SRV2 está caído se siguen escribiendo datos en SRV3
+60845178ca3420e863e5e1fdea37623cf0ca87ef82284b1ce95bd62792c019ed  /srv/espejo/datos-2.bin
+ 0: cs:WFConnection ro:Primary/Unknown ds:UpToDate/DUnknown C r-----
+    ns:0 nr:1151868 dw:1236072 dr:103489 al:11 bm:0 lo:0 pe:0 ua:0 ap:0 ep:1 wo:f oos:51272
+== 5. SRV2 vuelve (20:14:21): se reincorpora como secundario y solo copia lo que cambió
+servicio drbd al arrancar: disabled
+0: Failure: (127) Device minor not allocated
+Marked additional 156 MB as out-of-sync based on AL.
+ 0: cs:Connected ro:Secondary/Primary ds:UpToDate/UpToDate C r-----
+[   10.977578] drbd r0/0 drbd0: Began resync as SyncTarget (will sync 210876 KB [52719 bits set]).
+[   36.062744] drbd r0/0 drbd0: Resync done (total 25 sec; paused 0 sec; 8432 K/sec)
+== 6. Cambio controlado de vuelta a SRV2 (mantenimiento planificado)
+SRV3: Secondary/Secondary
+SRV2: Primary/Secondary
+e293a9a2f3a8d6ff30b4d16601b77b84667a7e2f6e73b9ff11fa00503fca6f99  /srv/espejo/datos-1.bin
+60845178ca3420e863e5e1fdea37623cf0ca87ef82284b1ce95bd62792c019ed  /srv/espejo/datos-2.bin
+creado en SRV2 antes del fallo
+creado en SRV3 con SRV2 caído
+Cambio controlado: 2634 ms
+Esperados: datos-1 e293a9a2…ca6f99 · datos-2 60845178…c019ed
+deb13-srv2: drbd al arrancar = enabled
+deb13-srv3: drbd al arrancar = disabled
+deb13-srv3: drbd al arrancar = enabled (corregido: el primer 'enable' no se aplicó)
+== 7. Reinicio de SRV3: ¿se reconecta solo?
+ 0: cs:Connected ro:Primary/Secondary ds:UpToDate/UpToDate C r-----

@@ -1,0 +1,8 @@
+DEB13-SRV2: intnet1="LAN23"
+DEB13-SRV2: macaddress1="08002784113E"
+DEB13-SRV2: nic1="intnet"
+DEB13-SRV2: nictype1="82540EM"
+DEB13-SRV3: intnet1="LAN23"
+DEB13-SRV3: macaddress1="0800274E5724"
+DEB13-SRV3: nic1="intnet"
+DEB13-SRV3: nictype1="82540EM"

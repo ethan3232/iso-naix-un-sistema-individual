@@ -2,12 +2,12 @@
 
 | | DEB13-SRV2 | DEB13-SRV3 |
 |---|---|---|
-| Función | Servidor de ficheros + **RAID 0/1/5** con `mdadm` ([07](../07-emmagatzematge-raid.md)) | Servidor web Apache (intranet) |
+| Función | Servidor de ficheros + **RAID 0/1/5** con `mdadm` + **primario** del espejo DRBD ([07](../07-emmagatzematge-raid.md)) | Servidor web Apache (intranet) + **secundario** del espejo DRBD |
 | IP | `192.168.23.21/24` | `192.168.23.22/24` |
 | Hostname | `deb13-srv2.asix23.lan` | `deb13-srv3.asix23.lan` |
-| Recursos | 1 vCPU · 1 GB RAM · 20 GB + 8 × 1 GB (RAID) | 1 vCPU · 1 GB RAM · 20 GB |
-| Red | Adaptador 1 → red interna `LAN23` | Adaptador 1 → red interna `LAN23` |
-| Paquetes | `mdadm samba sysstat fio parted` | `apache2 sysstat` |
+| Recursos | 1 vCPU · 1 GB RAM · 20 GB + 8 × 1 GB (RAID) + 1 GB (DRBD) | 1 vCPU · 1 GB RAM · 20 GB + 1 GB (DRBD) |
+| Red | Adaptador 1 → red interna `LAN23` · tarjeta **virtio-net** (antes e1000: ver [08 §5.1](../08-rendiment.md)) | ídem |
+| Paquetes | `mdadm samba sysstat fio parted drbd-utils iperf3 stress-ng` | `apache2 sysstat drbd-utils iperf3 stress-ng fio` |
 | Gestión desde el PC | `ssh -p 2221 izan@127.0.0.1` | `ssh -p 2222 izan@127.0.0.1` · web `http://127.0.0.1:8422` |
 
 **Nombres:** se llaman SRV1/SRV2/SRV3 en serie. La **SRV1** es la Debian router (`DEB13-SRV1-NFT`, nftables, `.3`).
@@ -50,12 +50,18 @@ PC `127.0.0.1:2221/2222/8422` → reenvío de puertos de VirtualBox en el adapta
 - **SRV3**: Apache activo; desde el PC `http://127.0.0.1:8422` → **HTTP 200**.
 - **SRV2**: los 3 RAID montados en `/srv/raid0`, `/srv/raid1` y `/srv/raid5` (pruebas en [07](../07-emmagatzematge-raid.md)).
 
+## 3b. Espejo por red (DRBD) entre SRV2 y SRV3
+
+Recurso `r0` → `/dev/drbd0` montado en `/srv/espejo` en el **primario** (SRV2). Estado: `cat /proc/drbd` (`Connected Primary/Secondary UpToDate/UpToDate`). Montaje, pruebas de caída y caso de uso en [07 §7](../07-emmagatzematge-raid.md).
+
+> El espejo **no se monta en el `fstab`**: solo lo monta el nodo que es primario, a mano (o con Pacemaker en producción).
+
 ## 4. Copias de seguridad
 
 | Qué | Cómo |
 |---|---|
-| Configuración (`/etc`: red, `fstab`, `mdadm.conf`, Apache) | Igual que DEB13-SRV1-NFT: la copia nocturna del NAS se lleva `/etc` en un `.tgz` |
-| Datos de los RAID | El RAID **no es una copia**: los datos importantes se copian al NAS |
+| Configuración (`/etc`: red, `fstab`, `mdadm.conf`, `drbd.d/r0.res`, Apache) | Igual que DEB13-SRV1-NFT: la copia nocturna del NAS se lleva `/etc` en un `.tgz` |
+| Datos de los RAID y del espejo DRBD | Ni el RAID ni DRBD **son una copia** (un borrado se replica al instante): los datos importantes se copian al NAS |
 | Sistema completo | Se reinstala en ~15 min con la instalación desatendida + `/etc` de la copia |
 
 ## Preguntas probables de la defensa

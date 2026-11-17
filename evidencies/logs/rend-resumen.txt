@@ -30,3 +30,39 @@ WS2025-DC-solo           | host CPU media  9.3% (máx 20.4%) · iowait medio  1.
 W11-CLI-solo             | host CPU media  8.5% (máx 22.0%) · iowait medio  1.1% (máx  6.3%) · RAM disp. mín  6442 MB · swap máx 0 MB
                          | disco SSD:   1763 MB leídos,    340 MB escritos (pico 143 MB/s)
                          | VM CPU media  49.8% (máx 200.5% = 2.0 hilos de 12) · RSS máx  2859 MB · arranque calmado: 68 s
+DEB13-SRV2-reposo        | host CPU media  8.7% (máx 14.7%) · iowait medio  0.2% (máx  1.3%) · RAM disp. mín  7151 MB · swap máx 0 MB
+                         | disco SSD:      1 MB leídos,    177 MB escritos (pico 26 MB/s)
+                         | VM CPU media   2.1% (máx  15.0% = 0.1 hilos de 12) · RSS máx   957 MB · arranque calmado: 8 s
+DEB13-SRV3-carga-cpu     | host CPU media  5.5% (máx  7.3%) · iowait medio  0.0% (máx  0.1%) · RAM disp. mín  7457 MB · swap máx 0 MB
+                         | disco SSD:      1 MB leídos,      3 MB escritos (pico 0 MB/s)
+                         | VM CPU media   1.5% (máx   5.0% = 0.1 hilos de 12) · RSS máx   872 MB · arranque calmado: 2 s
+DEB13-SRV2-carga-ram     | host CPU media  9.7% (máx 19.0%) · iowait medio  0.3% (máx  1.9%) · RAM disp. mín  6967 MB · swap máx 0 MB
+                         | disco SSD:     88 MB leídos,    147 MB escritos (pico 90 MB/s)
+                         | VM CPU media   3.5% (máx  44.0% = 0.4 hilos de 12) · RSS máx   999 MB · arranque calmado: 8 s
+DEB13-SRV2-carga-disco   | host CPU media 11.3% (máx 19.3%) · iowait medio  0.2% (máx  0.3%) · RAM disp. mín  6567 MB · swap máx 0 MB
+                         | disco SSD:     11 MB leídos,    111 MB escritos (pico 32 MB/s)
+                         | VM CPU media   5.1% (máx  85.5% = 0.9 hilos de 12) · RSS máx  1003 MB · arranque calmado: 10 s
+DEB13-SRV2-carga-red     | host CPU media 22.4% (máx 29.7%) · iowait medio  0.1% (máx  0.2%) · RAM disp. mín  6260 MB · swap máx 0 MB
+                         | disco SSD:      1 MB leídos,     55 MB escritos (pico 2 MB/s)
+                         | VM CPU media  53.9% (máx  73.0% = 0.7 hilos de 12) · RSS máx  1002 MB · arranque calmado: 52 s
+DEB13-SRV2-carga-todo    | host CPU media 13.3% (máx 28.2%) · iowait medio  0.1% (máx  0.2%) · RAM disp. mín  5952 MB · swap máx 0 MB
+                         | disco SSD:      5 MB leídos,     71 MB escritos (pico 15 MB/s)
+                         | VM CPU media  27.1% (máx  97.5% = 1.0 hilos de 12) · RSS máx  1003 MB · arranque calmado: 28 s
+DEB13-SRV2-reposo        | host CPU media  6.7% (máx 10.6%) · iowait medio  0.1% (máx  0.4%) · RAM disp. mín  5442 MB · swap máx 0 MB
+                         | disco SSD:      0 MB leídos,    119 MB escritos (pico 14 MB/s)
+                         | VM CPU media   2.4% (máx  12.5% = 0.1 hilos de 12) · RSS máx  1003 MB · arranque calmado: 2 s
+DEB13-SRV3-carga-cpu     | host CPU media 11.9% (máx 14.3%) · iowait medio  0.1% (máx  0.2%) · RAM disp. mín  5178 MB · swap máx 0 MB
+                         | disco SSD:      0 MB leídos,     58 MB escritos (pico 5 MB/s)
+                         | VM CPU media  83.8% (máx 100.5% = 1.0 hilos de 12) · RSS máx   942 MB · arranque calmado: no se calmó en 60 s s
+DEB13-SRV2-carga-ram     | host CPU media 13.9% (máx 21.1%) · iowait medio  0.2% (máx  0.6%) · RAM disp. mín  4654 MB · swap máx 0 MB
+                         | disco SSD:      7 MB leídos,     98 MB escritos (pico 19 MB/s)
+                         | VM CPU media  84.9% (máx 101.0% = 1.0 hilos de 12) · RSS máx  1005 MB · arranque calmado: no se calmó en 60 s s
+DEB13-SRV2-carga-disco   | host CPU media  6.4% (máx  9.5%) · iowait medio  2.3% (máx 11.2%) · RAM disp. mín  4389 MB · swap máx 0 MB
+                         | disco SSD:     28 MB leídos,   9913 MB escritos (pico 399 MB/s)
+                         | VM CPU media  10.0% (máx  35.0% = 0.3 hilos de 12) · RSS máx  1005 MB · arranque calmado: 26 s
+DEB13-SRV2-carga-red     | host CPU media 19.1% (máx 25.7%) · iowait medio  0.6% (máx  6.3%) · RAM disp. mín  6882 MB · swap máx 0 MB
+                         | disco SSD:      3 MB leídos,     50 MB escritos (pico 1 MB/s)
+                         | VM CPU media  53.4% (máx  74.0% = 0.7 hilos de 12) · RSS máx  1004 MB · arranque calmado: 52 s
+DEB13-SRV2-carga-todo    | host CPU media 19.0% (máx 32.0%) · iowait medio  5.2% (máx 19.0%) · RAM disp. mín  6418 MB · swap máx 0 MB
+                         | disco SSD:      4 MB leídos,   4802 MB escritos (pico 281 MB/s)
+                         | VM CPU media  97.0% (máx 135.0% = 1.4 hilos de 12) · RSS máx  1068 MB · arranque calmado: no se calmó en 60 s s

@@ -1,0 +1,4 @@
+### antes-e1000 · 17/11/2026 19:55 · NIC: 82540EM
+ronda 1: 4.73 Gbit/s · CPU del host 28,4 % · 6,0 % de CPU por cada Gbit/s
+ronda 2: 4.73 Gbit/s · CPU del host 28,2 % · 6,0 % de CPU por cada Gbit/s
+ronda 3: 4.75 Gbit/s · CPU del host 27,5 % · 5,8 % de CPU por cada Gbit/s

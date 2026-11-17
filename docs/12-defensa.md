@@ -43,6 +43,7 @@ Si la red falla, la **consola de VirtualBox** (doble clic en la VM) siempre func
 | **MikroTik** | `/interface print` · `/ip address print` · `/ip route print` · `/ip firewall nat print` | `/log print` | `/system backup load name=copia-nas.backup` |
 | **OPNsense** | *Interfaces → Overview* | *Firewall → Log Files → Live View* | *System → Configuration → History* → revert |
 | **RAID (mdadm)** | `cat /proc/mdstat` · `mdadm --detail /dev/md5` | `journalctl -k \| grep md` | `--fail` → `--remove` → `--add` |
+| **Espejo DRBD** | `cat /proc/drbd` (`cs:` conexión, `ro:` roles, `ds:` datos) · `drbdadm role r0` | `dmesg \| grep drbd` | Caída del primario: en el otro `drbdadm primary r0` + `mount /dev/drbd0 /srv/espejo` · desconectado: `drbdadm up r0` / `connect r0` · split-brain: `drbdadm connect --discard-my-data r0` en el nodo que pierde |
 | **Proxmox** | `pvecm status` · `pct list` · `qm list` | `journalctl -u pve-cluster -u corosync` | `pct start` · `pct restore` desde `nas-copias` |
 | **TrueNAS** | `zpool status copias` | *System → Audit / Alerts* | Sustituir disco del espejo (*Storage → Replace*) |
 | **Windows Server** | `Get-Service NTDS,DNS,ADWS` · `dcdiag /q` | Visor de eventos → *Directory Service*, *DNS Server* | `Restart-Service` · instantánea · medio IFM |
@@ -58,6 +59,8 @@ Si la red falla, la **consola de VirtualBox** (doble clic en la VM) siempre func
 | `nftables.conf` roto | `nft -c -f` | `etc.tgz` del NAS | [debian-srv §7](06-installacio/debian-srv.md) |
 | Línea errónea en `/etc/fstab` → no arranca | Consola: modo de emergencia | Comentar la línea, `findmnt --verify` | [10 · incidencia provocada](10-incidencies.md) |
 | Disco del RAID roto / desconectado | `/proc/mdstat` | `mdadm --add` | [07 §3](07-emmagatzematge-raid.md) |
+| Se cae DEB13-SRV2 (servidor de ficheros) | `cat /proc/drbd` en SRV3 → `WFConnection`, `Unknown` | Promocionar SRV3 y montar; al volver SRV2 se resincroniza solo | [07 §7](07-emmagatzematge-raid.md) |
+| Red lenta entre VMs | `iperf3` | Tarjeta virtio en lugar de e1000 | [08 §5.1](08-rendiment.md) |
 | Nodo Proxmox apagado | `pvecm status` | El clúster sigue con 2/3; migrar o restaurar | [proxmox](06-installacio/proxmox.md) |
 | Cable virtual desconectado (VirtualBox) | `ip -br a` → `NO-CARRIER` | *Configuración → Red → Cable conectado* / `VBoxManage controlvm <vm> setlinkstate1 on` | — |
 | IP o gateway cambiados en un cliente | `ip a` / `ip route` | Volver a los datos de [04-disseny](04-disseny.md) | — |
@@ -74,8 +77,23 @@ Las preguntas con su respuesta están al final de cada documento («Preguntas pr
 | NAS, ZFS, espejo frente a copia | [truenas](06-installacio/truenas.md) |
 | Clúster, quórum, contenedor frente a VM, migración | [proxmox](06-installacio/proxmox.md) |
 | Dominio, DNS, Kerberos, canal seguro | [windows-server](06-installacio/windows-server.md) · [clients](06-installacio/clients.md) |
-| RAID 0/1/5, reconstrucción, disco de reserva | [07](07-emmagatzematge-raid.md) |
-| Rendimiento, cuellos de botella | [02](02-inventari.md) · [08](08-rendiment.md) |
+| RAID 0/1/5, reconstrucción, disco de reserva, espejo por red (DRBD) | [07](07-emmagatzematge-raid.md) |
+| Rendimiento, cuellos de botella, cuántas VMs, virtio, caché del host | [02](02-inventari.md) · [08](08-rendiment.md) |
 | RTO, RPO, contingencia | [09](09-contingencia.md) |
 
-**Conceptos que tengo que saber explicar sin mirar:** hipervisor tipo 1 y tipo 2 · NAT frente a red interna frente a puente · máscara /24 y gateway · DNS directo e inverso · qué es un dominio · RAID frente a copia · RTO/RPO · quórum · *thin provisioning* (VDI dinámico) · `iowait` · swap · SHA256.
+**Conceptos que tengo que saber explicar sin mirar:** hipervisor tipo 1 y tipo 2 · NAT frente a red interna frente a puente · máscara /24 y gateway · DNS directo e inverso · qué es un dominio · RAID frente a copia · RTO/RPO · quórum · *thin provisioning* (VDI dinámico) · `iowait` · swap · SHA256 · paravirtualización (virtio) · caché de escritura y `fsync` · DRBD y split-brain.
+
+## 6. Las 10 cifras que conviene saber de memoria
+
+| Cifra | Qué demuestra |
+|---|---|
+| **26 s** | Recuperar el MikroTik con la configuración borrada (RTO objetivo 5 min) |
+| **8 ms** | Corte de una migración en caliente de VM en Proxmox (el contenedor: ~84 s) |
+| **2 de 3** | Quórum: el clúster sigue con un nodo caído |
+| **54 s / 15 s / 21 s** | Reconstrucción RAID 1 / RAID 5 / disco de reserva automático |
+| **~13 s · RPO 0** | Caída del servidor de ficheros con DRBD hasta tener los datos en el otro |
+| **399 MB/s** | Techo del SSD por USB: el cuello de botella con carga |
+| **iowait 82 %** | Pico al arrancar DEB13-CLI: el disco, no la CPU |
+| **5 VMs / ~11 GB** | Lo que aguanta mi PC de casa (límite: RAM) |
+| **4,7 → 12,3 Gbit/s** | Optimización 1: virtio-net |
+| **×80 en `fsync`** | Optimización 2: caché del host… revertida por seguridad de los datos |

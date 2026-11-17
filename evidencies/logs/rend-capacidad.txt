@@ -1,0 +1,11 @@
+### Prueba de capacidad 17/11/2026 19:49 · host 16 GB (15 859 MB) · en el host: escritorio + Firefox + Chrome + terminal
+Regla: solo se arranca la VM si (RAM disponible - RAM asignada a la VM) >= 1024 MB (reserva mínima para el host)
+Encendidas: Mikrotik-IND (512) + DEB13-SRV2 (1024) + DEB13-SRV3 (1024) = 2560 MB asignados · disponible: 6626 MB · swap: 0 MB
+✓ DEB13-SRV1-NFT (2048 MB) arrancada · asignado total 4608 MB · 90 s después: disponible 5899 MB · swap 0 MB · carga 1 min: 1.63
+✓ OPNsense (2048 MB) arrancada · asignado total 6656 MB · 90 s después: disponible 3858 MB · swap 4 MB · carga 1 min: 0.78
+✗ TrueNas (4096 MB): NO cabe → disponible 3853 MB - 4096 MB = -243 MB < 1024 MB de reserva. No se arranca.
+✗ WS2025-DC (4096 MB): NO cabe → disponible 3849 MB - 4096 MB = -247 MB < 1024 MB de reserva. No se arranca.
+VMs encendidas: DEB13-SRV1-NFT Mikrotik-IND OPNsense DEB13-SRV3 DEB13-SRV2 
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:           15859       12012         211         199        4172        3847
+Inter:         12156           4       12152

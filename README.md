@@ -14,8 +14,12 @@
 ![Proxmox](https://img.shields.io/badge/Proxmox_VE-9.2-E57000?style=for-the-badge&logo=proxmox&logoColor=white)
 ![Windows Server](https://img.shields.io/badge/Windows_Server-2025-0078D4?style=for-the-badge&logo=windows&logoColor=white)
 ![Windows 11](https://img.shields.io/badge/Windows-11_Pro-0078D4?style=for-the-badge&logo=windows11&logoColor=white)
+<br>
+![mdadm](https://img.shields.io/badge/RAID-0%20%C2%B7%201%20%C2%B7%205-5C2D91?style=for-the-badge&logo=linux&logoColor=white)
+![DRBD](https://img.shields.io/badge/DRBD-espejo%20por%20red-BE185D?style=for-the-badge&logo=linux&logoColor=white)
+![Estado](https://img.shields.io/badge/estado-Apte%20%2B%20Apte%2B-2EA44F?style=for-the-badge)
 
-*Simulación en VirtualBox del sistema informático de la empresa: tres servidores de comunicaciones, NAS con copias automáticas, clúster de virtualización, dominio de Active Directory y clientes, con RAID, medidas de rendimiento y plan de contingencia.*
+*Simulación en VirtualBox del sistema informático de la empresa: tres servidores de comunicaciones, NAS con copias automáticas, clúster de virtualización, dominio de Active Directory y clientes, con RAID local y por red, medidas de rendimiento con optimizaciones y plan de contingencia probado.*
 
 </div>
 
@@ -29,6 +33,8 @@
 | 🗄️ **Datos** | TrueNAS con pool **espejo** `copias` → recibe cada noche las configuraciones de los equipos y las imágenes de las VMs |
 | 🧱 **Virtualización** | Clúster Proxmox **`asix23`** de 3 nodos: contenedor `srv-infra` (intranet) y VM de prueba. Migración en caliente con **8 ms** de corte |
 | 👥 **Identidades** | Windows Server 2025 como **DC + DNS**, OUs por departamento, Windows 11 unido al dominio |
+| 💽 **Almacenamiento** | RAID **0, 1 y 5** con `mdadm` (fallos y reconstrucción probados) + **espejo por red DRBD** entre dos servidores: el servicio vuelve en **~13 s** con RPO 0 |
+| 📈 **Rendimiento** | 10 VMs medidas una a una, carga por recurso, **límite real: ~11 GB de VMs** en casa. 2 optimizaciones medidas: **virtio-net ×2,6** y caché del host (revertida, y por qué) |
 | 🔒 **Seguridad** | Credenciales fuera del repo + *hook* que bloquea cualquier commit con contraseñas |
 
 ## 🗺️ Esquema de red
@@ -55,6 +61,7 @@ flowchart TB
     PVE2 <-. clúster .-> PVE3
     SW --- S2[🐧 DEB13-SRV2<br/>ficheros + RAID <b>.21</b>]
     SW --- S3[🐧 DEB13-SRV3<br/>web <b>.22</b>]
+    S2 == espejo DRBD ==> S3
     PVE2 --- CT[📦 srv-infra LXC<br/>intranet <b>.30</b>]
     SW --- DC[🏢 WS2025-DC<br/>AD DS + DNS <b>.20</b>]
     SW --- C1[💻 W11-CLI<br/>Administración <b>.51</b>]
@@ -77,8 +84,8 @@ flowchart TB
 | `192.168.23.12` | PMX2 | Proxmox VE 9.2 · nodo 2 del clúster `asix23` | ✅ |
 | `192.168.23.13` | PMX3 | Proxmox VE 9.2 · nodo 3 del clúster `asix23` | ✅ |
 | `192.168.23.20` | WS2025-DC | Windows Server 2025 · AD DS + DNS (`asix23.lan`) | ✅ |
-| `192.168.23.21` | DEB13-SRV2 | Debian 13 · ficheros + **RAID 0/1/5** (mdadm) | ✅ |
-| `192.168.23.22` | DEB13-SRV3 | Debian 13 · web Apache | ✅ |
+| `192.168.23.21` | DEB13-SRV2 | Debian 13 · ficheros + **RAID 0/1/5** (mdadm) + DRBD primario | ✅ |
+| `192.168.23.22` | DEB13-SRV3 | Debian 13 · web Apache + DRBD secundario | ✅ |
 | `192.168.23.30` | srv-infra (LXC) | Servidor de infraestructura · intranet nginx | ✅ |
 | `192.168.23.51` | W11-CLI | Windows 11 Pro · Administración · en el dominio | ✅ |
 | `192.168.23.54` | DEB13-CLI | Debian 13 · Informática · cliente de pruebas | ✅ |
@@ -91,14 +98,34 @@ Máscara `255.255.255.0` · Asignación **fija** en todos (no hay DHCP en LAN23)
 | Tarea | Qué pide | Estado |
 |---|---|:---:|
 | **Tasca 0** | Entorno de pruebas + repositorio Git | ✅ |
-| **Tasca 2** | Inventario, diagnósticos y cuellos de botella | 🟡 casa ✅ (cuello de botella: SSD por USB) · falta clase |
+| **Tasca 2** | Inventario, diagnósticos y cuellos de botella | 🟡 casa ✅ (con SMART) · clase: se ejecuta en el aula el 18/11 |
 | **Tasca 4** | Diseño físico y lógico, recursos | ✅ |
 | **Tasca 5** | Instalación y comunicaciones | ✅ |
-| **Tasca 6** | RAID 0/1/5 | ✅ Apte · ⬜ Apte+ (espejo entre 2 equipos) |
-| **Tasca 7** | Rendimiento y optimizaciones | ⬜ |
-| **Contingencia** | RTO/RPO y recuperaciones | 🟡 plan hecho con tiempos reales |
+| **Tasca 6** | RAID 0/1/5 · espejo entre 2 equipos | ✅ Apte · ✅ Apte+ (DRBD) |
+| **Tasca 7** | Rendimiento y optimizaciones | ✅ Apte · ✅ Apte+ |
+| **Contingencia** | RTO/RPO y recuperaciones | ✅ 13 escenarios, 9 probados con tiempos reales |
+| **Tasca 8** | Preparación del caso práctico | ✅ guía y banco de preguntas · simulacro en el aula el 18/11 |
 
 <sub>✅ hecho · 🟡 en curso · ⬜ pendiente · 🧪 simulado — detalle ítem a ítem en [PROGRESO.md](PROGRESO.md)</sub>
+
+## 🧭 Guía rápida para la evaluación
+
+Cada ítem de las tareas individuales con **dónde está la evidencia** (detalle y estado ítem a ítem en [PROGRESO.md](PROGRESO.md)):
+
+| Tarea · nivel | Ítem | Evidencia |
+|---|---|---|
+| T0 · Apte / Apte+ | Entorno que simula el del grupo · repo documentado | Este repositorio · [04 · Diseño](docs/04-disseny.md) · [10 · Incidencias](docs/10-incidencies.md) |
+| T2 · Apte | Inventario y comparativa clase/casa, cuellos de botella | [02 · Inventario](docs/02-inventari.md) · [`inventari-casa.txt`](evidencies/logs/inventari-casa.txt) |
+| T2 · Apte+ | Tests de memoria, disco y red interpretados | [02 · Diagnósticos](docs/02-inventari.md#diagnósticos-apte) |
+| T4 · Apte | Esquema de red y tabla de recursos | [04](docs/04-disseny.md) · [05](docs/05-recursos.md) · [diagrama](diagrames/esquema-red.png) |
+| T4 · Apte+ | Conectividad verificada | [04](docs/04-disseny.md) · `evidencies/logs/prueba-gw-*.txt` |
+| T5 · Apte | 3 routers, NAS, Proxmox, Windows Server, Linux, clientes; permitido/bloqueado; SHA256; incidencia | [06 · Instalación](docs/06-installacio/README.md) · [03 · Sistemas](docs/03-sistemes.md) · [10](docs/10-incidencies.md) |
+| T5 · Apte+ | Copias automáticas de configuraciones | [truenas §6](docs/06-installacio/truenas.md#6-copias-automáticas-de-las-configuraciones-críticas-apte) |
+| T6 · Apte | RAID 0, 1 y 5 verificados con fallo | [07 §1–6](docs/07-emmagatzematge-raid.md) |
+| T6 · Apte+ | RAID en espejo entre 2 equipos + caso de uso | [07 §7 · DRBD](docs/07-emmagatzematge-raid.md#7-apte-raid-en-espejo-entre-dos-equipos) |
+| T7 · Apte | Línea base, carga, qué VM satura qué, cuántas VMs | [08 §1–4](docs/08-rendiment.md) |
+| T7 · Apte+ | 2 optimizaciones con antes/después | [08 §5](docs/08-rendiment.md#5-apte-dos-optimizaciones-antes-y-después) |
+| Transversal | Predicciones · contingencia RTO/RPO · Tasca 8 | [00](docs/00-prediccions.md) · [09](docs/09-contingencia.md) · [12](docs/12-defensa.md) |
 
 ## 📚 Documentación
 
@@ -111,10 +138,10 @@ Máscara `255.255.255.0` · Asignación **fija** en todos (no hay DHCP en LAN23)
 | 📐 | [04 · Diseño](docs/04-disseny.md) | Esquema lógico, interfaces, clúster |
 | 📊 | [05 · Recursos](docs/05-recursos.md) | Tabla de VMs, RAM simultánea, escenarios |
 | ⚙️ | [06 · Instalación](docs/06-installacio/README.md) | **Una guía por máquina** (ver abajo) |
-| 💽 | [07 · RAID](docs/07-emmagatzematge-raid.md) | RAID 0, 1 y 5, fallo y reconstrucción |
-| 📈 | [08 · Rendimiento](docs/08-rendiment.md) | Línea base, carga y optimizaciones |
+| 💽 | [07 · RAID](docs/07-emmagatzematge-raid.md) | RAID 0, 1 y 5, fallo y reconstrucción · **espejo por red DRBD** |
+| 📈 | [08 · Rendimiento](docs/08-rendiment.md) | Línea base, cada VM, carga por recurso, cuántas VMs, 2 optimizaciones |
 | 🚑 | [09 · Contingencia](docs/09-contingencia.md) | RTO/RPO y recuperaciones probadas |
-| 🐞 | [10 · Incidencias](docs/10-incidencies.md) | 16 problemas reales y cómo se resolvieron |
+| 🐞 | [10 · Incidencias](docs/10-incidencies.md) | 25 problemas reales y cómo se resolvieron |
 | 🤖 | 🎯 | [12 · Defensa](docs/12-defensa.md) | Guía de intervención para la Tasca 8 y banco de preguntas |
 
 <details>
@@ -128,6 +155,7 @@ Máscara `255.255.255.0` · Asignación **fija** en todos (no hay DHCP en LAN23)
 | [TrueNAS](docs/06-installacio/truenas.md) | Pool espejo, NFS, **copias automáticas "pull"** |
 | [Proxmox](docs/06-installacio/proxmox.md) | Clúster, contenedor vs VM, **migraciones medidas**, vzdump al NAS |
 | [Windows Server](docs/06-installacio/windows-server.md) | Dominio `asix23.lan`, OUs, DNS, copia del AD |
+| [Debian servidores](docs/06-installacio/debian-servidors.md) | SRV2 (ficheros + RAID + DRBD) y SRV3 (web), instalación desatendida |
 | [Clientes](docs/06-installacio/clients.md) | Windows 11 en el dominio, Debian de pruebas |
 
 </details>
@@ -144,6 +172,10 @@ Máscara `255.255.255.0` · Asignación **fija** en todos (no hay DHCP en LAN23)
 | Copia completa del contenedor al NAS | 205 MB en 47 s |
 | Copia del Directorio Activo (IFM) al NAS | 4,9 MB |
 | Cuello de botella del host (3 instalaciones a la vez) | CPU 80 % libre, **13–16 % esperando al disco** → el SSD SATA |
+| RAID 1 / RAID 5 sin un disco | 0 lecturas fallidas · reconstrucción en **54 s / 15 s** · disco de reserva automático en **21 s** |
+| **Caída de un servidor entero** (DRBD) | Datos montados en el otro en **~13 s**, SHA256 idéntico, al volver solo copia lo cambiado (206 MB en 25 s) |
+| Red entre VMs: e1000 → **virtio** | **4,74 → 12,3 Gbit/s**, la mitad de CPU por Gbit/s |
+| ¿Cuántas VMs aguanta el PC de casa? | **~11 GB** de VMs (5 VMs con el navegador abierto). Límite: RAM; con carga, el disco (399 MB/s por USB) |
 
 </details>
 
@@ -154,8 +186,8 @@ Máscara `255.255.255.0` · Asignación **fija** en todos (no hay DHCP en LAN23)
 docs/          documentación por tarea (nombres de archivo del enunciado)
 diagrames/     esquemas .mmd y sus exportaciones
 evidencies/    captures/<máquina>/*.png  y  logs/*.txt (salidas reales de comandos)
-configs/       configuraciones exportadas SIN credenciales (MikroTik, nftables…)
-scripts/       automatización: copias, cambio de gateway, control de VMs, Windows…
+configs/       configuraciones exportadas SIN credenciales (MikroTik, nftables, DRBD…)
+scripts/       automatización: copias, cambio de gateway, inventario, medidas de rendimiento, control de VMs, Windows…
 ```
 
 </details>

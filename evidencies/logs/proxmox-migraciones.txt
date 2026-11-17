@@ -1,0 +1,69 @@
+### Migraciones en el clúster asix23 — 17/11/2026 11:48
+
+# Espacio ocupado ANTES (lvs: tamaño asignado y % realmente usado del disco thin)
+  LV            LSize    Data% 
+  vm-100-disk-0 4096.00m 22.58 
+  vm-101-disk-0 2048.00m 0.00  
+
+# 1) CONTENEDOR 100 (srv-infra) pmx1 -> pmx2  [pct migrate --restart]
+2026-11-17 11:48:06 starting migration of CT 100 to node 'pmx2' (192.168.23.12)
+2026-11-17 11:48:10 270073856 bytes (270 MB, 258 MiB) copied, 3 s, 90.0 MB/s
+2026-11-17 11:48:13 874512384 bytes (875 MB, 834 MiB) copied, 6 s, 146 MB/s
+2026-11-17 11:48:16 1727004672 bytes (1.7 GB, 1.6 GiB) copied, 9 s, 192 MB/s
+2026-11-17 11:48:18 2013331456 bytes (2.0 GB, 1.9 GiB) copied, 12 s, 168 MB/s
+2026-11-17 11:48:19 2013462528 bytes (2.0 GB, 1.9 GiB) copied, 12 s, 166 MB/s
+2026-11-17 11:48:22 2040201216 bytes (2.0 GB, 1.9 GiB) copied, 15 s, 135 MB/s
+2026-11-17 11:48:25 2183593984 bytes (2.2 GB, 2.0 GiB) copied, 18 s, 121 MB/s
+2026-11-17 11:48:28 2470772736 bytes (2.5 GB, 2.3 GiB) copied, 21 s, 116 MB/s
+2026-11-17 11:48:31 2529099776 bytes (2.5 GB, 2.4 GiB) copied, 24 s, 105 MB/s
+2026-11-17 11:48:34 2548498432 bytes (2.5 GB, 2.4 GiB) copied, 27 s, 94.0 MB/s
+2026-11-17 11:48:37 2592669696 bytes (2.6 GB, 2.4 GiB) copied, 30 s, 86.0 MB/s
+2026-11-17 11:48:40 2618359808 bytes (2.6 GB, 2.4 GiB) copied, 33 s, 79.3 MB/s
+2026-11-17 11:48:43 2658992128 bytes (2.7 GB, 2.5 GiB) copied, 36 s, 73.8 MB/s
+2026-11-17 11:48:46 2711814144 bytes (2.7 GB, 2.5 GiB) copied, 39 s, 69.5 MB/s
+2026-11-17 11:48:49 2763718656 bytes (2.8 GB, 2.6 GiB) copied, 42 s, 65.8 MB/s
+2026-11-17 11:48:52 2800812032 bytes (2.8 GB, 2.6 GiB) copied, 45 s, 62.2 MB/s
+2026-11-17 11:48:55 2841051136 bytes (2.8 GB, 2.6 GiB) copied, 48 s, 59.2 MB/s
+2026-11-17 11:48:58 2845114368 bytes (2.8 GB, 2.6 GiB) copied, 51 s, 55.7 MB/s
+2026-11-17 11:49:01 2884239360 bytes (2.9 GB, 2.7 GiB) copied, 54 s, 53.4 MB/s
+2026-11-17 11:49:04 2920480768 bytes (2.9 GB, 2.7 GiB) copied, 57 s, 51.2 MB/s
+2026-11-17 11:49:07 2959409152 bytes (3.0 GB, 2.8 GiB) copied, 60 s, 49.3 MB/s
+2026-11-17 11:49:15 4294967296 bytes (4.3 GB, 4.0 GiB) copied, 68.6317 s, 62.6 MB/s
+2026-11-17 11:49:26 4294967296 bytes (4.3 GB, 4.0 GiB) copied, 78.4929 s, 54.7 MB/s
+2026-11-17 11:49:27 start final cleanup
+2026-11-17 11:49:27 start container on target node
+2026-11-17 11:49:27 # /usr/bin/ssh -e none -o 'BatchMode=yes' -o 'HostKeyAlias=pmx2' -o 'UserKnownHostsFile=/etc/pve/nodes/pmx2/ssh_known_hosts' -o 'GlobalKnownHostsFile=none' root@192.168.23.12 pct start 100
+2026-11-17 11:49:29 migration finished successfully (duration 00:01:25)
+
+real	1m25.696s
+user	0m3.863s
+sys	0m11.617s
+
+# Intranet medida desde TrueNAS (curl cada ~1 s): sin servicio desde 12:23:28 hasta 12:24:52 = ~84 s (la hora del NAS va 1 h adelantada, ver incidencia 13)
+12:23:28 CAIDO
+12:24:52 CAIDO
+
+# Contenedor 100 después de migrar
+VMID       Status     Lock         Name                
+100        running                 srv-infra           
+srv-infra
+
+# 2) MÁQUINA VIRTUAL 101 (vm-prueba) pmx1 -> pmx2 EN CALIENTE  [qm migrate --online --with-local-disks]
+2026-11-17 11:51:02 starting migration of VM 101 to node 'pmx2' (192.168.23.12)
+2026-11-17 11:51:08 migration downtime limit: 100 ms
+2026-11-17 11:51:09 average migration speed: 528.8 MiB/s - downtime 8 ms
+2026-11-17 11:51:09 migration status: completed
+2026-11-17 11:51:14 migration finished successfully (duration 00:00:12)
+
+real	0m12.718s
+user	0m0.638s
+sys	0m0.361s
+
+# VM 101 después de migrar
+      VMID NAME                 STATUS     MEM(MB)    BOOTDISK(GB) PID       
+       101 vm-prueba            running    512                2.00 3430      
+
+# Espacio en PMX2 después (lvs)
+  LV            LSize     Data% 
+  vm-100-disk-0  4096.00m 20.35 
+  vm-101-disk-0  2048.00m 100.00

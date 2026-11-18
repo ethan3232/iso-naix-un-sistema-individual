@@ -104,7 +104,7 @@ Máscara `255.255.255.0` · Asignación **fija** en todos (no hay DHCP en LAN23)
 | **Tasca 6** | RAID 0/1/5 · espejo entre 2 equipos | ✅ Apte · ✅ Apte+ (DRBD) |
 | **Tasca 7** | Rendimiento y optimizaciones | ✅ Apte · ✅ Apte+ |
 | **Contingencia** | RTO/RPO y recuperaciones | ✅ 13 escenarios, 9 probados con tiempos reales |
-| **Tasca 8** | Preparación del caso práctico | ✅ guía y banco de preguntas · simulacro en el aula el 18/11 |
+| **Tasca 8** | Preparación del caso práctico | ✅ guía y banco de preguntas (+ aviso del ICMP filtrado en el aula) |
 
 <sub>✅ hecho · 🟡 en curso · ⬜ pendiente · 🧪 simulado — detalle ítem a ítem en [PROGRESO.md](PROGRESO.md)</sub>
 

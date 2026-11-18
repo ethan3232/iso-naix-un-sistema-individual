@@ -40,6 +40,8 @@ El host (Linux Mint + escritorio + navegador + terminal) ya se queda **~3,2 GB**
 
 Cada VM se arranca **sola**, se mide 120 s y se apaga por ACPI antes de la siguiente ([`rend-por-vm.txt`](../evidencies/logs/rend-por-vm.txt), [`rend-ram-real.txt`](../evidencies/logs/rend-ram-real.txt)).
 
+Datos en bruto de cada medición (una muestra cada 2 s): `evidencies/logs/rend-<VM>-solo.csv` y `rend-DEB13-SRV2-carga-*.csv` · resumen: [`rend-resumen.txt`](../evidencies/logs/rend-resumen.txt).
+
 | VM | RAM asignada | **RAM real** (caída de la disponible) | Pico CPU (hilos de 12) | Disco en el arranque | Arranque calmado* |
 |---|---:|---:|---:|---:|---:|
 | Mikrotik-IND | 512 MB | **108 MB** | 0,7 | 38 MB | 8 s |

@@ -65,7 +65,7 @@ Después del reinicio:
 
 **¿Por qué `.lan` y no `.local`?** `.local` está reservado para mDNS (Bonjour/Avahi) y da conflictos con Linux y macOS. Microsoft recomienda usar un subdominio de un dominio propio; en el laboratorio usamos `.lan`, que no es un dominio público.
 
-### Verificación ([log completo](../../evidencies/logs/ws2025-dc-dominio.txt))
+### Verificación ([log completo](../../evidencies/logs/ws2025-dc-dominio.txt) · [registros DNS de la zona](../../evidencies/logs/ws2025-dns-registros.txt))
 
 ```
 ADWS     Running Servicios web de Active Directory

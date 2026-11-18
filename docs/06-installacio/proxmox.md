@@ -35,6 +35,12 @@ PMX1 ya estaba instalado, pero **no se conocía la contraseña de root** → se 
 ![Resumen de la instalación de PMX1](../../evidencies/captures/proxmox/01-pmx1-resumen-instalacion.png)
 *Demuestra: opciones elegidas en la instalación de PMX1 (ext4, Europe/Madrid, teclado español, 192.168.23.11/24).*
 
+| PMX2 | PMX3 |
+|---|---|
+| ![Resumen de la instalación de PMX2](../../evidencies/captures/proxmox/02-pmx2-resumen-instalacion.png) | ![Resumen de la instalación de PMX3](../../evidencies/captures/proxmox/04-pmx3-resumen-instalacion.png) |
+
+*Demuestra: los otros dos nodos se instalaron con las mismas opciones, cada uno con su IP (192.168.23.12 y .13).*
+
 ## 3. Usuario de administración
 
 `root@pam` (usuario Linux del sistema, obligatorio en Proxmox). Acceso remoto por SSH con clave y por la web.

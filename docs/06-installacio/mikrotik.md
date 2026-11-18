@@ -102,6 +102,8 @@ Prueba desde el cliente `DEB13-CLI` (192.168.23.54) con gateway .1 — salida co
 
 > **Nota sobre `ping` a Internet**: el ping desde las VMs a Internet no responde. No es culpa del router: la NAT de VirtualBox en Linux necesita que el anfitrión permita ICMP sin privilegios (`net.ipv4.ping_group_range`). Por eso se usa `traceroute -T` (TCP), que sí funciona. Ver [incidencias](../10-incidencies.md).
 
+Configuración completa aplicada (direcciones, rutas, NAT, cortafuegos, sin contraseñas): [`mikrotik-config.txt`](../../evidencies/logs/mikrotik-config.txt).
+
 ## 6. Copia de seguridad y vuelta atrás
 
 | Copia | Cómo | Para qué |

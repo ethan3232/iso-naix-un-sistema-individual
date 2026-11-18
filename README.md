@@ -37,6 +37,10 @@
 | 📈 **Rendimiento** | 10 VMs medidas una a una, carga por recurso, **límite real: ~11 GB de VMs** en casa. 2 optimizaciones medidas: **virtio-net ×2,6** y caché del host (revertida, y por qué) |
 | 🔒 **Seguridad** | Credenciales fuera del repo + *hook* que bloquea cualquier commit con contraseñas |
 
+## 📦 Entrega por tareas
+
+Cada tarea tiene su ficha con lo que pide el enunciado, lo que he hecho, los resultados, las evidencias y las preguntas de la defensa: **[Proyecto-por-Tareas](Proyecto-por-Tareas/README.md)**.
+
 ## 🗺️ Esquema de red
 
 <div align="center"><img src="diagrames/esquema-red.png" alt="Esquema de red" width="780"></div>
@@ -156,7 +160,8 @@ Cada ítem de las tareas individuales con **dónde está la evidencia** (detalle
 
 ```
 docs/          documentación por tarea (nombres de archivo del enunciado)
-diagrames/     esquemas .mmd y sus exportaciones
+Proyecto-por-Tareas/  una ficha por tarea para la entrega
+diagrames/     esquemas (scripts .py → SVG y PNG con generar.sh)
 evidencies/    captures/<máquina>/*.png  y  logs/*.txt (salidas reales de comandos)
 configs/       configuraciones exportadas SIN credenciales (MikroTik, nftables, DRBD…)
 scripts/       automatización: copias, cambio de gateway, inventario, medidas de rendimiento, control de VMs, Windows…

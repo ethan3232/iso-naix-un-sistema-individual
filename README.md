@@ -54,23 +54,27 @@ flowchart TB
     OPN -.-> SW
     DEB -.-> SW
     SW --- NAS[🗄️ TrueNas<br/><b>.10</b>]
-    SW --- PVE1[🧱 PMX1 <b>.11</b>]
-    SW --- PVE2[🧱 PMX2 <b>.12</b>]
-    SW --- PVE3[🧱 PMX3 <b>.13</b>]
-    PVE1 <-. clúster asix23 .-> PVE2
-    PVE2 <-. clúster .-> PVE3
-    SW --- S2[🐧 DEB13-SRV2<br/>ficheros + RAID <b>.21</b>]
-    SW --- S3[🐧 DEB13-SRV3<br/>web <b>.22</b>]
+    subgraph CL["🧱 Clúster Proxmox asix23 · 🧪 = simulado (VM de VirtualBox con la misma IP)"]
+        subgraph PVE1["PMX1 .11"]
+            S2[🧪 DEB13-SRV2<br/>ficheros + RAID <b>.21</b>]
+        end
+        subgraph PVE2["PMX2 .12"]
+            CT[📦 srv-infra LXC<br/>intranet <b>.30</b>]
+            DC[🧪 WS2025-DC<br/>AD DS + DNS <b>.20</b>]
+        end
+        subgraph PVE3["PMX3 .13"]
+            S3[🧪 DEB13-SRV3<br/>web <b>.22</b>]
+        end
+    end
+    SW --- CL
     S2 == espejo DRBD ==> S3
-    PVE2 --- CT[📦 srv-infra LXC<br/>intranet <b>.30</b>]
-    SW --- DC[🏢 WS2025-DC<br/>AD DS + DNS <b>.20</b>]
     SW --- C1[💻 W11-CLI<br/>Administración <b>.51</b>]
     SW --- C2[🐧 DEB13-CLI<br/>Informática <b>.54</b>]
 ```
 
 </details>
 
-<sub>Línea gruesa: gateway activo · línea discontinua: gateways alternativos (se prueban de uno en uno con `scripts/canvi-gw.sh`).</sub>
+<sub>Línea gruesa: gateway activo · línea discontinua: gateways alternativos (se prueban de uno en uno con `scripts/canvi-gw.sh`) · 🧪 borde discontinuo: SRV2, SRV3 y WS2025-DC van **dentro del clúster en el diseño**; por falta de RAM son VMs de VirtualBox en LAN23 con la misma IP ([04 §5.1](docs/04-disseny.md#51-servidores-dentro-del-clúster-simulados)).</sub>
 
 ## 📇 Direccionamiento
 
@@ -83,9 +87,9 @@ flowchart TB
 | `192.168.23.11` | PMX1 | Proxmox VE 9.2 · nodo 1 del clúster `asix23` | ✅ |
 | `192.168.23.12` | PMX2 | Proxmox VE 9.2 · nodo 2 del clúster `asix23` | ✅ |
 | `192.168.23.13` | PMX3 | Proxmox VE 9.2 · nodo 3 del clúster `asix23` | ✅ |
-| `192.168.23.20` | WS2025-DC | Windows Server 2025 · AD DS + DNS (`asix23.lan`) | ✅ |
-| `192.168.23.21` | DEB13-SRV2 | Debian 13 · ficheros + **RAID 0/1/5** (mdadm) + DRBD primario | ✅ |
-| `192.168.23.22` | DEB13-SRV3 | Debian 13 · web Apache + DRBD secundario | ✅ |
+| `192.168.23.20` | WS2025-DC | Windows Server 2025 · AD DS + DNS (`asix23.lan`) · 🧪 en el diseño, VM en **PMX2** | ✅ |
+| `192.168.23.21` | DEB13-SRV2 | Debian 13 · ficheros + **RAID 0/1/5** (mdadm) + DRBD primario · 🧪 en el diseño, VM en **PMX1** | ✅ |
+| `192.168.23.22` | DEB13-SRV3 | Debian 13 · web Apache + DRBD secundario · 🧪 en el diseño, VM en **PMX3** | ✅ |
 | `192.168.23.30` | srv-infra (LXC) | Servidor de infraestructura · intranet nginx | ✅ |
 | `192.168.23.51` | W11-CLI | Windows 11 Pro · Administración · en el dominio | ✅ |
 | `192.168.23.54` | DEB13-CLI | Debian 13 · Informática · cliente de pruebas | ✅ |

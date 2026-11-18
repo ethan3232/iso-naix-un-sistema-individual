@@ -15,12 +15,14 @@ Host de todas: **eth4n** (Linux Mint 22.3, Core Ultra 5 125H 14C/18T, 30 GiB RAM
 | PMX1 | Virtualización · nodo 1 · .11 | Proxmox VE 9.2 | 2 | 4 GB | 20 GB | LAN23 (promiscuo) | BIOS |
 | PMX2 | Virtualización · nodo 2 · .12 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN23 (promiscuo) | BIOS |
 | PMX3 | Virtualización · nodo 3 · .13 | Proxmox VE 9.2 | 2 | 4 GB | 20 GB | LAN23 (promiscuo) | BIOS |
-| DEB13-SRV2 | Ficheros · RAID 0/1/5 (mdadm) · espejo DRBD · .21 | Debian 13 | 1 | 1 GB | 20 GB + 8 × 1 GB (RAID) + 1 GB (DRBD) | LAN23 (**virtio**) | BIOS |
-| DEB13-SRV3 | Web (Apache) · espejo DRBD · .22 | Debian 13 | 1 | 1 GB | 20 GB + 1 GB (DRBD) | LAN23 (**virtio**) | BIOS |
-| WS2025-DC | Dominio AD DS + DNS · .20 | Windows Server 2025 Std (escritorio) | 2 | 4 GB | 50 GB | LAN23 | **UEFI + TPM 2.0** |
+| DEB13-SRV2 🧪 | Ficheros · RAID 0/1/5 (mdadm) · espejo DRBD · .21 | Debian 13 | 1 | 1 GB | 20 GB + 8 × 1 GB (RAID) + 1 GB (DRBD) | LAN23 (**virtio**) | BIOS |
+| DEB13-SRV3 🧪 | Web (Apache) · espejo DRBD · .22 | Debian 13 | 1 | 1 GB | 20 GB + 1 GB (DRBD) | LAN23 (**virtio**) | BIOS |
+| WS2025-DC 🧪 | Dominio AD DS + DNS · .20 | Windows Server 2025 Std (escritorio) | 2 | 4 GB | 50 GB | LAN23 | **UEFI + TPM 2.0** |
 | (LXC en PMX) | Servidor de infraestructura · .30 | Debian 13 (contenedor) | 1 | 512 MB | 8 GB | vmbr0 → LAN23 | — |
 | W11-CLI | Cliente Administración · .51 | Windows 11 Pro 25H2 | 2 | 4 GB | 64 GB | LAN23 | **UEFI + TPM 2.0** |
 | DEB13-CLI | Cliente Informática · .54 | Debian 13 (GNOME) | 1 | 4 GB | 20 GB | LAN23 | BIOS |
+
+> 🧪 **DEB13-SRV2, DEB13-SRV3 y WS2025-DC** van, en el diseño, **dentro del clúster Proxmox** (PMX1, PMX3 y PMX2). Por falta de RAM para la virtualización anidada se ejecutan como VMs de VirtualBox en LAN23, con la misma IP y función. Explicación y cálculo en [04 §5.1](04-disseny.md#51-servidores-dentro-del-clúster-simulados).
 
 Discos: **VDI de reserva dinámica** (solo ocupan lo que se usa). Ocupación real: ver [inventario](02-inventari.md).
 

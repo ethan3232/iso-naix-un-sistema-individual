@@ -5,7 +5,7 @@
 ## 1. Esquema lógico
 
 ![Esquema de red](../diagrames/esquema-red.png)
-*Esquema de red exportado con Graphviz ([`diagrames/esquema-red.dot`](../diagrames/esquema-red.dot), también en [SVG](../diagrames/esquema-red.svg)). Línea gruesa: gateway activo; discontinua: gateways alternativos.*
+*Esquema de red exportado con Graphviz ([`diagrames/esquema-red.dot`](../diagrames/esquema-red.dot), también en [SVG](../diagrames/esquema-red.svg)). Línea gruesa: gateway activo; discontinua: gateways alternativos. Máquinas con borde discontinuo (🧪): **dentro del clúster en el diseño, simuladas fuera** (ver [§5.1](#51-servidores-dentro-del-clúster-simulados)).*
 
 Versión Mermaid (se dibuja directamente en GitHub, fuente en [`diagrames/esquema-logico.mmd`](../diagrames/esquema-logico.mmd)):
 
@@ -24,13 +24,18 @@ flowchart TB
                 DEB["DEB13-SRV1-NFT .3<br/>nftables"]
             end
             NAS["TrueNas .10<br/>pool espejo 'copias'"]
-            subgraph CL["Clúster Proxmox 'asix23'"]
-                P1["PMX1 .11"]
-                P2["PMX2 .12"]
-                P3["PMX3 .13"]
-                CT["srv-infra .30<br/>LXC · intranet"]
+            subgraph CL["Clúster Proxmox 'asix23' (🧪 = simulado)"]
+                subgraph N1["PMX1 .11"]
+                    S2["🧪 DEB13-SRV2 .21<br/>ficheros + RAID · DRBD primario"]
+                end
+                subgraph N2["PMX2 .12"]
+                    CT["srv-infra .30<br/>LXC · intranet"]
+                    DC["🧪 WS2025-DC .20<br/>AD DS + DNS"]
+                end
+                subgraph N3["PMX3 .13"]
+                    S3["🧪 DEB13-SRV3 .22<br/>web · DRBD secundario"]
+                end
             end
-            DC["WS2025-DC .20<br/>AD DS + DNS"]
             W11["W11-CLI .51<br/>Administración"]
             DCLI["DEB13-CLI .54<br/>Informática"]
         end
@@ -38,10 +43,12 @@ flowchart TB
     INET --- AULA --- NAT
     NAT ---|WAN DHCP| MK & OPN & DEB
     MK ==>|gateway activo| LAN
-    P1 --- CT
+    S2 ==>|espejo DRBD| S3
     NAS -. NFS copias VMs .- CL
     NAS -. pull SSH/API copias config .- COM
     DC -. DNS + autenticación .- W11
+    classDef sim stroke-dasharray: 5 5
+    class S2,S3,DC sim
 ```
 
 ## 2. Esquema "físico" (montaje en VirtualBox)
@@ -57,15 +64,18 @@ Todo corre en **un solo equipo físico**: el portátil de clase (eth4n). Los "ca
 
 ```
                   PC eth4n (Linux Mint)
- ┌──────────────────────────────────────────────────────────────┐
- │  NAT VBox ──[nic1]── Mikrotik-IND ──[nic2]──┐                 │
- │  NAT VBox ──[nic1]── OPNsense     ──[nic2]──┤                 │
- │  NAT VBox ──[nic1]── DEB13-SRV1-NFT    ──[nic2]──┤                 │
- │                                             │                 │
- │                     ════ red interna LAN23 ═╪═══════════════  │
- │                     │      │      │      │      │      │      │
- │                 TrueNas  PMX1  PMX2  PMX3  WS2025  W11  DEB13-CLI
- └──────────────────────────────────────────────────────────────┘
+ ┌────────────────────────────────────────────────────────────────────┐
+ │  NAT VBox ──[nic1]── Mikrotik-IND   ──[nic2]──┐                    │
+ │  NAT VBox ──[nic1]── OPNsense       ──[nic2]──┤                    │
+ │  NAT VBox ──[nic1]── DEB13-SRV1-NFT ──[nic2]──┤                    │
+ │                                               │                    │
+ │      ═════════════════ red interna LAN23 ═════╪══════════════════  │
+ │        │      │     │     │      │      │     │      │       │     │
+ │     TrueNas PMX1  PMX2  PMX3  WS2025-DC SRV2 SRV3   W11  DEB13-CLI │
+ │                               └─────────┬───────┘                  │
+ │                         🧪 en el diseño van DENTRO del clúster     │
+ │                            (PMX2, PMX1 y PMX3); aquí, fuera        │
+ └────────────────────────────────────────────────────────────────────┘
           │ eno1 1 Gbps (172.16.222.207, red del aula)
 ```
 
@@ -125,6 +135,25 @@ Comprobación en cada caso: `ip route` (gateway) + `traceroute -T` (el primer sa
 | Gestión conjunta | ✅ |
 | Migración | ✅ medida ([Proxmox](06-installacio/proxmox.md#8-migraciones-medidas-log-completo)) |
 | Alta disponibilidad | 🧪 Diseño: necesitaría almacenamiento compartido para los **discos** de las VMs (NFS/iSCSI/Ceph) |
+
+### 5.1 Servidores dentro del clúster (simulados)
+
+En el diseño, los servidores de la empresa **no son máquinas sueltas**: corren **dentro del clúster Proxmox**, que es lo que aporta la virtualización (gestión conjunta, copias con `vzdump` al NAS, migración entre nodos). El problema es la RAM: meter VMs dentro de los nodos Proxmox (virtualización anidada) exige dar a cada nodo la RAM de sus VMs **más** la del propio Proxmox, y no cabe.
+
+| Servidor | Ubicación en el diseño | Ubicación real (implementada) | IP (la misma en los dos casos) |
+|---|---|---|---|
+| DEB13-SRV2 (ficheros + RAID + DRBD primario) | VM en **PMX1**, puente `vmbr0` → LAN23 | VM de VirtualBox en LAN23 | .21 |
+| WS2025-DC (AD DS + DNS) | VM en **PMX2**, puente `vmbr0` → LAN23 | VM de VirtualBox en LAN23 | .20 |
+| DEB13-SRV3 (web + DRBD secundario) | VM en **PMX3**, puente `vmbr0` → LAN23 | VM de VirtualBox en LAN23 | .22 |
+| srv-infra (intranet, LXC) | Contenedor en PMX2 | ✅ **Real**, dentro del clúster | .30 |
+
+**Cálculo de por qué no cabe (clase, ~24 GB para VMs):** 3 nodos Proxmox + NAS ≈ 10 GB ya en marcha. Llevar dentro SRV2 (1 GB) + SRV3 (1 GB) + WS2025-DC (4 GB) obliga a subir la RAM de los nodos esos 6 GB más ~1 GB de sobrecarga por nodo, y además Windows dentro de una VM anidada va muy lento (sin aceleración de hardware real). En casa (~10 GB) es imposible.
+
+**¿Por qué la simulación es válida?** Para el resto de la red es **indistinguible**: un puente `vmbr0` de Proxmox conecta la VM a LAN23 igual que el adaptador de VirtualBox, así que la VM tiene la misma IP, la misma puerta de enlace, el mismo DNS y da el mismo servicio. Lo que **no** se puede demostrar con ellas es lo propio del clúster (migrarlas de nodo o copiarlas con `vzdump`); eso se ha demostrado con `srv-infra` y la VM de prueba (101) en [Proxmox](06-installacio/proxmox.md).
+
+**Reparto por nodos:** SRV2 y SRV3 van en **nodos distintos** (PMX1 y PMX3) a propósito: el espejo DRBD solo protege si los dos lados están en **equipos físicos diferentes**. Si los dos estuvieran en el mismo nodo, la caída de ese nodo se llevaría las dos copias. El DC va en PMX2 junto a `srv-infra`, que lo usa como DNS.
+
+> **Pregunta probable de defensa:** *"¿Dónde está tu servidor de ficheros, en el clúster o fuera?"* → En el diseño, dentro del clúster (PMX1). En mi montaje es una VM de VirtualBox en la misma LAN23 y con la misma IP, porque la virtualización anidada no cabe en la RAM. Para la red es lo mismo; lo único que no puedo hacer con ella es migrarla, y eso lo he demostrado con el contenedor `srv-infra`.
 
 ## 6. Decisiones y alternativas
 

@@ -5,7 +5,7 @@
 ## 1. Esquema lógico
 
 ![Esquema de red](../diagrames/esquema-red.png)
-*Esquema de red exportado con Graphviz ([`diagrames/esquema-red.dot`](../diagrames/esquema-red.dot), también en [SVG](../diagrames/esquema-red.svg)). Línea gruesa: gateway activo; discontinua: gateways alternativos. Máquinas con borde discontinuo (🧪): **dentro del clúster en el diseño, simuladas fuera** (ver [§5.1](#51-servidores-dentro-del-clúster-simulados)).*
+*Esquema de red generado con [`diagrames/esquema-red.py`](../diagrames/esquema-red.py) (SVG dibujado con coordenadas fijas; también en [SVG](../diagrames/esquema-red.svg)). Línea gruesa: gateway activo; discontinua: gateways alternativos. Etiqueta **SIMULADO** y borde discontinuo: **dentro del clúster en el diseño, simuladas fuera** (ver [§5.1](#51-servidores-dentro-del-clúster-simulados)).*
 
 Versión Mermaid (se dibuja directamente en GitHub, fuente en [`diagrames/esquema-logico.mmd`](../diagrames/esquema-logico.mmd)):
 

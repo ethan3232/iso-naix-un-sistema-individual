@@ -83,11 +83,11 @@ Se midió con `fio` (escritura y lectura secuencial de 1 MiB, escritura aleatori
 
 **Análisis:** las cifras **no permiten comparar los tipos de RAID**, y saber por qué es parte del resultado:
 
-1. Los 8 "discos" son **ficheros `.vdi` en el mismo SSD físico** del anfitrión (Kingston A400 SATA). Un RAID 0 reparte los datos entre dos discos para escribir en paralelo, pero aquí los dos discos son el mismo hardware: no hay paralelismo real.
+1. Los 8 "discos" son **ficheros `.vdi` en el mismo SSD físico** del anfitrión (Kingston A400 en caja USB). Un RAID 0 reparte los datos entre dos discos para escribir en paralelo, pero aquí los dos discos son el mismo hardware: no hay paralelismo real.
 2. El A400 tiene una caché rápida pequeña. Cuando se llena, la escritura cae a ~15–25 MB/s, y eso se ve igual en **todos** los destinos, incluido el disco solo.
 3. Los VDI son **dinámicos**: la primera escritura en una zona nueva obliga a VirtualBox a hacer crecer el fichero.
 
-👉 **El cuello de botella es el disco del anfitrión**, no el RAID. Esto conecta con la [Tasca 2](02-inventari.md) (SSD SATA frente al NVMe del equipo de casa) y la [Tasca 7](08-rendiment.md).
+👉 **El cuello de botella es el disco del anfitrión**, no el RAID. Esto conecta con la [Tasca 2](02-inventari.md) (el SSD en caja USB da las mismas ~350 IOPS en clase y en casa) y la [Tasca 7](08-rendiment.md).
 
 ## 5. Comparativa: qué ganamos con cada tipo
 

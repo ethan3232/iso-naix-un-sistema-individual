@@ -98,7 +98,7 @@ Máscara `255.255.255.0` · Asignación **fija** en todos (no hay DHCP en LAN23)
 | Tarea | Qué pide | Estado |
 |---|---|:---:|
 | **Tasca 0** | Entorno de pruebas + repositorio Git | ✅ |
-| **Tasca 2** | Inventario, diagnósticos y cuellos de botella | 🟡 casa ✅ (con SMART) · clase: se ejecuta en el aula el 18/11 |
+| **Tasca 2** | Inventario, diagnósticos y cuellos de botella | ✅ clase y casa · mismo SSD por USB en los dos: ~350 IOPS iguales → el límite es el disco, no el PC |
 | **Tasca 4** | Diseño físico y lógico, recursos | ✅ |
 | **Tasca 5** | Instalación y comunicaciones | ✅ |
 | **Tasca 6** | RAID 0/1/5 · espejo entre 2 equipos | ✅ Apte · ✅ Apte+ (DRBD) |
@@ -171,7 +171,7 @@ Cada ítem de las tareas individuales con **dónde está la evidencia** (detalle
 | Migración de un contenedor | 85 s, ~84 s sin servicio (se copia el disco entero) |
 | Copia completa del contenedor al NAS | 205 MB en 47 s |
 | Copia del Directorio Activo (IFM) al NAS | 4,9 MB |
-| Cuello de botella del host (3 instalaciones a la vez) | CPU 80 % libre, **13–16 % esperando al disco** → el SSD SATA |
+| Cuello de botella del host (3 instalaciones a la vez) | CPU 80 % libre, **13–16 % esperando al disco** → el SSD (A400 en caja USB) |
 | RAID 1 / RAID 5 sin un disco | 0 lecturas fallidas · reconstrucción en **54 s / 15 s** · disco de reserva automático en **21 s** |
 | **Caída de un servidor entero** (DRBD) | Datos montados en el otro en **~13 s**, SHA256 idéntico, al volver solo copia lo cambiado (206 MB en 25 s) |
 | Red entre VMs: e1000 → **virtio** | **4,74 → 12,3 Gbit/s**, la mitad de CPU por Gbit/s |

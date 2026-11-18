@@ -1,0 +1,220 @@
+# INVENTARIO DEL EQUIPO: clase — 18/11/2026 08:08 — usuario batoi
+
+==================================================================
+## 1. Sistema y firmware
+==================================================================
+
+$ hostnamectl 2>/dev/null | grep -vE 'Machine ID|Boot ID'
+ Static hostname: eth4n
+       Icon name: computer-laptop
+         Chassis: laptop 💻
+Operating System: Linux Mint 22.3
+          Kernel: Linux 6.8.0-138-generic
+    Architecture: x86-64
+ Hardware Vendor: ASUSTeK COMPUTER INC.
+  Hardware Model: ASUS EXPERTBOOK B3605CCA
+Firmware Version: B3605CCA.303
+   Firmware Date: Wed 2025-06-11
+    Firmware Age: 1y 5month 1w
+
+$ cat /sys/class/dmi/id/sys_vendor /sys/class/dmi/id/product_name /sys/class/dmi/id/board_name /sys/class/dmi/id/bios_vendor /sys/class/dmi/id/bios_version /sys/class/dmi/id/bios_date 2>/dev/null | paste -sd' | '
+ASUSTeK COMPUTER INC. ASUS EXPERTBOOK B3605CCA|B3605CCA ASUSTeK COMPUTER INC. (Licensed by AMI, LLC.) B3605CCA.303|06/11/2025
+
+$ [ -d /sys/firmware/efi ] && echo 'Arranque: UEFI' || echo 'Arranque: BIOS (Legacy)'
+Arranque: UEFI
+
+$ mokutil --sb-state 2>/dev/null || echo 'Secure Boot: N/C (mokutil no disponible)'
+SecureBoot disabled
+
+==================================================================
+## 2. CPU y virtualización
+==================================================================
+
+$ lscpu | grep -E 'Nombre del modelo|Model name|^CPU\(s\)|Núcleo|Core|Hilo|Thread|Socket|MHz máx|max MHz|Virtualiz|L2|L3'
+CPU(s):                                   18
+Nombre del modelo:                        Intel(R) Core(TM) Ultra 5 125H
+Hilo(s) de procesamiento por núcleo:      2
+Núcleo(s) por «socket»:                   14
+«Socket(s)»:                              1
+CPU(s) factor de escala MHz:              41%
+CPU MHz máx.:                             4500.0000
+Virtualización:                           VT-x
+Caché L2:                                 14 MiB (7 instancias)
+Caché L3:                                 18 MiB (1 instancia)
+CPU(s) del nodo NUMA 0:                   0-17
+
+$ echo "Flags de virtualización (vmx=Intel VT-x, svm=AMD-V): $(grep -oE 'vmx|svm' /proc/cpuinfo | sort -u | tr '\n' ' ')"
+Flags de virtualización (vmx=Intel VT-x, svm=AMD-V): vmx 
+
+$ ls -l /dev/kvm 2>&1 | head -1
+crw-rw----+ 1 root kvm 10, 232 nov 18 08:05 /dev/kvm
+
+==================================================================
+## 3. Memoria RAM
+==================================================================
+
+$ free -h
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:            30Gi       4.6Gi        24Gi       978Mi       3.0Gi        26Gi
+Inter:          15Gi          0B        15Gi
+
+$ grep -E 'MemTotal|SwapTotal' /proc/meminfo
+MemTotal:       32083488 kB
+SwapTotal:      16409472 kB
+
+$ swapon --show
+NAME       TYPE      SIZE USED PRIO
+/swapfile  file        8G   0B   -2
+/dev/zram0 partition 7.6G   0B  100
+
+==================================================================
+## 4. Discos y almacenamiento
+==================================================================
+
+$ lsblk -o NAME,SIZE,TYPE,ROTA,TRAN,MODEL,FSTYPE,MOUNTPOINT
+NAME          SIZE TYPE ROTA TRAN   MODEL                      FSTYPE MOUNTPOINT
+sda         894.3G disk    1 usb    KINGSTON SA400S37960G             
+├─sda1        509M part    1                                   vfat   /boot/efi
+├─sda2       58.6G part    1                                   ext4   /
+└─sda3        388G part    1                                   ext4   /home
+zram0         7.6G disk    0                                          [SWAP]
+nvme0n1     953.9G disk    0 nvme   SAMSUNG MZVMA1T0HCLD-00BTW        
+├─nvme0n1p1   260M part    0 nvme                              vfat   
+├─nvme0n1p2    16M part    0 nvme                                     
+├─nvme0n1p3 468.8G part    0 nvme                              ntfs   
+├─nvme0n1p4   1.4G part    0 nvme                              ntfs   
+├─nvme0n1p5   260M part    0 nvme                              vfat   
+├─nvme0n1p6  12.1G part    0 nvme                              ext4   
+└─nvme0n1p7 471.1G part    0 nvme                              ext4   
+
+$ df -h -x tmpfs -x devtmpfs -x squashfs -x efivarfs
+S.ficheros     Tamaño Usados  Disp Uso% Montado en
+/dev/sda2         58G    26G   30G  47% /
+/dev/sda1        508M    17M  492M   4% /boot/efi
+/dev/sda3        381G   250G  113G  70% /home
+sda: rotacional=1 scheduler=none [mq-deadline] 
+nvme0n1: rotacional=0 scheduler=[none] mq-deadline 
+
+(SMART: ejecutar con sudo y con smartmontools instalado)
+
+==================================================================
+## 5. Red
+==================================================================
+
+$ ip -br link
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eno1             UP             30:c5:99:2b:59:5d <BROADCAST,MULTICAST,UP,LOWER_UP> 
+wlp1s0           DOWN           50:bb:b5:f2:55:34 <BROADCAST,MULTICAST> 
+docker0          DOWN           76:3c:88:ba:e3:5a <NO-CARRIER,BROADCAST,MULTICAST,UP> 
+
+$ ip -br addr
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eno1             UP             172.16.222.207/24 
+wlp1s0           DOWN           
+docker0          DOWN           172.17.0.1/16 
+
+$ ip route
+default via 172.16.222.1 dev eno1 proto dhcp src 172.16.222.207 metric 100 
+172.16.222.0/24 dev eno1 proto kernel scope link src 172.16.222.207 metric 100 
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown 
+eno1: velocidad=1000 Mb/s, MAC=30:c5:99:2b:59:5d
+wlp1s0: velocidad=N/C Mb/s, MAC=50:bb:b5:f2:55:34
+
+$ lspci | grep -iE 'ethernet|network|wireless'
+0000:00:1f.6 Ethernet controller: Intel Corporation Device 550b (rev 20)
+0000:01:00.0 Network controller: Realtek Semiconductor Co., Ltd. RTL8852BE PCIe 802.11ax Wireless Network Controller
+
+==================================================================
+## 6. Gráfica, USB y otros periféricos
+==================================================================
+
+$ lspci | grep -iE 'vga|3d|display|audio'
+0000:00:02.0 VGA compatible controller: Intel Corporation Meteor Lake-P [Intel Arc Graphics] (rev 08)
+0000:00:1f.3 Multimedia audio controller: Intel Corporation Meteor Lake-P HD Audio Controller (rev 20)
+
+$ lsusb 2>/dev/null | grep -viE 'root hub'
+Bus 003 Device 002: ID 322e:2339 BillionPixels USB2.0 FHD UVC WebCam
+Bus 003 Device 003: ID 0bda:0129 Realtek Semiconductor Corp. RTS5129 Card Reader Controller
+Bus 003 Device 004: ID 413c:301a Dell Computer Corp. Dell MS116 Optical Mouse
+Bus 003 Device 005: ID 13d3:3571 IMC Networks Bluetooth Radio
+Bus 004 Device 002: ID 152d:0583 JMicron Technology Corp. / JMicron USA Technology Corp. JMS583Gen 2 to PCIe Gen3x2 Bridge
+
+$ cat /sys/class/power_supply/BAT*/capacity /sys/class/power_supply/BAT*/status 2>/dev/null | paste -sd' ' | sed 's/^/Batería: /' || echo 'Sin batería'
+Batería: 100 Full
+
+$ cat /sys/class/power_supply/BAT*/energy_full_design /sys/class/power_supply/BAT*/energy_full 2>/dev/null | paste -sd' ' | awk '{if($1) printf "Salud de la batería: %.0f%% de la capacidad original\n", $2/$1*100}'
+
+==================================================================
+## 7. Sensores y temperaturas
+==================================================================
+
+$ for z in /sys/class/thermal/thermal_zone*; do echo "$(cat $z/type): $(($(cat $z/temp)/1000)) ºC"; done 2>/dev/null | head -8
+acpitz: 27 ºC
+INT3400 Thermal: 20 ºC
+TCPU_PCI: 62 ºC
+x86_pkg_temp: 61 ºC
+SEN1: 35 ºC
+SEN2: 50 ºC
+SEN3: 47 ºC
+SEN4: 45 ºC
+
+==================================================================
+## 8. Software de virtualización
+==================================================================
+
+$ VBoxManage --version 2>/dev/null || echo 'VirtualBox no instalado'
+7.0.20r163906
+
+$ lsmod | grep -E '^(kvm|vbox)' | awk '{print $1}' | paste -sd' '
+vboxnetadp vboxnetflt vboxdrv kvm_intel kvm
+
+==================================================================
+## 9. DIAGNÓSTICO — Disco (escritura y lectura secuencial, 1 GiB, sin caché)
+==================================================================
+Herramienta: dd con oflag=direct / iflag=direct · Fichero de prueba en $HOME · Condiciones: equipo en reposo
+Escritura secuencial: 384 MB/s (2.7 s)
+Lectura secuencial:   308 MB/s (3.3 s)
+Escritura aleatoria 4K (2000 bloques, sync):
+  347 IOPS (5.8 s)
+
+==================================================================
+## 10. DIAGNÓSTICO — Memoria (ancho de banda y prueba de patrón)
+==================================================================
+Herramienta: python3 (copia de 512 MiB en memoria) · sin sudo. Para un test completo: memtest86+ desde GRUB.
+
+$ python3 -c '
+import time
+n=512*1024*1024; a=bytearray(b"\x55")*n
+t=time.time(); b=bytes(a); d=time.time()-t
+print(f"Copia de 512 MiB: {d:.2f} s -> {n/d/1e9:.1f} GB/s")
+ok = b.count(b"\x55")==n
+print("Patrón 0x55 verificado sin errores" if ok else "ERROR: el patrón no coincide")'
+Copia de 512 MiB: 0.18 s -> 3.1 GB/s
+Patrón 0x55 verificado sin errores
+
+==================================================================
+## 11. DIAGNÓSTICO — Red
+==================================================================
+Herramientas: ping (latencia/pérdida al gateway y a Internet), curl (velocidad de descarga)
+
+$ ping -c 10 -i 0.2 172.16.222.1 | tail -2
+10 packets transmitted, 10 received, 0% packet loss, time 1871ms
+rtt min/avg/max/mdev = 0.476/0.543/0.685/0.065 ms
+
+$ ping -c 5 1.1.1.1 | tail -2
+5 packets transmitted, 0 received, 100% packet loss, time 4074ms
+
+
+$ curl -s -o /dev/null -m 30 -w 'Descarga de 50 MB (Cloudflare): %{speed_download} B/s (%{time_total} s)\n' https://speed.cloudflare.com/__down?bytes=50000000 | awk '{printf "%s %s %s %s %.1f MB/s %s %s\n",$1,$2,$3,$4,$5/1048576,$7,$8}'
+Descarga de 50 MB 0.0 MB/s B/s (30.000494
+
+$ ip -s link show eno1 | sed -n '3,6p'
+    RX:  bytes packets errors dropped  missed   mcast           
+      51352472   40313      0       0       0     654 
+    TX:  bytes packets errors dropped carrier collsns           
+       4079136   26283      0       0       0       0 
+
+# FIN DEL INVENTARIO
+Ejecución 2: escritura 110 MB/s · lectura 397 MB/s · 4K sync 351 IOPS
+Ejecución 3: escritura 391 MB/s · lectura 397 MB/s · 4K sync 348 IOPS
+Salud de la batería: 93% de la capacidad original · 19 ciclos

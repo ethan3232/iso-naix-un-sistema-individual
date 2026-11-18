@@ -4,7 +4,7 @@
 
 ## Tabla de máquinas
 
-Host de todas: **eth4n** (Linux Mint 22.3, Core Ultra 5 125H 14C/18T, 30 GiB RAM, SSD SATA Kingston A400 960 GB). Hipervisor: VirtualBox 7.0.20. Grupo de VMs: `ISO-INDV`.
+Host de todas: **eth4n** (Linux Mint 22.3, Core Ultra 5 125H 14C/18T, 30 GiB RAM, SSD Kingston A400 960 GB en caja USB 5 Gb/s). Hipervisor: VirtualBox 7.0.20. Grupo de VMs: `ISO-INDV`.
 
 | Nombre (VM) | Función | SO | vCPU | RAM | Disco | Red (VirtualBox) | Firmware |
 |---|---|---|---|---|---|---|---|
@@ -63,4 +63,4 @@ procs  ... -cpu-------
 - `id` 80–83 % → la **CPU está casi libre**.
 - `wa` 13–16 % y `b` = 3 → **procesos bloqueados esperando al disco**.
 
-El cuello de botella es el **SSD SATA** (Kingston A400, sin caché DRAM), no la CPU ni la RAM. Mejora propuesta: mover las VMs al **NVMe** de 1 TB (otra partición del portátil, ~5–7 veces más rápido) o no instalar varios sistemas a la vez.
+El cuello de botella es el **SSD** (Kingston A400, sin caché DRAM, en caja USB 5 Gb/s), no la CPU ni la RAM. Mejora propuesta: no instalar varios sistemas a la vez y conectar la caja a 10 Gb/s (el NVMe del portátil no se puede usar: es el disco del aula). Ver [02](02-inventari.md).

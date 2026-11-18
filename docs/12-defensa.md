@@ -22,6 +22,8 @@ En el examen, el profesorado provocará un fallo en mi entorno y yo tendré que 
 
 Si la red falla, la **consola de VirtualBox** (doble clic en la VM) siempre funciona.
 
+> ⚠️ **En el aula el cortafuegos del centro filtra el ICMP hacia Internet** (comprobado el 18/11: `ping 1.1.1.1` y `ping 8.8.8.8` desde el propio PC → 100 % de pérdida, pero HTTPS funciona). Desde las VMs pasa lo mismo, porque salen por la NAT del PC. Para comprobar Internet en clase: `curl -sI https://deb.debian.org | head -1` y `getent hosts debian.org`. Un `ping 1.1.1.1` fallido **no** prueba que el router esté roto.
+
 ## 2. Método de intervención (escribirlo mientras se hace)
 
 | Paso | Qué hago | Ejemplo |

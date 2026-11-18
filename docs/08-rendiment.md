@@ -163,7 +163,7 @@ RAM total del host ............................ 15 859 MB
 - **Con caché** las cifras son **más rápidas que el propio SSD** (2,3 GB/s por un USB de 5 Gb/s es imposible): la VM está escribiendo en la **RAM del host**.
 - El ×80 del `fsync` es la clave: la VM cree que sus datos están **en el disco** cuando todavía están **en RAM**. Si el PC se apaga de golpe, **se pierden** escrituras que la VM daba por guardadas.
 
-**Decisión:** ❌ **se vuelve a desactivar** en SRV2 (`useHostIOCache=false`, comprobado). SRV2 guarda los RAID y el espejo DRBD: de nada sirve un RAID 1 si un corte de luz se lleva lo que "ya estaba escrito". La caché solo compensa en VMs **sin datos importantes** (clientes de pruebas, VMs desechables). Mejora real alternativa para el disco: el puerto USB de 10 Gb/s y hacer las pruebas pesadas en clase (SATA) — ver [02](02-inventari.md).
+**Decisión:** ❌ **se vuelve a desactivar** en SRV2 (`useHostIOCache=false`, comprobado). SRV2 guarda los RAID y el espejo DRBD: de nada sirve un RAID 1 si un corte de luz se lleva lo que "ya estaba escrito". La caché solo compensa en VMs **sin datos importantes** (clientes de pruebas, VMs desechables). Mejora real alternativa para el disco: conectar la caja USB a 10 Gb/s (en clase el disco también va por USB, con las mismas IOPS: no hay un "disco rápido" alternativo) — ver [02](02-inventari.md).
 
 > **Pregunta probable de defensa:** *"Has multiplicado el disco por 60, ¿por qué no lo dejas?"* → Porque no es velocidad real: es la RAM del host fingiendo ser el disco. Gano velocidad a cambio de **perder la garantía de escritura**. En un servidor de ficheros eso no se acepta; en un cliente de pruebas, sí.
 

@@ -52,7 +52,7 @@ s "6. Gráfica, USB y otros periféricos"
 c "lspci | grep -iE 'vga|3d|display|audio'"
 c "lsusb 2>/dev/null | grep -viE 'root hub'"
 c "cat /sys/class/power_supply/BAT*/capacity /sys/class/power_supply/BAT*/status 2>/dev/null | paste -sd' ' | sed 's/^/Batería: /' || echo 'Sin batería'"
-c "cat /sys/class/power_supply/BAT*/energy_full_design /sys/class/power_supply/BAT*/energy_full 2>/dev/null | paste -sd' ' | awk '{if(\$1) printf \"Salud de la batería: %.0f%% de la capacidad original\n\", \$2/\$1*100}'"
+c "cat /sys/class/power_supply/BAT*/{energy,charge}_full_design /sys/class/power_supply/BAT*/{energy,charge}_full /sys/class/power_supply/BAT*/cycle_count 2>/dev/null | paste -sd' ' | awk '{if(\$1) printf \"Salud de la batería: %.0f%% de la capacidad original · %s ciclos\n\", \$2/\$1*100, \$3}'"
 
 s "7. Sensores y temperaturas"
 c "for z in /sys/class/thermal/thermal_zone*; do echo \"\$(cat \$z/type): \$((\$(cat \$z/temp)/1000)) ºC\"; done 2>/dev/null | head -8"

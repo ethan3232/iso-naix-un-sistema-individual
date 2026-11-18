@@ -27,7 +27,7 @@ El enunciado pide simular **en mi propio equipo** el sistema de la empresa del g
 |---|---|---|---|
 | CPU con virtualización | VT-x/AMD-V + virtualización anidada (Proxmox) | Core Ultra 5 125H, VT-x | ✅ |
 | RAM | Suma de las VMs encendidas + ~6 GB para el host | 30 GiB | ⚠️ No caben todas a la vez → escenarios ([05-recursos](05-recursos.md)) |
-| Disco | ~120 GB reales para VMs | 167 GB libres en SSD SATA | ✅ justo · ⚠️ es el cuello de botella de rendimiento |
+| Disco | ~120 GB reales para VMs | 167 GB libres en el SSD (caja USB) | ✅ justo · ⚠️ es el cuello de botella de rendimiento |
 | Red | Acceso a Internet para descargas y actualizaciones | 1 Gbps (red del aula) | ✅ |
 | Firmware | UEFI y TPM 2.0 (Windows 11 / Server 2025) | Los aporta VirtualBox 7 (EFI + TPM virtual) | ✅ |
 

@@ -68,6 +68,10 @@ async function pulsarTexto(page, texto) {
       await page.goto(base + paso.ruta, { waitUntil: 'networkidle2', timeout: 60000 }).catch(() => {});
       await espera(3000);
     }
+    if (paso.escribir) {
+      await page.type(paso.escribir.sel, paso.escribir.texto).catch((e) => console.error('  aviso:', e.message));
+      await page.keyboard.press('Enter');
+    }
     for (const t of [].concat(paso.clic || [])) { await espera(1500); await pulsarTexto(page, t); }
     await espera(paso.espera || 4000);
     if (paso.ver) {

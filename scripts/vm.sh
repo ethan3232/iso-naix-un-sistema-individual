@@ -3,6 +3,7 @@
 #   scripts/vm.sh type  <vm> "texto"     -> escribe el texto y pulsa Enter
 #   scripts/vm.sh raw   <vm> "texto"     -> escribe el texto sin Enter
 #   scripts/vm.sh key   <vm> enter|esc|tab|up|down|f2|y|n
+#   scripts/vm.sh key   <vm> winr|winup|altf4|altspace   (combinaciones de Windows)
 #   scripts/vm.sh shot  <vm> <ruta.png>  -> captura de pantalla
 set -euo pipefail
 acc=$1; vm=$2; shift 2
@@ -11,7 +12,8 @@ case $acc in
   raw)  VBoxManage controlvm "$vm" keyboardputstring "$1" ;;
   key)  case $1 in
           enter) c="1c 9c";; esc) c="01 81";; tab) c="0f 8f";; up) c="e0 48 e0 c8";; down) c="e0 50 e0 d0";;
-          f2) c="3c bc";; y) c="15 95";; n) c="31 b1";; space) c="39 b9";; left) c="e0 4b e0 cb";; right) c="e0 4d e0 cd";;
+          f2) c="3c bc";; winr) c="e0 5b 13 93 e0 db";; winup) c="e0 5b e0 48 e0 c8 e0 db";;
+          altf4) c="38 3e be b8";; f5) c="3f bf";; ctrll) c="1d 26 a6 9d";; y) c="15 95";; n) c="31 b1";; space) c="39 b9";; left) c="e0 4b e0 cb";; right) c="e0 4d e0 cd";;
           *) echo "tecla desconocida"; exit 1;; esac
         VBoxManage controlvm "$vm" keyboardputscancode $c ;;
   shot) mkdir -p "$(dirname "$1")"; VBoxManage controlvm "$vm" screenshotpng "$1" ;;

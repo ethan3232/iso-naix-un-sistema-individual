@@ -55,15 +55,8 @@ Cada VM se arranca **sola**, se mide 120 s y se apaga por ACPI antes de la sigui
 
 <sub>* Primer momento en que la VM se queda por debajo del 15 % de CPU durante 10 s. † El pico de DEB13-CLI no es su vCPU: son los hilos de E/S de VirtualBox leyendo disco (ese momento el host tuvo un **iowait del 82 %**).</sub>
 
-```mermaid
-xychart-beta
-    title "RAM asignada vs RAM real al arrancar (MB)"
-    x-axis ["MK", "SRV3", "SRV2", "SRV1", "OPN", "CLI", "PMX1", "DC", "W11", "NAS"]
-    y-axis "MB" 0 --> 4500
-    bar [512, 1024, 1024, 2048, 2048, 4096, 4096, 4096, 4096, 4096]
-    bar [108, 349, 1162, 1134, 2177, 1334, 2738, 2785, 2257, 3144]
-```
-<sub>Primera barra: asignada · segunda: real.</sub>
+![RAM asignada frente a real](../diagrames/ram-vms.png)
+*Barra clara: RAM asignada · barra azul: RAM que pierde realmente el PC (caída de `MemAvailable`). Datos de la tabla de arriba. Fuente: [`diagrames/ram-vms.py`](../diagrames/ram-vms.py).*
 
 **Lectura:**
 - **RAM**: los que más gastan son **TrueNAS** (ZFS usa la RAM libre como caché ARC), **WS2025-DC** y **PMX1**. MikroTik apenas 108 MB.

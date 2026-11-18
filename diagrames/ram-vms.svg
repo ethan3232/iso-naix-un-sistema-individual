@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="690" viewBox="0 0 1200 690">
+<defs>
+<marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker>
+<marker id="flecha-drbd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#be185d"/></marker>
+<marker id="flecha-lan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#059669"/></marker>
+<marker id="flecha-com" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ea580c"/></marker>
+</defs>
+<rect width="1200" height="690" fill="#ffffff"/>
+<text x="600.0" y="40" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="22" font-weight="bold" fill="#1f2937" text-anchor="middle">RAM asignada frente a RAM real al arrancar</text>
+<text x="600.0" y="64" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#6b7280" text-anchor="middle">MB por VM · cada una medida sola, con el resto apagadas</text>
+<path d="M190.0,114 L190.0,556" fill="none" stroke="#e5e7eb" stroke-width="1" stroke-linejoin="round"/>
+<text x="190.0" y="576" font-family="DejaVu Sans Mono, monospace" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="middle">0</text>
+<path d="M374.32,114 L374.32,556" fill="none" stroke="#e5e7eb" stroke-width="1" stroke-linejoin="round"/>
+<text x="374.32" y="576" font-family="DejaVu Sans Mono, monospace" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="middle">1024</text>
+<path d="M558.64,114 L558.64,556" fill="none" stroke="#e5e7eb" stroke-width="1" stroke-linejoin="round"/>
+<text x="558.64" y="576" font-family="DejaVu Sans Mono, monospace" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="middle">2048</text>
+<path d="M742.96,114 L742.96,556" fill="none" stroke="#e5e7eb" stroke-width="1" stroke-linejoin="round"/>
+<text x="742.96" y="576" font-family="DejaVu Sans Mono, monospace" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="middle">3072</text>
+<path d="M927.28,114 L927.28,556" fill="none" stroke="#e5e7eb" stroke-width="1" stroke-linejoin="round"/>
+<text x="927.28" y="576" font-family="DejaVu Sans Mono, monospace" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="middle">4096</text>
+<text x="595.0" y="598" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b7280" text-anchor="middle">MB</text>
+<text x="176" y="144" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#1f2937" text-anchor="end">TrueNas</text>
+<rect x="190" y="130" width="737.28" height="20" rx="4" fill="#d3e3f7"/>
+<rect x="190" y="134" width="565.92" height="12" rx="4" fill="#2a78d6"/>
+<text x="939.28" y="144" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#1f2937" text-anchor="start">3144 / 4096</text>
+<text x="1180" y="144" font-family="DejaVu Sans Mono, monospace" font-size="12.5" font-weight="bold" fill="#1f2937" text-anchor="end">77 %</text>
+<text x="176" y="188" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#1f2937" text-anchor="end">WS2025-DC</text>
+<rect x="190" y="174" width="737.28" height="20" rx="4" fill="#d3e3f7"/>
+<rect x="190" y="178" width="501.29999999999995" height="12" rx="4" fill="#2a78d6"/>
+<text x="939.28" y="188" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#1f2937" text-anchor="start">2785 / 4096</text>
+<text x="1180" y="188" font-family="DejaVu Sans Mono, monospace" font-size="12.5" font-weight="bold" fill="#1f2937" text-anchor="end">68 %</text>
+<text x="176" y="232" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#1f2937" text-anchor="end">PMX1</text>
+<rect x="190" y="218" width="737.28" height="20" rx="4" fill="#d3e3f7"/>
+<rect x="190" y="222" width="492.8399999999999" height="12" rx="4" fill="#2a78d6"/>
+<text x="939.28" y="232" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#1f2937" text-anchor="start">2738 / 4096</text>
+<text x="1180" y="232" font-family="DejaVu Sans Mono, monospace" font-size="12.5" font-weight="bold" fill="#1f2937" text-anchor="end">67 %</text>
+<text x="176" y="276" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#1f2937" text-anchor="end">W11-CLI</text>
+<rect x="190" y="262" width="737.28" height="20" rx="4" fill="#d3e3f7"/>
+<rect x="190" y="266" width="406.26" height="12" rx="4" fill="#2a78d6"/>
+<text x="939.28" y="276" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#1f2937" text-anchor="start">2257 / 4096</text>
+<text x="1180" y="276" font-family="DejaVu Sans Mono, monospace" font-size="12.5" font-weight="bold" fill="#1f2937" text-anchor="end">55 %</text>
+<text x="176" y="320" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#1f2937" text-anchor="end">OPNsense</text>
+<rect x="190" y="306" width="368.64" height="20" rx="4" fill="#d3e3f7"/>
+<rect x="190" y="310" width="391.86" height="12" rx="4" fill="#2a78d6"/>
+<text x="593.86" y="320" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#1f2937" text-anchor="start">2177 / 2048</text>
+<text x="1180" y="320" font-family="DejaVu Sans Mono, monospace" font-size="12.5" font-weight="bold" fill="#b45309" text-anchor="end">106 %</text>
+<text x="176" y="364" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#1f2937" text-anchor="end">DEB13-CLI</text>
+<rect x="190" y="350" width="737.28" height="20" rx="4" fill="#d3e3f7"/>
+<rect x="190" y="354" width="240.12" height="12" rx="4" fill="#2a78d6"/>
+<text x="939.28" y="364" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#1f2937" text-anchor="start">1334 / 4096</text>
+<text x="1180" y="364" font-family="DejaVu Sans Mono, monospace" font-size="12.5" font-weight="bold" fill="#1f2937" text-anchor="end">33 %</text>
+<text x="176" y="408" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#1f2937" text-anchor="end">DEB13-SRV2</text>
+<rect x="190" y="394" width="184.32" height="20" rx="4" fill="#d3e3f7"/>
+<rect x="190" y="398" width="209.15999999999997" height="12" rx="4" fill="#2a78d6"/>
+<text x="411.15999999999997" y="408" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#1f2937" text-anchor="start">1162 / 1024</text>
+<text x="1180" y="408" font-family="DejaVu Sans Mono, monospace" font-size="12.5" font-weight="bold" fill="#b45309" text-anchor="end">113 %</text>
+<text x="176" y="452" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#1f2937" text-anchor="end">DEB13-SRV1-NFT</text>
+<rect x="190" y="438" width="368.64" height="20" rx="4" fill="#d3e3f7"/>
+<rect x="190" y="442" width="204.12" height="12" rx="4" fill="#2a78d6"/>
+<text x="570.64" y="452" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#1f2937" text-anchor="start">1134 / 2048</text>
+<text x="1180" y="452" font-family="DejaVu Sans Mono, monospace" font-size="12.5" font-weight="bold" fill="#1f2937" text-anchor="end">55 %</text>
+<text x="176" y="496" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#1f2937" text-anchor="end">DEB13-SRV3</text>
+<rect x="190" y="482" width="184.32" height="20" rx="4" fill="#d3e3f7"/>
+<rect x="190" y="486" width="62.81999999999999" height="12" rx="4" fill="#2a78d6"/>
+<text x="386.32" y="496" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#1f2937" text-anchor="start">349 / 1024</text>
+<text x="1180" y="496" font-family="DejaVu Sans Mono, monospace" font-size="12.5" font-weight="bold" fill="#1f2937" text-anchor="end">34 %</text>
+<text x="176" y="540" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#1f2937" text-anchor="end">Mikrotik-IND</text>
+<rect x="190" y="526" width="92.15999999999997" height="20" rx="4" fill="#d3e3f7"/>
+<rect x="190" y="530" width="19.439999999999998" height="12" rx="4" fill="#2a78d6"/>
+<text x="294.15999999999997" y="540" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#1f2937" text-anchor="start">108 / 512</text>
+<text x="1180" y="540" font-family="DejaVu Sans Mono, monospace" font-size="12.5" font-weight="bold" fill="#1f2937" text-anchor="end">21 %</text>
+<text x="1180" y="108" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#6b7280" text-anchor="end">real / asignada</text>
+<rect x="190" y="614" width="28" height="16" rx="4" fill="#d3e3f7"/>
+<text x="226" y="626" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#1f2937" text-anchor="start">RAM asignada a la VM</text>
+<rect x="410" y="618" width="28" height="8" rx="4" fill="#2a78d6"/>
+<text x="446" y="626" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#1f2937" text-anchor="start">RAM real que pierde el PC</text>
+<text x="190" y="650" font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#6b7280" text-anchor="start">&gt; 100 % (OPNsense, SRV2): la medida incluye la memoria propia de VirtualBox para esa VM.  TrueNas usa casi todo: ZFS aprovecha la RAM libre como caché (ARC).</text>
+</svg>

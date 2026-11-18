@@ -119,17 +119,8 @@ Se midió con `fio` (escritura y lectura secuencial de 1 MiB, escritura aleatori
 
 Un RAID 1 normal copia cada escritura en **dos discos del mismo equipo**: si se rompe un disco, bien; si se rompe **el servidor** (placa, fuente, sistema), los dos discos se quedan dentro. DRBD hace un **RAID 1 por la red**: cada escritura va al disco local **y** al disco del otro servidor.
 
-```mermaid
-flowchart LR
-    APP[Servicio / ficheros<br/>/srv/espejo] --> D0
-    subgraph S2 [DEB13-SRV2 · .21 · PRIMARIO]
-      D0[/dev/drbd0/] --> L2[(disco 1 GB<br/>VB5c4301f8)]
-    end
-    subgraph S3 [DEB13-SRV3 · .22 · SECUNDARIO]
-      D1[/dev/drbd0/] --> L3[(disco 1 GB<br/>VB8435b78f)]
-    end
-    D0 == "LAN23 · TCP 7789<br/>protocolo C (síncrono)" ==> D1
-```
+![Espejo DRBD](../diagrames/espejo-drbd.png)
+*Cada escritura en SRV2 se copia por LAN23 a SRV3 y no se da por terminada hasta que los dos la tienen (protocolo C). Fuente: [`diagrames/espejo-drbd.py`](../diagrames/espejo-drbd.py).*
 
 | Alternativa | Por qué no |
 |---|---|

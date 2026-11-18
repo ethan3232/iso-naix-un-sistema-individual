@@ -7,49 +7,6 @@
 ![Esquema de red](../diagrames/esquema-red.png)
 *Esquema de red generado con [`diagrames/esquema-red.py`](../diagrames/esquema-red.py) (SVG dibujado con coordenadas fijas; también en [SVG](../diagrames/esquema-red.svg)). Línea gruesa: gateway activo; discontinua: gateways alternativos. Etiqueta **SIMULADO** y borde discontinuo: **dentro del clúster en el diseño, simuladas fuera** (ver [§5.1](#51-servidores-dentro-del-clúster-simulados)).*
 
-Versión Mermaid (se dibuja directamente en GitHub, fuente en [`diagrames/esquema-logico.mmd`](../diagrames/esquema-logico.mmd)):
-
-```mermaid
-flowchart TB
-    subgraph EXT["🌍 Exterior"]
-        INET((Internet))
-        AULA["Red del aula 172.16.222.0/24<br/>(compartida, NO se toca)"]
-    end
-    subgraph HOST["💻 PC eth4n · Linux Mint · VirtualBox 7.0"]
-        NAT["NAT de VirtualBox<br/>10.0.2.0/24 · gw 10.0.2.2 · DNS 10.0.2.3"]
-        subgraph LAN["🔌 Red interna LAN23 · 192.168.23.0/24 · dominio asix23.lan"]
-            subgraph COM["Comunicaciones (solo uno activo)"]
-                MK["Mikrotik-IND .1<br/>RouterOS"]
-                OPN["OPNsense .2"]
-                DEB["DEB13-SRV1-NFT .3<br/>nftables"]
-            end
-            NAS["TrueNas .10<br/>pool espejo 'copias'"]
-            subgraph CL["Clúster Proxmox 'asix23' (🧪 = simulado)"]
-                subgraph N1["PMX1 .11"]
-                    S2["🧪 DEB13-SRV2 .21<br/>ficheros + RAID · DRBD primario"]
-                end
-                subgraph N2["PMX2 .12"]
-                    CT["srv-infra .30<br/>LXC · intranet"]
-                    DC["🧪 WS2025-DC .20<br/>AD DS + DNS"]
-                end
-                subgraph N3["PMX3 .13"]
-                    S3["🧪 DEB13-SRV3 .22<br/>web · DRBD secundario"]
-                end
-            end
-            W11["W11-CLI .51<br/>Administración"]
-            DCLI["DEB13-CLI .54<br/>Informática"]
-        end
-    end
-    INET --- AULA --- NAT
-    NAT ---|WAN DHCP| MK & OPN & DEB
-    MK ==>|gateway activo| LAN
-    S2 ==>|espejo DRBD| S3
-    NAS -. NFS copias VMs .- CL
-    NAS -. pull SSH/API copias config .- COM
-    DC -. DNS + autenticación .- W11
-    classDef sim stroke-dasharray: 5 5
-    class S2,S3,DC sim
-```
 
 ## 2. Esquema "físico" (montaje en VirtualBox)
 
@@ -62,22 +19,8 @@ Todo corre en **un solo equipo físico**: el portátil de clase (eth4n). Los "ca
 | Cable de cada equipo al switch | Adaptador conectado a `LAN23` (`cableconnected on`) |
 | Acceso del técnico a la gestión | Redirecciones de puertos **solo en 127.0.0.1** (no se ven desde la red del aula) |
 
-```
-                  PC eth4n (Linux Mint)
- ┌────────────────────────────────────────────────────────────────────┐
- │  NAT VBox ──[nic1]── Mikrotik-IND   ──[nic2]──┐                    │
- │  NAT VBox ──[nic1]── OPNsense       ──[nic2]──┤                    │
- │  NAT VBox ──[nic1]── DEB13-SRV1-NFT ──[nic2]──┤                    │
- │                                               │                    │
- │      ═════════════════ red interna LAN23 ═════╪══════════════════  │
- │        │      │     │     │      │      │     │      │       │     │
- │     TrueNas PMX1  PMX2  PMX3  WS2025-DC SRV2 SRV3   W11  DEB13-CLI │
- │                               └─────────┬───────┘                  │
- │                         🧪 en el diseño van DENTRO del clúster     │
- │                            (PMX2, PMX1 y PMX3); aquí, fuera        │
- └────────────────────────────────────────────────────────────────────┘
-          │ eno1 1 Gbps (172.16.222.207, red del aula)
-```
+![Montaje en VirtualBox](../diagrames/esquema-fisico.png)
+*Cómo está cableado: cada router tiene un adaptador NAT (nic1) y otro en la red interna LAN23 (nic2); el resto de VMs solo están en LAN23. La gestión se hace desde el propio PC por 127.0.0.1. Fuente: [`diagrames/esquema-fisico.py`](../diagrames/esquema-fisico.py).*
 
 **¿Por qué red interna y no puente (bridge)?** Con puente, mis VMs aparecerían en la red compartida del aula (172.16.222.0/24) y un DHCP o una IP repetida molestaría a los compañeros. El enunciado prohíbe lanzar un DHCP de pruebas en la red compartida. La red interna aísla mi LAN y **obliga a que todo el tráfico pase por el router**, que es lo que queremos demostrar.
 

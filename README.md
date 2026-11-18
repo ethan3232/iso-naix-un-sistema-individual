@@ -41,38 +41,6 @@
 
 <div align="center"><img src="diagrames/esquema-red.png" alt="Esquema de red" width="780"></div>
 
-<details>
-<summary>Ver versión Mermaid</summary>
-
-```mermaid
-flowchart TB
-    INET((🌍 Internet)) --- NAT[NAT de VirtualBox<br/>WAN por DHCP 10.0.2.15]
-    NAT ==> MK[🔀 Mikrotik-IND<br/>RouterOS · <b>.1</b><br/>gateway activo]
-    NAT -.-> OPN[🛡️ OPNsense<br/><b>.2</b>]
-    NAT -.-> DEB[🐧 DEB13-SRV1-NFT<br/>nftables · <b>.3</b>]
-    MK ==> SW{{"🔌 LAN23 · 192.168.23.0/24"}}
-    OPN -.-> SW
-    DEB -.-> SW
-    SW --- NAS[🗄️ TrueNas<br/><b>.10</b>]
-    subgraph CL["🧱 Clúster Proxmox asix23 · 🧪 = simulado (VM de VirtualBox con la misma IP)"]
-        subgraph PVE1["PMX1 .11"]
-            S2[🧪 DEB13-SRV2<br/>ficheros + RAID <b>.21</b>]
-        end
-        subgraph PVE2["PMX2 .12"]
-            CT[📦 srv-infra LXC<br/>intranet <b>.30</b>]
-            DC[🧪 WS2025-DC<br/>AD DS + DNS <b>.20</b>]
-        end
-        subgraph PVE3["PMX3 .13"]
-            S3[🧪 DEB13-SRV3<br/>web <b>.22</b>]
-        end
-    end
-    SW --- CL
-    S2 == espejo DRBD ==> S3
-    SW --- C1[💻 W11-CLI<br/>Administración <b>.51</b>]
-    SW --- C2[🐧 DEB13-CLI<br/>Informática <b>.54</b>]
-```
-
-</details>
 
 <sub>Línea gruesa: gateway activo · línea discontinua: gateways alternativos (se prueban de uno en uno con `scripts/canvi-gw.sh`) · 🧪 borde discontinuo: SRV2, SRV3 y WS2025-DC van **dentro del clúster en el diseño**; por falta de RAM son VMs de VirtualBox en LAN23 con la misma IP ([04 §5.1](docs/04-disseny.md#51-servidores-dentro-del-clúster-simulados)).</sub>
 

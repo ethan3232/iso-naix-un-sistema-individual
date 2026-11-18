@@ -23,3 +23,7 @@ secrets*
 Thumbs.db
 *~
 *.swp
+
+# Generados (el PDF final sí se versiona en entrega/)
+build/
+__pycache__/

@@ -44,6 +44,36 @@ El profesorado provocará un fallo en mi entorno y yo tendré que **acotar el im
 | **4,7 → 12,3 Gbit/s** | Optimización virtio-net |
 | **×80 en `fsync`** | Caché del host, revertida por seguridad |
 
+## Desarrollo
+
+### Método de intervención (escribirlo mientras se hace)
+
+| Paso | Qué hago | Ejemplo |
+|---|---|---|
+| **1. Estado inicial** | Qué funciona y qué no, **desde el punto de vista del usuario** | "DEB13-CLI no abre webs" |
+| **2. Acotar** | Ir de abajo arriba: ¿VM encendida? → ¿enlace? → ¿IP? → ¿gateway? → ¿Internet? → ¿DNS? → ¿servicio? | `ip -br a` · `ping .1` · `ping 1.1.1.1` · `getent hosts debian.org` |
+| **3. Hipótesis** | Una sola causa probable y **qué prueba la confirmaría** | "La NAT del router se ha borrado → `/ip firewall nat print` saldrá vacío" |
+| **4. Punto de retorno** | **Antes de tocar nada**: instantánea o copia del estado actual | `VBoxManage snapshot <vm> take antes-arreglo` · `/export` · `cp fichero fichero.antes` |
+| **5. Aplicar** | La recuperación del plan (copia local → NAS → alternativo) | `/system backup load`, `canvi-gw.sh 3`, `mdadm --add`… |
+| **6. Prueba funcional** | Comprobar **la función**, no solo que la VM arranca | El cliente vuelve a navegar / abre su fichero / inicia sesión |
+| **7. Registrar** | Hora, causa, solución, tiempo de corte y pérdida en [10](../docs/10-incidencies.md) | |
+
+### Chuleta de diagnóstico por sistema
+
+| Sistema | Ver estado | Ver registros | Arreglos habituales |
+|---|---|---|---|
+| **Linux (Debian)** | `ip -br a` · `ip route` · `ss -tlnp` · `systemctl --failed` · `df -h` · `free -h` | `journalctl -xb` · `journalctl -u <servicio>` · `dmesg -T` | `systemctl restart <s>` · `nft -c -f /etc/nftables.conf` · `findmnt --verify` |
+| **nftables** | `sudo nft list ruleset` | `journalctl -k \| grep -E 'BLOQUEADO\|IN-DROP'` | Restaurar `nftables.conf` de la copia |
+| **MikroTik** | `/interface print` · `/ip address print` · `/ip route print` · `/ip firewall nat print` | `/log print` | `/system backup load name=copia-nas.backup` |
+| **OPNsense** | *Interfaces → Overview* | *Firewall → Log Files → Live View* | *System → Configuration → History* → revert |
+| **RAID (mdadm)** | `cat /proc/mdstat` · `mdadm --detail /dev/md5` | `journalctl -k \| grep md` | `--fail` → `--remove` → `--add` |
+| **Espejo DRBD** | `cat /proc/drbd` (`cs:` conexión, `ro:` roles, `ds:` datos) · `drbdadm role r0` | `dmesg \| grep drbd` | Caída del primario: en el otro `drbdadm primary r0` + `mount /dev/drbd0 /srv/espejo` · desconectado: `drbdadm up r0` / `connect r0` · split-brain: `drbdadm connect --discard-my-data r0` en el nodo que pierde |
+| **Proxmox** | `pvecm status` · `pct list` · `qm list` | `journalctl -u pve-cluster -u corosync` | `pct start` · `pct restore` desde `nas-copias` |
+| **TrueNAS** | `zpool status copias` | *System → Audit / Alerts* | Sustituir disco del espejo (*Storage → Replace*) |
+| **Windows Server** | `Get-Service NTDS,DNS,ADWS` · `dcdiag /q` | Visor de eventos → *Directory Service*, *DNS Server* | `Restart-Service` · instantánea · medio IFM |
+| **Windows 11** | `ipconfig /all` · `nltest /sc_query:asix23.lan` | Visor de eventos | `Test-ComputerSecureChannel -Repair` |
+| **Rendimiento** | `vmstat 2` (`wa` = espera de disco, `si/so` = swap) · `top` · `bash scripts/mide-vm.sh <vm> 60` | — | Apagar VMs que no se usan, bajar RAM asignada |
+
 ## Evidencias
 
 - Guía completa: [11-defensa](../docs/11-defensa.md) · Plan de contingencia: [09-contingencia](../docs/09-contingencia.md) · Incidencias: [10-incidencies](../docs/10-incidencies.md)

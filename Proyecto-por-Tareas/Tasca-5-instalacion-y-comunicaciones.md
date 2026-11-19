@@ -58,6 +58,10 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 *Demuestra: `ether1` (WAN) tiene IP por DHCP (10.0.2.15), `ether2` (LAN) tiene 192.168.23.1/24, la ruta por defecto sale por 10.0.2.2 y existe la regla de NAT *masquerade* de LAN23 hacia Internet.*
 
+![Reglas de la cadena forward](../evidencies/captures/mikrotik/03-cortafuegos-forward.png)
+
+*Demuestra: en el tráfico que atraviesa el router, el bloqueo de Telnet (regla 8) va antes que el permiso de HTTPS (9) y que la salida general LAN → Internet (10); al final, todo lo demás se descarta y se registra (`FWD-DROP`).*
+
 ![Log permitido y bloqueado](../evidencies/captures/mikrotik/04-log-permitido-bloqueado.png)
 
 *Demuestra: el cortafuegos registra una sola vez la conexión HTTPS permitida (`PERMITIDO-HTTPS`) y varias veces el mismo intento de Telnet bloqueado (`BLOQUEADO-TELNET`).*
@@ -67,6 +71,10 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 **Fallo y recuperación:** se borraron la IP de la LAN y el NAT (toda la empresa sin gateway). Se recuperó con `/system backup load name=copia-nas.backup` en **26 s** sin servicio. En el primer intento la copia estaba solo en el NAS y **no se podía alcanzar**, porque al NAS se llega a través del propio MikroTik. Lección: la copia tiene que poder alcanzarse sin el equipo que ha fallado. Ahora hay tres copias: en el router, en el NAS y el `/export` en Git.
 
 ### OPNsense
+
+![Panel principal de OPNsense](../evidencies/captures/opnsense/01-panel-principal.png)
+
+*Demuestra: OPNsense 26.7 funcionando, con la WAN (10.0.2.15/24, por DHCP) y la LAN (192.168.23.2/24) activas, la puerta de enlace `WAN_DHCP` (10.0.2.2) en línea y los servicios en verde.*
 
 ![Reglas de la LAN](../evidencies/captures/opnsense/03-reglas-cortafuegos-lan.png)
 
@@ -88,6 +96,16 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 *Demuestra: en DEB13-CLI la ruta por defecto es 192.168.23.3, el primer salto del `traceroute` es el Debian, HTTPS responde `HTTP/2 200` y Telnet se queda sin respuesta (timed out).*
 
+| Tabla / cadena | Política | Reglas importantes |
+|---|---|---|
+| `inet filtro` / input | **drop** | lo, established, ICMP, gestión desde LAN23, SSH solo desde el anfitrión; el resto se registra con `IN-DROP` |
+| `inet filtro` / forward | **drop** | established; **Telnet → drop + log `BLOQUEADO-TELNET`**; **HTTPS nuevo → accept + log `PERMITIDO-HTTPS`**; LAN → WAN accept; el resto con `FWD-DROP` |
+| `ip nat` / postrouting | accept | `oifname enp0s3 masquerade` |
+
+![Log de nftables](../evidencies/captures/debian-srv/02-log-permitido-bloqueado.png)
+
+*Demuestra: nftables registra en el log del kernel cada conexión HTTPS permitida una sola vez (el primer paquete) y los intentos de Telnet bloqueados uno por segundo (los reintentos del cliente). La salida se ha filtrado para mostrar solo hora, prefijo, origen, destino y puerto.*
+
 **Política `drop` por defecto:** todo lo que no se permite explícitamente se bloquea, así no hace falta conocer de antemano todos los ataques.
 
 **Fallo y recuperación:** se dejó un error de sintaxis en `/etc/nftables.conf` y se reinició el servidor. Al arrancar, `nftables: failed` con **0 reglas** (sin filtro y sin NAT). `journalctl -u nftables` señaló la línea exacta; se recuperó el fichero de la copia del NAS, se comprobó con `nft -c -f` y se aplicó: **21 s** sin Internet (casi todo es el reinicio).
@@ -101,6 +119,16 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 *Demuestra: el pool `copias` es un espejo de 2 discos con 18,89 GiB útiles, sano (`Online, no errors`) y con una comprobación (scrub) programada cada domingo.*
 
+![Discos del espejo](../evidencies/captures/truenas/03-vdev-espejo-sdb-sdc.png)
+
+*Demuestra: el espejo está formado por los discos adicionales `sdb` y `sdc` (20 GiB cada uno), los dos `ONLINE` y sin errores de lectura, escritura ni de suma de comprobación.*
+
+![Recurso NFS](../evidencies/captures/truenas/05-nfs-compartido.png)
+
+*Demuestra: el servicio NFS está en marcha y comparte `/mnt/copias/sistemas` para las copias de las VMs y contenedores de Proxmox (`nas-copias`).*
+
+**¿Por qué espejo?** Si se rompe un disco del NAS, las copias siguen en el otro. ZFS además comprueba cada bloque con una suma de verificación y el *scrub* semanal detecta datos dañados antes de que hagan falta.
+
 ## 4. Proxmox VE · clúster `asix23` (`.11`, `.12`, `.13`)
 
 - **Clúster de 3 nodos** (`pvecm create` + `pvecm add`). Se probó apagando un nodo: con 2 de 3 votos sigue habiendo **quórum** y todo funciona.
@@ -110,6 +138,16 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 ![Resumen del centro de datos](../evidencies/captures/proxmox/05-web-datacenter-resumen.png)
 
 *Demuestra: el clúster `asix23` tiene quórum (`Quorate: Yes`) con los 3 nodos en línea; el contenedor está en marcha y la VM de prueba, parada.*
+
+![Nodos del clúster](../evidencies/captures/proxmox/06-web-cluster-nodos.png)
+
+*Demuestra: los 3 nodos (pmx1, pmx2 y pmx3) forman parte del clúster, cada uno con 1 voto y su enlace de corosync en la red LAN23.*
+
+![Contenedor srv-infra en marcha](../evidencies/captures/proxmox/10-web-srv-infra.png)
+
+*Demuestra: el contenedor `srv-infra` (sin privilegios) está en marcha en el nodo pmx2 con la IP `192.168.23.30` y consume solo ~48 MB de los 512 MB de RAM asignados.*
+
+**Cuándo usar cada uno:** contenedor para servicios Linux ligeros (web, DNS, proxy), porque caben más en el mismo nodo; VM cuando hace falta otro sistema operativo (Windows Server), un kernel propio o más aislamiento.
 
 | | Contenedor (LXC) | Máquina virtual (KVM) |
 |---|---|---|
@@ -129,6 +167,10 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 **Copias:** `vzdump` del contenedor (205 MB en 47 s) y de la VM al NFS del NAS, con una tarea programada diaria a las 02:30.
 
+![Tarea de copia programada](../evidencies/captures/proxmox/09-web-tarea-copia-nas.png)
+
+*Demuestra: hay una tarea de copia activa para todos los nodos, cada día a las 02:30, que guarda el contenedor 100 y la VM 101 en `nas-copias`.*
+
 ![Copias guardadas en el NAS](../evidencies/captures/proxmox/11-web-copias-en-nas.png)
 
 *Demuestra: las copias del contenedor (`.tar.zst`, 205 MB) y de la VM (`.vma.zst`) están en el NFS del TrueNAS y se pueden restaurar desde aquí.*
@@ -145,6 +187,16 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 ![Unidades organizativas](../evidencies/captures/windows-server/02-ad-unidades-organizativas.png)
 
 *Demuestra: el dominio `asix23.lan` tiene una unidad organizativa por departamento (Administracion, Comercial, Direccion, Informatica y Produccion).*
+
+![Equipo W11-CLI en la OU Administracion](../evidencies/captures/windows-server/03-ad-equipo-w11-en-ou-administracion.png)
+
+*Demuestra: el cliente Windows 11 (`W11-CLI`) está unido al dominio y colocado en la OU de su departamento, Administracion.*
+
+![Zona DNS asix23.lan](../evidencies/captures/windows-server/04-dns-zona-asix23-lan.png)
+
+*Demuestra: la zona DNS `asix23.lan` está integrada en AD y tiene un registro A por cada equipo de LAN23 (routers, NAS, nodos Proxmox, intranet y clientes); el de `W11-CLI` se creó solo al unirse al dominio (tiene marca de tiempo).*
+
+**¿Por qué `.lan` y no `.local`?** `.local` está reservado para mDNS (Bonjour/Avahi) y da conflictos con Linux y macOS.
 
 **¿Qué es un dominio y qué aporta?** Un grupo de equipos y usuarios que comparten una base de datos central de cuentas (Active Directory). Con dominio hay **una sola cuenta por persona** válida en cualquier PC, las contraseñas se cambian una vez, las políticas (GPO) se aplican a todo un departamento y, si alguien se va, se deshabilita su cuenta y pierde el acceso a todo.
 
@@ -177,6 +229,10 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 *Demuestra: IP fija 192.168.23.51/24, gateway .1 y DNS .20; el DC resuelve y responde; el equipo es miembro de `asix23.lan` (`PartOfDomain: True`) y su canal seguro con el DC funciona.*
 
+![Propiedades del sistema: dominio asix23.lan](../evidencies/captures/w11-cli/02-propiedades-sistema-dominio-asix23.png)
+
+*Demuestra: en *Propiedades del sistema* el nombre completo del equipo es `W11-CLI.asix23.lan` y su dominio, `asix23.lan`.*
+
 ## 8. Incidencia provocada en una VM desechable
 
 En un **clon enlazado** de DEB13-CLI (si algo sale mal se borra y el original no se toca) añadí a `/etc/fstab` un disco que no existe.
@@ -192,6 +248,14 @@ En un **clon enlazado** de DEB13-CLI (si algo sale mal se borra y el original no
 ![Modo de emergencia](../evidencies/captures/incidencia/02-sintoma-modo-emergencia.png)
 
 *Síntoma: el arranque espera 90 s al disco inexistente y entra en modo de emergencia.*
+
+![Comprobación](../evidencies/captures/incidencia/03-comprobacion-blkid-fstab.png)
+
+*Comprobación: `blkid` no muestra el UUID que pide la línea 16 de `fstab`.*
+
+![Solución](../evidencies/captures/incidencia/04-solucion-fstab.png)
+
+*Solución: con la línea comentada, `mount -a` y `findmnt --verify` terminan sin errores.*
 
 **Cómo evitarlo:** comprobar con `mount -a` o `findmnt --verify` antes de reiniciar, y usar `nofail` en discos que no son imprescindibles.
 
@@ -209,9 +273,21 @@ El NAS **recoge** (*pull*) cada noche a las 02:00 las configuraciones con el scr
 
 Cada copia va a una carpeta por equipo y fecha, se borran las de más de 14 días y, si un equipo está apagado, se anota un aviso y se sigue con los demás.
 
+![Tarea cron de copias](../evidencies/captures/truenas/06-tarea-cron-copias.png)
+
+*Demuestra: la tarea programada ejecuta `copia-configs.sh` cada día a las 02:00 (`0 2 * * *`) con el usuario `izan` y está activada.*
+
 ![Copias guardadas en el NAS](../evidencies/captures/truenas/08-consola-copias-guardadas.png)
 
 *Demuestra: en `/mnt/copias/configs/` hay una carpeta por equipo con una subcarpeta por fecha, y el registro termina cada ejecución con `0 equipo(s) con error`.*
+
+**¿Qué tiene sentido copiar y qué no?**
+
+| Sí | No |
+|---|---|
+| Configuraciones: son pequeñas, cambian a menudo y cuesta mucho rehacerlas | El sistema operativo entero de un router o de Proxmox: se reinstala en minutos desde la ISO |
+| La base de datos de AD y las VMs y contenedores con servicios | Cachés, temporales y logs antiguos |
+| Datos de los usuarios | Copias de las copias en el mismo disco |
 
 ## Preguntas probables de la defensa
 

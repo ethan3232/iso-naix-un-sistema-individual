@@ -4,15 +4,12 @@
 Uso:  ~/iso-lab/pdf-venv/bin/python scripts/genera-tareas.py [Tasca-5 ...]
 
 Para cada ficha genera en entrega/tareas/:
-  <Tarea>/<Tarea>.md   el Markdown autónomo (imágenes en <Tarea>/img/, sin enlaces al resto del repo)
-  <Tarea>.zip          la carpeta comprimida, lista para subir a Aules
-  <Tarea>.pdf          la misma ficha en PDF (versión corta, para leerla o imprimirla)
+  <Tarea>.md    Markdown de una sola pieza: las imágenes y los enlaces apuntan al repositorio de GitHub
+  <Tarea>.pdf   la misma ficha en PDF, con las imágenes incrustadas y el enlace al repositorio
 """
 import importlib.util
 import re
-import shutil
 import sys
-import zipfile
 from pathlib import Path
 
 from pypdf import PdfReader
@@ -36,56 +33,70 @@ TAREAS = {  # nombre de la entrega: (ficha, color)
     "Transversal-predicciones-y-contingencia": ("Transversal.md", "suave"),
 }
 
-CABECERA = "**Alumno:** izan · 1.º ASIX · Puesto 23 · Red `192.168.23.0/24` · Dominio `asix23.lan` · CIP FP Batoi · Curso 2026-2027"
+REPO = "https://github.com/ethan3232/iso-naix-un-sistema-individual"
+CABECERA = ("**Alumno:** izan · 1.º ASIX · Puesto 23 · Red `192.168.23.0/24` · Dominio `asix23.lan` · CIP FP Batoi · Curso 2026-2027\n\n"
+            "**Repositorio del proyecto:** [{repo}]({repo}) · **Esta tarea en GitHub:** [{url}]({url})")
 
 
 def quita_seccion(texto, titulo):
     return re.sub(rf"^## +{titulo}.*?(?=^## |\Z)", "", texto, flags=re.M | re.S)
 
 
+def a_github(ficha, ruta, crudo=False):
+    """Convierte una ruta relativa del repositorio en su URL de GitHub."""
+    ruta, _, ancla = ruta.partition("#")
+    destino = (ficha.parent / ruta).resolve().relative_to(RAIZ).as_posix()
+    tipo = "raw" if crudo else ("tree" if (RAIZ / destino).is_dir() else "blob")
+    return f"{REPO}/{tipo}/main/{destino}" + (f"#{ancla}" if ancla else "")
+
+
 def md_autonomo(nombre, ficha):
-    """Devuelve el Markdown autónomo y la lista de imágenes (origen, nombre en img/)."""
+    """Markdown de una sola pieza: imágenes y enlaces apuntan al repositorio de GitHub.
+    Devuelve también la lista de imágenes locales (para el PDF)."""
     texto = ficha.read_text(encoding="utf-8")
     texto = M.limpia_emojis(texto)
     texto = quita_seccion(texto, "Evidencias")
     texto = texto.replace("## Preguntas probables de la defensa", "## Por qué lo he hecho así")
-    imagenes = []
+    locales = {}
 
     def img(m):
         alt, ruta = m.group(1), m.group(2)
         if ruta.startswith("http"):
             return m.group(0)
-        origen = (ficha.parent / ruta).resolve()
-        partes = origen.parts
-        destino = f"{partes[-2]}-{partes[-1]}" if "captures" in partes else partes[-1]
-        imagenes.append((origen, destino))
-        return f"![{alt}](img/{destino})"
+        url = a_github(ficha, ruta, crudo=True)
+        locales[url] = (ficha.parent / ruta).resolve()
+        return f"![{alt}]({url})"
 
     texto = re.sub(r"!\[([^\]]*)\]\(([^)\s]+)\)", img, texto)
-    # Enlaces internos del repositorio → solo el texto (fuera del repo no funcionarían)
-    texto = re.sub(r"(?<!!)\[([^\]]+)\]\((?!https?:)[^)\s]+\)", r"\1", texto)
-    # Cabecera con los datos del alumno debajo del título
-    texto = re.sub(r"^(# .+\n)", rf"\1\n{CABECERA}\n", texto, count=1)
+    texto = re.sub(r"(?<!!)\[([^\]]+)\]\((?!https?:|#)([^)\s]+)\)",
+                   lambda m: f"[{m.group(1)}]({a_github(ficha, m.group(2))})", texto)
+    url = f"{REPO}/blob/main/Proyecto-por-Tareas/{ficha.name}"
+    texto = re.sub(r"^(# .+\n)", lambda m: f"{m.group(1)}\n{CABECERA.format(repo=REPO, url=url)}\n", texto, count=1)
     texto = re.sub(r"\n{3,}", "\n\n", texto).strip() + "\n"
-    return texto, imagenes
+    texto += (f"\n---\n\n**Documentación completa, capturas, salidas de los comandos, configuraciones y scripts:** "
+              f"[{REPO}]({REPO})\n")
+    return texto, locales
 
 
 CSS_CORTO = """
 .ficha > h1 { font-size: 20pt; margin: 0 0 4pt; padding-bottom: 6pt; border-bottom: 4px solid var(--c); color: #0f172a; }
-.ficha > p:first-of-type { color: var(--suave); font-size: 8.5pt; }
+.ficha > h1 + p, .ficha > h1 + p + p { color: var(--suave); font-size: 8.5pt; margin: 2pt 0; word-break: break-all; }
 img { max-height: 95mm; }
 """
 
 
-def pdf(nombre, texto_md, carpeta, color):
-    texto = re.sub(r"!\[([^\]]*)\]\(img/([^)]+)\)", lambda m: f"![{m.group(1)}]({(carpeta / 'img' / m.group(2)).as_uri()})", texto_md)
+def pdf(nombre, texto_md, locales, color):
+    texto = texto_md
+    for url, ruta in locales.items():  # en el PDF las imágenes van incrustadas desde el disco
+        texto = texto.replace(f"]({url})", f"]({ruta.as_uri()})")
     cuerpo = M.markdown.markdown(texto, extensions=["tables", "fenced_code", "sane_lists", "attr_list", "md_in_html"])
     titulo = re.search(r"^# +(.+)$", texto_md, flags=re.M).group(1)
     doc = (f'<!doctype html><html lang="es"><head><meta charset="utf-8"><title>{titulo}</title>'
            f'<style>{M.CSS}{CSS_CORTO}</style></head><body>'
            f'<section class="ficha" style="--c:{M.COLOR[color]}">{cuerpo}</section></body></html>')
     original = M.IMPRIME
-    M.IMPRIME = original.replace("Naix un sistema · Memoria técnica", f"Naix un sistema · {titulo.split(' · ')[0]}")
+    M.IMPRIME = original.replace("Naix un sistema · Memoria técnica · izan · 1.º ASIX",
+                                 f"{titulo.split(' · ')[0]} · izan · github.com/ethan3232/iso-naix-un-sistema-individual")
     salida = SALIDA / f"{nombre}.pdf"
     M.imprime(doc, salida)
     M.IMPRIME = original
@@ -94,22 +105,10 @@ def pdf(nombre, texto_md, carpeta, color):
 
 def genera(nombre):
     ficha_nombre, color = TAREAS[nombre]
-    texto, imagenes = md_autonomo(nombre, FICHAS / ficha_nombre)
-    carpeta = SALIDA / nombre
-    if carpeta.exists():
-        shutil.rmtree(carpeta)
-    (carpeta / "img").mkdir(parents=True)
-    for origen, destino in imagenes:
-        shutil.copy2(origen, carpeta / "img" / destino)
-    (carpeta / f"{nombre}.md").write_text(texto, encoding="utf-8")
-
-    zip_ruta = SALIDA / f"{nombre}.zip"
-    with zipfile.ZipFile(zip_ruta, "w", zipfile.ZIP_DEFLATED) as z:
-        for f in sorted(carpeta.rglob("*")):
-            if f.is_file():
-                z.write(f, f.relative_to(SALIDA))
-    paginas = pdf(nombre, texto, carpeta, color)
-    print(f"{nombre}: {len(imagenes)} imágenes · PDF {paginas} páginas")
+    texto, locales = md_autonomo(nombre, FICHAS / ficha_nombre)
+    (SALIDA / f"{nombre}.md").write_text(texto, encoding="utf-8")
+    paginas = pdf(nombre, texto, locales, color)
+    print(f"{nombre}: {len(locales)} imágenes · PDF {paginas} páginas")
 
 
 if __name__ == "__main__":

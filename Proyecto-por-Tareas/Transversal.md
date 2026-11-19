@@ -49,3 +49,56 @@ Antes de cada fase escribí lo que esperaba que pasara, para compararlo después
 ## 3. Incidencias
 
 26 problemas reales encontrados durante el montaje, cada uno con síntoma, causa, solución y lección aprendida. La tabla completa está en la Tasca 0.
+
+## Desarrollo
+
+### Conceptos
+
+| Término | Qué significa | Ejemplo en mi sistema |
+|---|---|---|
+| **RTO** (*Recovery Time Objective*) | Tiempo máximo que puede estar parado un servicio | Internet: 5 min |
+| **RPO** (*Recovery Point Objective*) | Cuántos datos (medidos en tiempo) se pueden perder como máximo | Configuración de los routers: 24 h (copia diaria) |
+| **Tiempo real** | Lo que **medimos** al provocar el fallo | MikroTik: 26 s sin Internet en el cliente |
+
+> **Pregunta probable de defensa:** *"¿Qué diferencia hay entre RTO y RPO?"* → El RTO mira **hacia delante** (¿cuánto tardo en volver a funcionar?) y el RPO **hacia atrás** (¿desde cuándo pierdo cambios?). Una copia diaria da un RPO de hasta 24 h aunque la recuperación tarde solo segundos.
+
+### Procedimiento general ante un fallo
+
+1. **Detectar**: síntoma desde un cliente (`ping`, `curl`, no hay Internet, no inicia sesión…).
+2. **Aislar**: ¿es la red, el servidor o el cliente? `ping` al gateway → al servidor → a Internet.
+3. **Recuperar** con la vía más rápida que exista:
+   - Copia **local** si la hay (historial de OPNsense, `copia-nas.backup` en el MikroTik).
+   - Si no, copia del **NAS**.
+   - Si el equipo no vuelve: **router alternativo** (`canvi-gw.sh`) o **migrar** el servicio a otro nodo.
+4. **Verificar** desde el cliente (Internet, servicio, inicio de sesión).
+5. **Documentar** en `10-incidencies.md`: hora, causa, solución y tiempo real.
+
+### Lecciones aprendidas
+
+- **Una copia que no se puede alcanzar no sirve**: en el primer intento del MikroTik, la copia estaba en el NAS, pero al NAS se llegaba *a través* del propio router roto. Solución: guardar también una copia **en el propio equipo** y tener un camino alternativo (WAN).
+- **Un espejo no es una copia**: protege de un disco roto, no de un borrado o un ransomware.
+- **El host es el punto único de fallo** de todo el entorno de pruebas. En la empresa se reparte en varios equipos físicos (el clúster de 3 nodos y el NAS separados).
+
+### Puntos débiles detectados (con datos)
+
+| Punto débil | Evidencia | Mejora posible |
+|---|---|---|
+| NAS y VMs en el **mismo SSD** | Inventario: todo está en el Kingston A400 | Copia de las configuraciones fuera del PC (Git ✓) y de los VDI críticos a otro disco |
+| Copia del DC **manual** | `copia-ad.ps1` se lanza a mano | Tarea programada de Windows |
+| RPO de 24 h en los routers | Cron diario a las 02:00 | Copia tras cada cambio (como el historial de OPNsense) |
+| Migración del contenedor con **~84 s** de corte | Discos locales en cada nodo | Almacenamiento compartido (NFS del NAS) → solo se copia la RAM |
+
+### Valoración personal
+
+**¿Es adecuado el plan? Para un entorno de pruebas, sí; para la empresa real, tiene que mejorar en tres puntos.**
+
+Lo que me convence es que **casi todos los escenarios están probados de verdad, no solo escritos**: he borrado la configuración del MikroTik, he roto nftables, he metido una regla errónea en OPNsense, he migrado servicios entre nodos y he arrancado los RAID sin un disco. Todos los tiempos reales quedan **muy por debajo del RTO** que me había puesto (26 s frente a 5 min en el peor router) y en ninguna prueba se han perdido datos. Además, las pruebas me sirvieron para **corregir el propio plan**: la primera versión de la recuperación del MikroTik confiaba en el NAS y no funcionaba, porque el camino al NAS pasaba por el router roto. Si no lo hubiera probado, lo habría descubierto en el peor momento.
+
+Lo que tiene que mejorar:
+
+1. **El host es un punto único de fallo.** Todo vive en un solo PC y en un solo SSD (incluido el NAS que guarda las copias). En la empresa pondría el NAS en otro equipo físico y una segunda copia fuera de la oficina (regla 3-2-1). Aquí lo compenso en parte con las configuraciones en Git.
+2. **El RPO de 24 h de los routers es largo** para un equipo que cambia a menudo. Haría una copia tras cada cambio (como ya hace OPNsense con su historial).
+3. **Quedan escenarios solo simulados**: la recuperación del DC desde la copia IFM y la restauración de una VM desde `vzdump` en otro nodo. Están preparados y las copias verificadas, pero no los he ejecutado de principio a fin, así que su tiempo real no lo conozco. Serían las siguientes pruebas que haría.
+
+En resumen: el plan es **fiable para lo que se ha probado** y **honesto con lo que no**, que es lo que más me importa, porque un plan de contingencia que nunca se ha ensayado solo es una suposición.
+

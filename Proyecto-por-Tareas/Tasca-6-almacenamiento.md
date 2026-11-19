@@ -57,6 +57,65 @@
 - Logs: [`raid-creacion.txt`](../evidencies/logs/raid-creacion.txt) · [`raid-fallos.txt`](../evidencies/logs/raid-fallos.txt) · [`raid-rendimiento-fio.txt`](../evidencies/logs/raid-rendimiento-fio.txt) · [`drbd-espejo-red.txt`](../evidencies/logs/drbd-espejo-red.txt)
 - Configuración: [`configs/drbd/r0.res`](../configs/drbd/r0.res)
 
+## Desarrollo
+
+### Implementación
+
+```bash
+mdadm --create /dev/md0 --level=0 --raid-devices=2 /dev/sdb /dev/sdc
+mdadm --create /dev/md1 --level=1 --raid-devices=2 /dev/sdd /dev/sde
+mdadm --create /dev/md5 --level=5 --raid-devices=3 /dev/sdf /dev/sdg /dev/sdh
+mkfs.ext4 -L raid-0 /dev/md0      # (igual con md1 y md5)
+mdadm --detail --scan >> /etc/mdadm/mdadm.conf   # para que se monten solos al arrancar
+update-initramfs -u
+# /etc/fstab:
+LABEL=raid-0 /srv/raid0 ext4 defaults,nofail 0 2
+```
+
+- **`mdadm.conf` + `update-initramfs`**: sin esto, al reiniciar los RAID pueden aparecer con otro nombre (`md127`) y el `fstab` no los encuentra.
+- **`nofail` en el `fstab`**: es la lección de la [incidencia provocada](../docs/10-incidencies.md). Si un RAID no arranca, el servidor arranca igualmente en lugar de quedarse en modo de emergencia.
+- **Montar por `LABEL`** y no por `/dev/mdX`: si cambia el número del dispositivo, la etiqueta sigue siendo la misma.
+- Copias de los ficheros originales en la VM: `/etc/fstab.antes-raid` y `/etc/mdadm/mdadm.conf.antes-raid` (vuelta atrás).
+
+#### Capacidad resultante
+
+| RAID | Espacio bruto | Espacio útil | Aprovechamiento | Fórmula |
+|---|---|---|---|---|
+| RAID 0 | 2 GB | **2,0 GB** | 100 % | N × disco |
+| RAID 1 | 2 GB | **1,0 GB** | 50 % | 1 disco |
+| RAID 5 | 3 GB | **2,0 GB** | 67 % | (N − 1) × disco |
+
+### Verificación: fallos provocados
+
+Método: se escriben **100 MB aleatorios** en cada RAID y se guarda su **SHA256**. Después se provoca el fallo y se comprueba si los datos siguen siendo **accesibles** y **exactamente iguales**. Durante el fallo, un bucle lee el fichero cada 0,5 s (vaciando la caché) para ver si el servicio se corta.
+
+| Prueba | Qué se hace | Resultado | ¿Datos? |
+|---|---|---|---|
+| **RAID 0** sin un disco | Se para `md0` y se intenta arrancar solo con `sdb` | ✗ *"Not enough devices to start the array"*: **no arranca** | Inaccesibles (vuelven al poner los 2 discos) |
+| **RAID 1** pierde `sde` | `mdadm --fail` → `--remove` → `--add sdi` | ✓ Sigue funcionando `[U_]` · **22 lecturas correctas, 0 fallidas** | SHA256 coincide en modo degradado y tras reconstruir |
+| Reconstrucción RAID 1 | Copia completa de `sdd` → `sdi` | ✓ **54,3 s** (1 GB) · estado final `[UU]` | ✓ |
+| **RAID 5** pierde `sdg` | `--fail` → `--remove` → `--add sde` (el disco "reparado") | ✓ Sigue funcionando `[U_U]` · **7 lecturas correctas, 0 fallidas** | SHA256 coincide |
+| Reconstrucción RAID 5 | Recalcula el disco que falta con la **paridad** | ✓ **14,6 s** · estado final `[UUU]` | ✓ |
+| **RAID 5 + disco de reserva** | `--add-spare sdg` y se rompe `sdf` **sin tocar nada más** | ✓ La reserva entra **automáticamente** y se reconstruye en **21,2 s** | ✓ |
+| **Reinicio** | `systemctl reboot` | ✓ Los 3 RAID se montan solos | ✓ Los 3 SHA256 coinciden |
+
+**Observaciones de la prueba:**
+- En modo degradado el RAID 5 hizo **7 lecturas en 20 s** y el RAID 1 **22**. Con un disco menos, cada lectura del RAID 5 tiene que **recalcular los datos que faltan con la paridad** (XOR), así que va más lenta. En cambio, el RAID 1 sigue teniendo una copia completa.
+- La reconstrucción del RAID 1 (54 s) fue más lenta que la del RAID 5 (15 s). No es por el tipo de RAID: el disco nuevo del RAID 1 (`sdi`) era un VDI **sin estrenar** y VirtualBox tenía que hacer crecer el fichero mientras escribía. Ver el apartado 4.
+
+### Comparativa: qué ganamos con cada tipo
+
+| | RAID 0 (*striping*) | RAID 1 (espejo) | RAID 5 (paridad distribuida) |
+|---|---|---|---|
+| Discos mínimos | 2 | 2 | 3 |
+| Espacio útil | 100 % | 50 % | (N−1)/N → 67 % con 3 |
+| ¿Aguanta un disco roto? | ✗ **No**, y con N discos el riesgo se multiplica por N | ✓ Sí | ✓ Sí (solo **uno**) |
+| Lectura (teoría) | Muy alta: N discos en paralelo | Mejor: puede leer de los dos | Mejor: lee de N discos |
+| Escritura (teoría) | Muy alta | = (escribe en los dos) | Peor: *penalización de escritura*: leer, recalcular la paridad y escribir |
+| En modo degradado | — (perdido) | Igual de rápido | **Más lento** (recalcula con la paridad; lo hemos visto: 7 lecturas frente a 22) |
+| Uso típico | Datos temporales, caché, edición de vídeo **con copia aparte** | Disco del sistema, servidores pequeños, el pool del NAS | Servidor de ficheros: buen equilibrio de espacio y seguridad |
+| En mi sistema | No se usaría para datos de la empresa | **Pool `copias` del TrueNAS** (espejo) | Carpetas de departamentos en DEB13-SRV2 |
+
 ## Cómo comprobarlo
 
 ```bash

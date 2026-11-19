@@ -2,6 +2,8 @@
 
 **Alumno:** izan · 1.º ASIX · Puesto 23 · Red `192.168.23.0/24` · Dominio `asix23.lan` · CIP FP Batoi · Curso 2026-2027
 
+**Repositorio del proyecto:** [https://github.com/ethan3232/iso-naix-un-sistema-individual](https://github.com/ethan3232/iso-naix-un-sistema-individual) · **Esta tarea en GitHub:** [https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/Proyecto-por-Tareas/Tasca-5-instalacion-y-comunicaciones.md](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/Proyecto-por-Tareas/Tasca-5-instalacion-y-comunicaciones.md)
+
 **Módulos:** ISO-RA1, FDM-RA1 · **Estado:**  Apte ·  Apte+
 
 ## Qué pide el enunciado
@@ -56,11 +58,15 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 ### MikroTik RouterOS
 
-![Direcciones, rutas y NAT](img/mikrotik-01-red-ruta-nat.png)
+![Direcciones, rutas y NAT](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/mikrotik/01-red-ruta-nat.png)
 
 *Demuestra: `ether1` (WAN) tiene IP por DHCP (10.0.2.15), `ether2` (LAN) tiene 192.168.23.1/24, la ruta por defecto sale por 10.0.2.2 y existe la regla de NAT *masquerade* de LAN23 hacia Internet.*
 
-![Log permitido y bloqueado](img/mikrotik-04-log-permitido-bloqueado.png)
+![Reglas de la cadena forward](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/mikrotik/03-cortafuegos-forward.png)
+
+*Demuestra: en el tráfico que atraviesa el router, el bloqueo de Telnet (regla 8) va antes que el permiso de HTTPS (9) y que la salida general LAN → Internet (10); al final, todo lo demás se descarta y se registra (`FWD-DROP`).*
+
+![Log permitido y bloqueado](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/mikrotik/04-log-permitido-bloqueado.png)
 
 *Demuestra: el cortafuegos registra una sola vez la conexión HTTPS permitida (`PERMITIDO-HTTPS`) y varias veces el mismo intento de Telnet bloqueado (`BLOQUEADO-TELNET`).*
 
@@ -70,11 +76,15 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 ### OPNsense
 
-![Reglas de la LAN](img/opnsense-03-reglas-cortafuegos-lan.png)
+![Panel principal de OPNsense](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/opnsense/01-panel-principal.png)
+
+*Demuestra: OPNsense 26.7 funcionando, con la WAN (10.0.2.15/24, por DHCP) y la LAN (192.168.23.2/24) activas, la puerta de enlace `WAN_DHCP` (10.0.2.2) en línea y los servicios en verde.*
+
+![Reglas de la LAN](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/opnsense/03-reglas-cortafuegos-lan.png)
 
 *Demuestra: en la interfaz LAN la regla que bloquea Telnet (puerto 23) está la primera, antes que la que permite HTTPS (443) y que las reglas por defecto que dejan salir a la LAN.*
 
-![Live View del cortafuegos](img/opnsense-04-live-view-permitido-bloqueado.png)
+![Live View del cortafuegos](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/opnsense/04-live-view-permitido-bloqueado.png)
 
 *Demuestra: en Firewall → Log Files → Live View, filtrado por el cliente 192.168.23.54, la conexión HTTPS sale en verde (`pass`) y los intentos de Telnet en rojo (`block`).*
 
@@ -82,13 +92,23 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 ### Debian 13 con nftables
 
-![Reenvío, reglas forward y NAT](img/debian-srv-01-reenvio-reglas-forward-nat.png)
+![Reenvío, reglas forward y NAT](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/debian-srv/01-reenvio-reglas-forward-nat.png)
 
 *Demuestra: el reenvío está activo (`ip_forward = 1`); la cadena `forward` tiene política `drop`, bloquea Telnet antes de permitir HTTPS y la salida LAN → Internet, y la tabla `nat` hace masquerade por la WAN.*
 
-![Pruebas desde el cliente](img/debian-srv-03-cliente-pruebas-por-gw-debian.png)
+![Pruebas desde el cliente](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/debian-srv/03-cliente-pruebas-por-gw-debian.png)
 
 *Demuestra: en DEB13-CLI la ruta por defecto es 192.168.23.3, el primer salto del `traceroute` es el Debian, HTTPS responde `HTTP/2 200` y Telnet se queda sin respuesta (timed out).*
+
+| Tabla / cadena | Política | Reglas importantes |
+|---|---|---|
+| `inet filtro` / input | **drop** | lo, established, ICMP, gestión desde LAN23, SSH solo desde el anfitrión; el resto se registra con `IN-DROP` |
+| `inet filtro` / forward | **drop** | established; **Telnet → drop + log `BLOQUEADO-TELNET`**; **HTTPS nuevo → accept + log `PERMITIDO-HTTPS`**; LAN → WAN accept; el resto con `FWD-DROP` |
+| `ip nat` / postrouting | accept | `oifname enp0s3 masquerade` |
+
+![Log de nftables](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/debian-srv/02-log-permitido-bloqueado.png)
+
+*Demuestra: nftables registra en el log del kernel cada conexión HTTPS permitida una sola vez (el primer paquete) y los intentos de Telnet bloqueados uno por segundo (los reintentos del cliente). La salida se ha filtrado para mostrar solo hora, prefijo, origen, destino y puerto.*
 
 **Política `drop` por defecto:** todo lo que no se permite explícitamente se bloquea, así no hace falta conocer de antemano todos los ataques.
 
@@ -99,9 +119,19 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 - Administración por la web con `truenas_admin` (TrueNAS 25 ya no deja entrar como `root`) y el usuario `izan` (administrador, con clave SSH para las copias). IP fija 192.168.23.10/24 en LAN23.
 - **Disco adicional para copias:** dos discos de 20 GB en **espejo ZFS** (pool `copias`), con dos datasets: `configs` (configuraciones) y `sistemas` (copias de Proxmox, compartido por NFS).
 
-![Pool copias](img/truenas-02-pool-copias.png)
+![Pool copias](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/truenas/02-pool-copias.png)
 
 *Demuestra: el pool `copias` es un espejo de 2 discos con 18,89 GiB útiles, sano (`Online, no errors`) y con una comprobación (scrub) programada cada domingo.*
+
+![Discos del espejo](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/truenas/03-vdev-espejo-sdb-sdc.png)
+
+*Demuestra: el espejo está formado por los discos adicionales `sdb` y `sdc` (20 GiB cada uno), los dos `ONLINE` y sin errores de lectura, escritura ni de suma de comprobación.*
+
+![Recurso NFS](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/truenas/05-nfs-compartido.png)
+
+*Demuestra: el servicio NFS está en marcha y comparte `/mnt/copias/sistemas` para las copias de las VMs y contenedores de Proxmox (`nas-copias`).*
+
+**¿Por qué espejo?** Si se rompe un disco del NAS, las copias siguen en el otro. ZFS además comprueba cada bloque con una suma de verificación y el *scrub* semanal detecta datos dañados antes de que hagan falta.
 
 ## 4. Proxmox VE · clúster `asix23` (`.11`, `.12`, `.13`)
 
@@ -109,9 +139,19 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 - **Servidores:** contenedor LXC `srv-infra` (`.30`, intranet con nginx) y una VM KVM de prueba para las migraciones.
 - **Almacenamiento:** `local` y `local-lvm` en cada nodo, y `nas-copias` (NFS del TrueNAS) compartido para las copias.
 
-![Resumen del centro de datos](img/proxmox-05-web-datacenter-resumen.png)
+![Resumen del centro de datos](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/proxmox/05-web-datacenter-resumen.png)
 
 *Demuestra: el clúster `asix23` tiene quórum (`Quorate: Yes`) con los 3 nodos en línea; el contenedor está en marcha y la VM de prueba, parada.*
+
+![Nodos del clúster](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/proxmox/06-web-cluster-nodos.png)
+
+*Demuestra: los 3 nodos (pmx1, pmx2 y pmx3) forman parte del clúster, cada uno con 1 voto y su enlace de corosync en la red LAN23.*
+
+![Contenedor srv-infra en marcha](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/proxmox/10-web-srv-infra.png)
+
+*Demuestra: el contenedor `srv-infra` (sin privilegios) está en marcha en el nodo pmx2 con la IP `192.168.23.30` y consume solo ~48 MB de los 512 MB de RAM asignados.*
+
+**Cuándo usar cada uno:** contenedor para servicios Linux ligeros (web, DNS, proxy), porque caben más en el mismo nodo; VM cuando hace falta otro sistema operativo (Windows Server), un kernel propio o más aislamiento.
 
 | | Contenedor (LXC) | Máquina virtual (KVM) |
 |---|---|---|
@@ -131,7 +171,11 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 **Copias:** `vzdump` del contenedor (205 MB en 47 s) y de la VM al NFS del NAS, con una tarea programada diaria a las 02:30.
 
-![Copias guardadas en el NAS](img/proxmox-11-web-copias-en-nas.png)
+![Tarea de copia programada](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/proxmox/09-web-tarea-copia-nas.png)
+
+*Demuestra: hay una tarea de copia activa para todos los nodos, cada día a las 02:30, que guarda el contenedor 100 y la VM 101 en `nas-copias`.*
+
+![Copias guardadas en el NAS](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/proxmox/11-web-copias-en-nas.png)
 
 *Demuestra: las copias del contenedor (`.tar.zst`, 205 MB) y de la VM (`.vma.zst`) están en el NFS del TrueNAS y se pueden restaurar desde aquí.*
 
@@ -140,13 +184,23 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 - Instalación desatendida, IP fija 192.168.23.20/24, gateway `.1` y DNS `127.0.0.1` (él mismo).
 - Roles **AD DS + DNS**: dominio `asix23.lan` (NetBIOS `ASIX23`), una **OU por departamento** y reenviador DNS al gateway para los nombres de Internet.
 
-![Administrador del servidor](img/windows-server-01-administrador-servidor-ad-ds-dns.png)
+![Administrador del servidor](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/windows-server/01-administrador-servidor-ad-ds-dns.png)
 
 *Demuestra: el servidor tiene instalados los roles AD DS y DNS y los dos están en buen estado.*
 
-![Unidades organizativas](img/windows-server-02-ad-unidades-organizativas.png)
+![Unidades organizativas](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/windows-server/02-ad-unidades-organizativas.png)
 
 *Demuestra: el dominio `asix23.lan` tiene una unidad organizativa por departamento (Administracion, Comercial, Direccion, Informatica y Produccion).*
+
+![Equipo W11-CLI en la OU Administracion](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/windows-server/03-ad-equipo-w11-en-ou-administracion.png)
+
+*Demuestra: el cliente Windows 11 (`W11-CLI`) está unido al dominio y colocado en la OU de su departamento, Administracion.*
+
+![Zona DNS asix23.lan](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/windows-server/04-dns-zona-asix23-lan.png)
+
+*Demuestra: la zona DNS `asix23.lan` está integrada en AD y tiene un registro A por cada equipo de LAN23 (routers, NAS, nodos Proxmox, intranet y clientes); el de `W11-CLI` se creó solo al unirse al dominio (tiene marca de tiempo).*
+
+**¿Por qué `.lan` y no `.local`?** `.local` está reservado para mDNS (Bonjour/Avahi) y da conflictos con Linux y macOS.
 
 **¿Qué es un dominio y qué aporta?** Un grupo de equipos y usuarios que comparten una base de datos central de cuentas (Active Directory). Con dominio hay **una sola cuenta por persona** válida en cualquier PC, las contraseñas se cambian una vez, las políticas (GPO) se aplican a todo un departamento y, si alguien se va, se deshabilita su cuenta y pierde el acceso a todo.
 
@@ -158,11 +212,11 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 - **SRV2:** servidor de ficheros con Samba (recurso `compartida` sobre el RAID 1) y los RAID de la Tasca 6. **SRV3:** servidor web Apache con la intranet.
 - **Copia:** el NAS se lleva cada noche `/etc` (red, `fstab`, RAID, Samba, Apache). El sistema se reinstala en ~15 min.
 
-![Recurso Samba en SRV2](img/debian-servidors-04-srv2-samba-compartida.png)
+![Recurso Samba en SRV2](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/debian-servidors/04-srv2-samba-compartida.png)
 
 *Demuestra: el recurso `[compartida]` está definido, el servicio `smbd` está activo y un usuario autenticado puede listar los archivos de la carpeta.*
 
-![Apache sirviendo la intranet en SRV3](img/debian-servidors-05-srv3-apache-intranet.png)
+![Apache sirviendo la intranet en SRV3](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/debian-servidors/05-srv3-apache-intranet.png)
 
 *Demuestra: Apache está activo, escucha en el puerto 80 y sirve la página de la intranet en 192.168.23.22.*
 
@@ -175,9 +229,13 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 | Dominio |  Unido a `asix23.lan` en la OU Administracion |  No: es el puesto de pruebas que cambia de gateway constantemente; unirlo no aporta nada a las pruebas |
 | Copia | Los datos del usuario van al servidor; el sistema se reinstala | `/etc` y `/home` al NAS cuando se necesite |
 
-![Red, ping al DC y pertenencia al dominio](img/w11-cli-01-red-ping-dc-miembro-dominio.png)
+![Red, ping al DC y pertenencia al dominio](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/w11-cli/01-red-ping-dc-miembro-dominio.png)
 
 *Demuestra: IP fija 192.168.23.51/24, gateway .1 y DNS .20; el DC resuelve y responde; el equipo es miembro de `asix23.lan` (`PartOfDomain: True`) y su canal seguro con el DC funciona.*
+
+![Propiedades del sistema: dominio asix23.lan](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/w11-cli/02-propiedades-sistema-dominio-asix23.png)
+
+*Demuestra: en *Propiedades del sistema* el nombre completo del equipo es `W11-CLI.asix23.lan` y su dominio, `asix23.lan`.*
 
 ## 8. Incidencia provocada en una VM desechable
 
@@ -191,9 +249,17 @@ En un **clon enlazado** de DEB13-CLI (si algo sale mal se borra y el original no
 | **Solución** | Comentar la línea, `mount -a` y `findmnt --verify` sin errores |
 | **Vuelta al estado normal** | Reinicio: arranca hasta la pantalla de inicio de sesión |
 
-![Modo de emergencia](img/incidencia-02-sintoma-modo-emergencia.png)
+![Modo de emergencia](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/incidencia/02-sintoma-modo-emergencia.png)
 
 *Síntoma: el arranque espera 90 s al disco inexistente y entra en modo de emergencia.*
+
+![Comprobación](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/incidencia/03-comprobacion-blkid-fstab.png)
+
+*Comprobación: `blkid` no muestra el UUID que pide la línea 16 de `fstab`.*
+
+![Solución](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/incidencia/04-solucion-fstab.png)
+
+*Solución: con la línea comentada, `mount -a` y `findmnt --verify` terminan sin errores.*
 
 **Cómo evitarlo:** comprobar con `mount -a` o `findmnt --verify` antes de reiniciar, y usar `nofail` en discos que no son imprescindibles.
 
@@ -211,11 +277,27 @@ El NAS **recoge** (*pull*) cada noche a las 02:00 las configuraciones con el scr
 
 Cada copia va a una carpeta por equipo y fecha, se borran las de más de 14 días y, si un equipo está apagado, se anota un aviso y se sigue con los demás.
 
-![Copias guardadas en el NAS](img/truenas-08-consola-copias-guardadas.png)
+![Tarea cron de copias](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/truenas/06-tarea-cron-copias.png)
+
+*Demuestra: la tarea programada ejecuta `copia-configs.sh` cada día a las 02:00 (`0 2 * * *`) con el usuario `izan` y está activada.*
+
+![Copias guardadas en el NAS](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/truenas/08-consola-copias-guardadas.png)
 
 *Demuestra: en `/mnt/copias/configs/` hay una carpeta por equipo con una subcarpeta por fecha, y el registro termina cada ejecución con `0 equipo(s) con error`.*
+
+**¿Qué tiene sentido copiar y qué no?**
+
+| Sí | No |
+|---|---|
+| Configuraciones: son pequeñas, cambian a menudo y cuesta mucho rehacerlas | El sistema operativo entero de un router o de Proxmox: se reinstala en minutos desde la ISO |
+| La base de datos de AD y las VMs y contenedores con servicios | Cachés, temporales y logs antiguos |
+| Datos de los usuarios | Copias de las copias en el mismo disco |
 
 ## Por qué lo he hecho así
 
 - **¿Contenedor o VM?** El contenedor comparte el kernel del nodo: arranca en segundos y gasta poca RAM, pero solo ejecuta Linux. La VM tiene su propio kernel, aísla más y permite migración en caliente (8 ms frente a ~84 s).
 - **¿Por qué las copias las recoge el NAS y no las envían los equipos?** Para que ningún equipo guarde credenciales del NAS: un atacante en un router no podría borrar las copias.
+
+---
+
+**Documentación completa, capturas, salidas de los comandos, configuraciones y scripts:** [https://github.com/ethan3232/iso-naix-un-sistema-individual](https://github.com/ethan3232/iso-naix-un-sistema-individual)

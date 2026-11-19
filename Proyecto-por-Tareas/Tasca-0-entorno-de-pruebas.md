@@ -76,6 +76,44 @@ Cada problema se resolvió con el método **síntoma → hipótesis → comproba
 - Problemas y soluciones: [10-incidencies](../docs/10-incidencies.md)
 - Repositorio: https://github.com/ethan3232/iso-naix-un-sistema-individual
 
+## Desarrollo
+
+### Tabla de máquinas
+
+Host de todas: **eth4n** (Linux Mint 22.3, Core Ultra 5 125H 14C/18T, 30 GiB RAM, SSD Kingston A400 960 GB en caja USB 5 Gb/s). Hipervisor: VirtualBox 7.0.20. Grupo de VMs: `ISO-INDV`.
+
+| Nombre (VM) | Función | SO | vCPU | RAM | Disco | Red (VirtualBox) | Firmware |
+|---|---|---|---|---|---|---|---|
+| Mikrotik-IND | Comunicaciones · gateway .1 | RouterOS 7.24.5 x86 | 2 | 512 MB | 2 GB | NAT + LAN23 | BIOS |
+| OPNsense | Comunicaciones · .2 | OPNsense 26.7 | 2 | 2 GB | 20 GB | NAT + LAN23 | BIOS |
+| DEB13-SRV1-NFT | Comunicaciones · .3 (nftables) | Debian 13 | 1 | 2 GB | 20 GB | NAT + LAN23 | BIOS |
+| TrueNas | NAS · .10 | TrueNAS SCALE 25.10.7 | 2 | 4 GB | 32 + 20 + 20 GB | LAN23 | BIOS |
+| PMX1 | Virtualización · nodo 1 · .11 | Proxmox VE 9.2 | 2 | 4 GB | 20 GB | LAN23 (promiscuo) | BIOS |
+| PMX2 | Virtualización · nodo 2 · .12 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN23 (promiscuo) | BIOS |
+| PMX3 | Virtualización · nodo 3 · .13 | Proxmox VE 9.2 | 2 | 4 GB | 20 GB | LAN23 (promiscuo) | BIOS |
+| DEB13-SRV2 (*) | Ficheros · RAID 0/1/5 (mdadm) · espejo DRBD · .21 | Debian 13 | 1 | 1 GB | 20 GB + 8 × 1 GB (RAID) + 1 GB (DRBD) | LAN23 (**virtio**) | BIOS |
+| DEB13-SRV3 (*) | Web (Apache) · espejo DRBD · .22 | Debian 13 | 1 | 1 GB | 20 GB + 1 GB (DRBD) | LAN23 (**virtio**) | BIOS |
+| WS2025-DC (*) | Dominio AD DS + DNS · .20 | Windows Server 2025 Std (escritorio) | 2 | 4 GB | 50 GB | LAN23 | **UEFI + TPM 2.0** |
+| (LXC en PMX) | Servidor de infraestructura · .30 | Debian 13 (contenedor) | 1 | 512 MB | 8 GB | vmbr0 → LAN23 | — |
+| W11-CLI | Cliente Administración · .51 | Windows 11 Pro 25H2 | 2 | 4 GB | 64 GB | LAN23 | **UEFI + TPM 2.0** |
+| DEB13-CLI | Cliente Informática · .54 | Debian 13 (GNOME) | 1 | 4 GB | 20 GB | LAN23 | BIOS |
+
+> (*) **DEB13-SRV2, DEB13-SRV3 y WS2025-DC** van, en el diseño, **dentro del clúster Proxmox** (PMX1, PMX3 y PMX2). Por falta de RAM para la virtualización anidada se ejecutan como VMs de VirtualBox en LAN23, con la misma IP y función. Explicación y cálculo en [04 §5.1](../docs/04-disseny.md#51-servidores-dentro-del-clúster-simulados).
+
+Discos: **VDI de reserva dinámica** (solo ocupan lo que se usa). Ocupación real: ver [inventario](../docs/02-inventari.md).
+
+### Escenarios de arranque
+
+| Escenario | VMs encendidas | RAM | ¿Para qué? |
+|---|---|---|---|
+| **A · Comunicaciones** | router activo (.1, .2 o .3) + DEB13-CLI + TrueNas | 9–10,5 GB | Pruebas de gateway, NAT, cortafuegos, copias |
+| **B · Dominio** | Mikrotik-IND + WS2025-DC + W11-CLI + TrueNas | 12,5 GB | AD DS, DNS, unión al dominio |
+| **C · Clúster** | Mikrotik-IND + PMX1 + PMX2 + TrueNas | 12,5 GB | Clúster, migraciones, contenedor |
+| **D · RAID / rendimiento** | Mikrotik-IND + DEB13-SRV2 + DEB13-SRV3 | 2,5 GB | RAID con mdadm, espejo DRBD, carga y optimizaciones (Tasca 7) |
+| **E · Máximo** | Se van encendiendo mientras quede ≥ 1 GB libre | casa: 6,6 GB (5 VMs) | Tasca 7: límite real medido ([08 §4](../docs/08-rendiment.md)) |
+
+> En **casa** (16 GB) caben A y D. B y C solo en clase (o en casa sin el NAS).
+
 ## Cómo comprobarlo
 
 ```bash

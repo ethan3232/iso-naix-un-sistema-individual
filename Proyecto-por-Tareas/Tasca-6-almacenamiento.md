@@ -1,6 +1,6 @@
 # Tasca 6 · Almacenamiento
 
-**Módulo:** ISO-RA3 · **Estado:** ✅ Apte · ✅ Apte+
+**Módulo:** ISO-RA3 · **Estado:** ✓ Apte · ✓ Apte+
 
 ## Qué pide el enunciado
 
@@ -19,9 +19,9 @@
 
 | RAID | Espacio útil | ¿Aguanta un disco roto? | Resultado de la prueba |
 |---|---|---|---|
-| RAID 0 | 2,0 GB (100 %) | ❌ No | Más espacio y velocidad teórica, sin protección |
-| RAID 1 | 1,0 GB (50 %) | ✅ Sí | 0 lecturas fallidas en modo degradado · reconstrucción en **54 s** |
-| RAID 5 | 2,0 GB (67 %) | ✅ Sí (solo uno) | 0 lecturas fallidas · reconstrucción en **15 s** · **disco de reserva automático en 21 s** |
+| RAID 0 | 2,0 GB (100 %) | ✗ No | Más espacio y velocidad teórica, sin protección |
+| RAID 1 | 1,0 GB (50 %) | ✓ Sí | 0 lecturas fallidas en modo degradado · reconstrucción en **54 s** |
+| RAID 5 | 2,0 GB (67 %) | ✓ Sí (solo uno) | 0 lecturas fallidas · reconstrucción en **15 s** · **disco de reserva automático en 21 s** |
 
 **Qué se gana con cada uno:** RAID 0 da rendimiento sin seguridad (datos temporales). RAID 1 da seguridad sencilla (disco del sistema, pool del NAS). RAID 5 equilibra espacio y seguridad (carpetas de los departamentos).
 

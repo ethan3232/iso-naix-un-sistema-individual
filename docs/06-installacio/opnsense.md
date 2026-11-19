@@ -8,7 +8,7 @@
 | Recursos | 2 vCPU · 2 GB RAM · 20 GB · BIOS |
 | Interfaces | `em0` = **WAN** (NAT VirtualBox, DHCP 10.0.2.15) · `em1` = **LAN** 192.168.23.2/24 |
 | Gestión | Web `https://127.0.0.1:8402` desde el PC (redirección por MikroTik) · consola |
-| Estado | ✅ Instalado, configurado y probado |
+| Estado | ✓ Instalado, configurado y probado |
 
 ## 1. Requisitos, licencia e imagen
 
@@ -57,8 +57,8 @@ Reglas creadas en la interfaz **LAN** (por la API de OPNsense, igual que en *Fir
 
 | Secuencia | Acción | Protocolo / puerto | Log | Descripción |
 |---|---|---|---|---|
-| 10 | **block** | TCP 23 | ✅ | PRUEBA BLOQUEADA: Telnet |
-| 20 | **pass** | TCP 443 | ✅ | PRUEBA PERMITIDA: HTTPS |
+| 10 | **block** | TCP 23 | ✓ | PRUEBA BLOQUEADA: Telnet |
+| 20 | **pass** | TCP 443 | ✓ | PRUEBA PERMITIDA: HTTPS |
 | 50 | pass | cualquiera | — | Default allow LAN to any |
 
 ![Reglas de la LAN](../../evidencies/captures/opnsense/03-reglas-cortafuegos-lan.png)

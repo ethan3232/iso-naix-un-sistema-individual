@@ -22,7 +22,7 @@ Antes de cada fase escribí lo que esperaba que pasara, para compararlo después
 | VM que no arranca (`fstab`) | 30 min | Resuelto con el método de diagnóstico | 0 |
 | Disco roto en RAID 1/5 | 0 | 0 s sin servicio · reconstrucción 54 s / 15 s | 0 |
 | Servidor de ficheros caído (DRBD) | 5 min | **~13 s** | 0 |
-| DC de Windows perdido · cliente estropeado · host roto · disco del NAS | — | 🧪 Simulados: con copia hecha y verificada | Según la copia |
+| DC de Windows perdido · cliente estropeado · host roto · disco del NAS | — | Simulados: con copia hecha y verificada | Según la copia |
 
 **Punto único de fallo:** el PC anfitrión. En una empresa real habría varios hosts físicos y el NAS fuera del host.
 

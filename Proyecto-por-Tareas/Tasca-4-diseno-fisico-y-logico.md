@@ -1,6 +1,6 @@
 # Tasca 4 · Diseño físico y lógico
 
-**Módulos:** FDM-RA4, ISO-RA1, ISO-RA3 · **Estado:** ✅ Apte · ✅ Apte+
+**Módulos:** FDM-RA4, ISO-RA1, ISO-RA3 · **Estado:** ✓ Apte · ✓ Apte+
 
 ## Qué pide el enunciado
 

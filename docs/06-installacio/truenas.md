@@ -8,7 +8,7 @@
 | Recursos | 2 vCPU · 4 GB RAM · disco de arranque 32 GB + **2 discos de 20 GB** para datos |
 | Red | `enp0s3` en `LAN23` · 192.168.23.10/24 · gw 192.168.23.1 · DNS 192.168.23.1 · dominio `asix23.lan` · **fija** |
 | Gestión | Web: `https://127.0.0.1:8410` desde el PC (redirección por MikroTik) · SSH: `127.0.0.1:2210` |
-| Estado | ✅ Configurado; recibe copias automáticas |
+| Estado | ✓ Configurado; recibe copias automáticas |
 
 ## 1. Requisitos, licencia e imagen
 

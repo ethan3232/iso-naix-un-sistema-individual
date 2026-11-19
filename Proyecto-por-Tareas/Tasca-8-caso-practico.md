@@ -1,6 +1,6 @@
 # Tasca 8 · Caso práctico individual (preparación)
 
-**Examen:** miércoles 25/11/2026 · **Estado:** ✅ guía de intervención y banco de preguntas
+**Examen:** miércoles 25/11/2026 · **Estado:** ✓ guía de intervención y banco de preguntas
 
 ## Qué pide el enunciado
 
@@ -27,7 +27,7 @@ El profesorado provocará un fallo en mi entorno y yo tendré que **acotar el im
 | Nodo Proxmox apagado | `pvecm status` | El clúster sigue con 2 de 3 |
 | Cable virtual desconectado | `ip -br a` → `NO-CARRIER` | `VBoxManage controlvm <vm> setlinkstate1 on` |
 
-> ⚠️ **En el aula el ICMP hacia Internet está filtrado.** Un `ping 1.1.1.1` fallido no demuestra que el router esté roto: hay que comprobarlo con `curl` y con DNS (`getent hosts debian.org`).
+> Atención: **En el aula el ICMP hacia Internet está filtrado.** Un `ping 1.1.1.1` fallido no demuestra que el router esté roto: hay que comprobarlo con `curl` y con DNS (`getent hosts debian.org`).
 
 ## Las 10 cifras que hay que saber
 

@@ -1,6 +1,6 @@
 # Tasca 2 · Equipos y periféricos
 
-**Módulos:** FDM-RA1, FDM-RA4 · **Estado:** ✅ Apte · ✅ Apte+
+**Módulos:** FDM-RA1, FDM-RA4 · **Estado:** ✓ Apte · ✓ Apte+
 
 ## Qué pide el enunciado
 

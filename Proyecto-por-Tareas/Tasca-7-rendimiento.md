@@ -1,6 +1,6 @@
 # Tasca 7 · Rendimiento
 
-**Módulos:** ISO-RA6, FDM-RA1 · **Estado:** ✅ Apte · ✅ Apte+
+**Módulos:** ISO-RA6, FDM-RA1 · **Estado:** ✓ Apte · ✓ Apte+
 
 ## Qué pide el enunciado
 
@@ -23,10 +23,10 @@
 
 | Recurso | ¿Quién lo satura? | ¿Es el límite? |
 |---|---|---|
-| **RAM** | TrueNAS, WS2025-DC y PMX1 (~3 GB cada una) | ✅ **Sí: marca cuántas VMs caben** |
-| **Disco** | Las Windows al arrancar; cualquier VM escribiendo | ✅ **Sí, con carga** (USB, 399 MB/s; iowait de hasta el 82 %) |
-| **CPU** | Windows al arrancar (2 hilos) | ❌ No (máximo 32 %) |
-| **Red interna** | Copias entre VMs, DRBD | ❌ No (12 Gbit/s con virtio) |
+| **RAM** | TrueNAS, WS2025-DC y PMX1 (~3 GB cada una) | ✓ **Sí: marca cuántas VMs caben** |
+| **Disco** | Las Windows al arrancar; cualquier VM escribiendo | ✓ **Sí, con carga** (USB, 399 MB/s; iowait de hasta el 82 %) |
+| **CPU** | Windows al arrancar (2 hilos) | ✗ No (máximo 32 %) |
+| **Red interna** | Copias entre VMs, DRBD | ✗ No (12 Gbit/s con virtio) |
 
 **¿Cuántas VMs aguanta?** En el PC de casa, unos **11 GB de VMs**: 5 VMs con el navegador abierto. El límite es la RAM y, con carga, el disco.
 
@@ -34,8 +34,8 @@
 
 | Optimización | Antes | Después | Decisión |
 |---|---|---|---|
-| **1. Tarjeta de red virtio-net** en lugar de Intel e1000 (SRV2 y SRV3) | 4,74 Gbit/s | **12,3 Gbit/s**, y la mitad de CPU por Gbit/s | ✅ Se mantiene |
-| **2. Caché de E/S del anfitrión** en el disco de SRV2 | sin caché | ×60 en escritura, **×80 en `fsync`** | ❌ **Revertida**: escribe en la RAM del PC y un corte de luz perdería datos "ya escritos". En un servidor con RAID y DRBD no compensa |
+| **1. Tarjeta de red virtio-net** en lugar de Intel e1000 (SRV2 y SRV3) | 4,74 Gbit/s | **12,3 Gbit/s**, y la mitad de CPU por Gbit/s | ✓ Se mantiene |
+| **2. Caché de E/S del anfitrión** en el disco de SRV2 | sin caché | ×60 en escritura, **×80 en `fsync`** | ✗ **Revertida**: escribe en la RAM del PC y un corte de luz perdería datos "ya escritos". En un servidor con RAID y DRBD no compensa |
 
 ## Evidencias
 

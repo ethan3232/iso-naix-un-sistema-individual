@@ -8,7 +8,7 @@
 | Red (`vmbr0` sobre `nic0`) | 192.168.23.11/24 · gw .1 · DNS .1 · **fija** | 192.168.23.12/24 | 192.168.23.13/24 |
 | Recursos | 2 vCPU · 4 GB · 20 GB · **VT-x anidado** | 2 vCPU · 4 GB · 32 GB | 2 vCPU · 4 GB · 32 GB |
 | Web | `https://127.0.0.1:8411` (desde el PC) | `https://127.0.0.1:8412` | `https://127.0.0.1:8413` |
-| Estado | ✅ Clúster, contenedor, VM, migraciones y copias | ✅ | ✅ |
+| Estado | ✓ Clúster, contenedor, VM, migraciones y copias | ✓ | ✓ |
 
 ## 1. Requisitos, licencia e imagen
 
@@ -62,7 +62,7 @@ PMX3 se unió en **12 s**. Estado final ([log](../../evidencies/logs/proxmox-clu
 |---|---|---|
 | Votos | 3 de 3 | **2 de 3** |
 | Quórum necesario | 2 | 2 |
-| Estado | Quorate | **Quorate ✅** — el clúster sigue gestionando |
+| Estado | Quorate | **Quorate ✓** — el clúster sigue gestionando |
 
 Con **2 nodos** esto no pasaba: al caer uno quedaba 1 de 2 votos y el clúster se bloqueaba. **Por eso se usan 3 nodos** (o 2 + un QDevice): siempre queda mayoría con un nodo caído.
 
@@ -83,9 +83,9 @@ Con **2 nodos** esto no pasaba: al caer uno quedaba 1 de 2 votos y el clúster s
 | **Quórum** | Mayoría de votos (más de la mitad) para que el clúster acepte cambios y evitar el *split-brain*. Con **3 nodos** el quórum es 2: **aguanta la caída de un nodo** (probado). Con 2 nodos no aguantaba ninguna |
 | **Red del clúster (corosync)** | Comparte la red de gestión LAN23. En producción va en una red separada, porque corosync necesita latencia baja |
 | **Almacenamiento** | Cada nodo tiene su `local-lvm` (**local**, no compartido) + `nas-copias` (NFS del NAS, **compartido**, solo para copias) |
-| Gestión conjunta | ✅ Una sola web para los tres nodos |
-| Migración | ✅ Manual, probada (ver abajo) |
-| **Alta disponibilidad (HA)** | ❌ No: necesita almacenamiento compartido para los discos y 3 votos. Diferencia clave: migrar = lo muevo yo; HA = se mueve solo si un nodo muere |
+| Gestión conjunta | ✓ Una sola web para los tres nodos |
+| Migración | ✓ Manual, probada (ver abajo) |
+| **Alta disponibilidad (HA)** | ✗ No: necesita almacenamiento compartido para los discos y 3 votos. Diferencia clave: migrar = lo muevo yo; HA = se mueve solo si un nodo muere |
 
 ![Recursos del clúster](../../evidencies/captures/proxmox/07-web-recursos-cluster.png)
 
@@ -120,7 +120,7 @@ $ curl -s http://192.168.23.30 | grep h1        (desde PMX2)
 | Arranque | 1–2 s | Decenas de segundos |
 | Consumo | Muy bajo (nuestro CT: ~40 MB de RAM en reposo) | Más alto (RAM reservada, BIOS, kernel) |
 | Aislamiento | Menor (si se rompe el kernel, caen todos) | Mayor |
-| Migración en caliente | ❌ (se para y arranca: `--restart`) | ✅ (`--online`) |
+| Migración en caliente | ✗ (se para y arranca: `--restart`) | ✓ (`--online`) |
 
 **¿Cuándo usar cada uno?** Contenedor para servicios Linux ligeros (web, DNS, proxy): más densidad y menos gasto. VM cuando se necesita otro sistema operativo (Windows Server), un kernel propio o más aislamiento por seguridad.
 
@@ -155,8 +155,8 @@ $ curl -s http://192.168.23.30 | grep h1        (desde PMX2)
 | Copia | Destino | Resultado |
 |---|---|---|
 | **Imagen completa** del CT 100 y la VM 101 (`vzdump`, modo snapshot, zstd) | `nas-copias` = NFS de TrueNAS `/mnt/copias/sistemas` | CT: **205 MB** en 47 s · VM: 73 KB (disco vacío) |
-| **Tarea programada** diaria 02:30, se guardan las 3 últimas | `nas-copias` | ✅ |
-| Configuración de los nodos (`/etc/pve`, red, corosync) | NAS por `copia-configs.sh` (pull) | ✅ `pve-config.tgz` |
+| **Tarea programada** diaria 02:30, se guardan las 3 últimas | `nas-copias` | ✓ |
+| Configuración de los nodos (`/etc/pve`, red, corosync) | NAS por `copia-configs.sh` (pull) | ✓ `pve-config.tgz` |
 
 ![Tarea de copia programada](../../evidencies/captures/proxmox/09-web-tarea-copia-nas.png)
 
@@ -167,9 +167,9 @@ $ curl -s http://192.168.23.30 | grep h1        (desde PMX2)
 *Demuestra: las copias del contenedor (`.tar.zst`, 205 MB) y de la VM (`.vma.zst`) están guardadas en el NFS del TrueNAS y se pueden restaurar desde aquí (botón Restore).*
 
 **¿Qué tiene sentido guardar y qué no?**
-- ✅ Las **VMs y contenedores** (es donde están los servicios y datos) y la **configuración del clúster** (`/etc/pve`: definiciones de VMs, almacenamiento, usuarios, corosync).
-- ❌ El **sistema Proxmox entero**: se reinstala en 10 minutos (lo hemos hecho dos veces); lo valioso es la configuración y las VMs.
-- ❌ Las plantillas e ISOs: se vuelven a descargar.
+- ✓ Las **VMs y contenedores** (es donde están los servicios y datos) y la **configuración del clúster** (`/etc/pve`: definiciones de VMs, almacenamiento, usuarios, corosync).
+- ✗ El **sistema Proxmox entero**: se reinstala en 10 minutos (lo hemos hecho dos veces); lo valioso es la configuración y las VMs.
+- ✗ Las plantillas e ISOs: se vuelven a descargar.
 
 ## Preguntas probables de la defensa
 

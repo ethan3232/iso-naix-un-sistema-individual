@@ -1,6 +1,6 @@
 # 08 · Rendimiento y diagnóstico
 
-**Tasca 7** · Estado: ✅ Apte · ✅ Apte+ (2 optimizaciones con medida antes/después)
+**Tasca 7** · Estado: ✓ Apte · ✓ Apte+ (2 optimizaciones con medida antes/después)
 
 Equipo medido: **PC de casa** (i5-11400F 6C/12T, 16 GB, VMs en el SSD de clase por USB 5 Gb/s; ver [02](02-inventari.md)).
 Todas las cifras salen de los logs de [`evidencies/logs/`](../evidencies/logs/) (`rend-*`, `optim-*`).
@@ -114,11 +114,11 @@ RAM total del host ............................ 15 859 MB
 
 | Escenario ([05](05-recursos.md)) | RAM asignada | Casa (~11 GB) | Clase (~23 GB) |
 |---|---:|:---:|:---:|
-| A · Comunicaciones (MK + CLI + NAS) | 8,7 GB | ✅ | ✅ |
-| B · Dominio (MK + DC + W11 + NAS) | 12,8 GB | ❌ (se queda sin NAS: 8,7 GB) | ✅ |
-| C · Clúster (MK + 2 PMX + NAS) | 12,8 GB | ❌ | ✅ |
-| D · RAID / DRBD (MK + SRV2 + SRV3) | 2,5 GB | ✅ | ✅ |
-| Todo el laboratorio (12 VMs) | 34,5 GB | ❌ | ❌ |
+| A · Comunicaciones (MK + CLI + NAS) | 8,7 GB | ✓ | ✓ |
+| B · Dominio (MK + DC + W11 + NAS) | 12,8 GB | ✗ (se queda sin NAS: 8,7 GB) | ✓ |
+| C · Clúster (MK + 2 PMX + NAS) | 12,8 GB | ✗ | ✓ |
+| D · RAID / DRBD (MK + SRV2 + SRV3) | 2,5 GB | ✓ | ✓ |
+| Todo el laboratorio (12 VMs) | 34,5 GB | ✗ | ✗ |
 
 **Respuesta:** en casa, **unos 11 GB de VMs a la vez** (por ejemplo 2 VMs de 4 GB + 3 pequeñas, o 5–7 Debian/MikroTik). El límite es la **RAM**; con carga, el **disco** se nota antes que la CPU.
 
@@ -158,7 +158,7 @@ RAM total del host ............................ 15 859 MB
 - **Con caché** las cifras son **más rápidas que el propio SSD** (2,3 GB/s por un USB de 5 Gb/s es imposible): la VM está escribiendo en la **RAM del host**.
 - El ×80 del `fsync` es la clave: la VM cree que sus datos están **en el disco** cuando todavía están **en RAM**. Si el PC se apaga de golpe, **se pierden** escrituras que la VM daba por guardadas.
 
-**Decisión:** ❌ **se vuelve a desactivar** en SRV2 (`useHostIOCache=false`, comprobado). SRV2 guarda los RAID y el espejo DRBD: de nada sirve un RAID 1 si un corte de luz se lleva lo que "ya estaba escrito". La caché solo compensa en VMs **sin datos importantes** (clientes de pruebas, VMs desechables). Mejora real alternativa para el disco: conectar la caja USB a 10 Gb/s (en clase el disco también va por USB, con las mismas IOPS: no hay un "disco rápido" alternativo) — ver [02](02-inventari.md).
+**Decisión:** ✗ **se vuelve a desactivar** en SRV2 (`useHostIOCache=false`, comprobado). SRV2 guarda los RAID y el espejo DRBD: de nada sirve un RAID 1 si un corte de luz se lleva lo que "ya estaba escrito". La caché solo compensa en VMs **sin datos importantes** (clientes de pruebas, VMs desechables). Mejora real alternativa para el disco: conectar la caja USB a 10 Gb/s (en clase el disco también va por USB, con las mismas IOPS: no hay un "disco rápido" alternativo) — ver [02](02-inventari.md).
 
 > **Pregunta probable de defensa:** *"Has multiplicado el disco por 60, ¿por qué no lo dejas?"* → Porque no es velocidad real: es la RAM del host fingiendo ser el disco. Gano velocidad a cambio de **perder la garantía de escritura**. En un servidor de ficheros eso no se acepta; en un cliente de pruebas, sí.
 
@@ -166,7 +166,7 @@ RAM total del host ............................ 15 859 MB
 
 | Recurso | ¿Quién lo satura? | ¿Es el límite? | Mejora |
 |---|---|---|---|
-| **RAM** | TrueNAS, WS2025-DC, PMX1 (≈ 3 GB cada una) | ✅ **Sí: el número de VMs** | Ajustar la RAM asignada; ampliar a 32 GB (2 ranuras libres) |
-| **Disco** | W11-CLI y WS2025-DC al arrancar; cualquier VM escribiendo | ✅ **Sí: con carga** (USB 399 MB/s, caché SLC) | USB 10 Gb/s; arrancar las Windows de una en una; no usar caché del host en servidores |
-| **CPU** | Windows al arrancar (2 hilos), red interna | ❌ No (máx. 32 %) | virtio-net (−50 % CPU por Gbit/s) |
-| **Red interna** | Copias entre VMs, DRBD | ❌ No (12 Gbit/s con virtio) | virtio-net ✅ aplicado |
+| **RAM** | TrueNAS, WS2025-DC, PMX1 (≈ 3 GB cada una) | ✓ **Sí: el número de VMs** | Ajustar la RAM asignada; ampliar a 32 GB (2 ranuras libres) |
+| **Disco** | W11-CLI y WS2025-DC al arrancar; cualquier VM escribiendo | ✓ **Sí: con carga** (USB 399 MB/s, caché SLC) | USB 10 Gb/s; arrancar las Windows de una en una; no usar caché del host en servidores |
+| **CPU** | Windows al arrancar (2 hilos), red interna | ✗ No (máx. 32 %) | virtio-net (−50 % CPU por Gbit/s) |
+| **Red interna** | Copias entre VMs, DRBD | ✗ No (12 Gbit/s con virtio) | virtio-net ✓ aplicado |

@@ -8,7 +8,7 @@
 | Función | Servidor de comunicaciones alternativo: router + NAT + cortafuegos `nftables` |
 | Recursos | 1 vCPU · 2 GB RAM · disco 20 GB |
 | Interfaces | `enp0s3` = WAN (NAT VirtualBox, DHCP) · `enp0s8` = LAN23 `192.168.23.3/24` |
-| Estado | ✅ Configurado y verificado |
+| Estado | ✓ Configurado y verificado |
 
 ## 1. Requisitos e imagen
 
@@ -116,7 +116,7 @@ DEB13-SRV kernel: BLOQUEADO-TELNET IN=enp0s8 OUT=enp0s3 SRC=192.168.23.54 DST=64
 | Red original | `/root/backups/00-red-inicial.tgz` | `tar xzf ... -C /` y `systemctl restart NetworkManager` |
 | nftables original | `/root/backups/nftables.conf.orig` | `cp` a `/etc/nftables.conf` + `nft -f /etc/nftables.conf` |
 | Configuración en Git | `configs/debian-srv/` | Copiar de nuevo con `scp` |
-| Copia de `/etc` en TrueNAS | ⬜ pendiente | |
+| Copia de `/etc` y de las reglas en TrueNAS | `/mnt/copias/configs/debian-srv/<fecha>/`: la recoge `copia-configs.sh` desde el NAS por SSH (solo puede ejecutar `sudo tar`) | Descomprimir el `.tgz` en `/` y `nft -f /etc/nftables.conf` |
 
 Si una regla deja sin acceso por SSH: la **consola de VirtualBox** no depende de la red → `sudo nft flush ruleset` deja pasar todo.
 

@@ -1,6 +1,6 @@
 # 02 · Inventario y diagnóstico
 
-**Tasca 2** · Estado: ✅ casa (con SMART y `dmidecode`) · ✅ clase (18/11/2026, en el aula)
+**Tasca 2** · Estado: ✓ casa (con SMART y `dmidecode`) · ✓ clase (18/11/2026, en el aula)
 
 Herramienta: [`scripts/inventari.sh`](../scripts/inventari.sh), que recoge hardware y hace diagnósticos de disco, memoria y red con el equipo **en reposo** (todas las VMs apagadas). Con `sudo` añade SMART (salud de los discos) y `dmidecode` (módulos de RAM).
 
@@ -13,7 +13,7 @@ Log completo: [`inventari-clase.txt`](../evidencies/logs/inventari-clase.txt) (1
 | Equipo | Portátil **ASUS ExpertBook B3605CCA** | Firmware UEFI |
 | CPU | Intel **Core Ultra 5 125H** (Meteor Lake) · 14 núcleos (4 P + 8 E + 2 LP-E) / **18 hilos** · hasta 4,5 GHz · L3 18 MiB | **VT-x** activo (`vmx`, `/dev/kvm`). Núcleos híbridos: los E-cores son más lentos, por eso no conviene dar a una VM más vCPU de las necesarias |
 | RAM | **30 GiB** utilizables (32 GB físicos; el resto lo reserva la gráfica integrada) | + 8 GB de swap en fichero + 7,6 GB de zram |
-| Disco de Linux + VMs | **Kingston A400 960 GB** (SSD SATA) **dentro de la caja USB** (puente JMicron JMS583, driver `uas`) conectada a **5 Gb/s** | ⚠️ **También en clase va por USB**, no por SATA interno (`lsblk` → `TRAN=usb`, `lsusb -t` → `5000M`). Es el mismo SSD que me llevo a casa. `/` 58 GB + `/home` 381 GB (70 % usado) |
+| Disco de Linux + VMs | **Kingston A400 960 GB** (SSD SATA) **dentro de la caja USB** (puente JMicron JMS583, driver `uas`) conectada a **5 Gb/s** | Atención: **También en clase va por USB**, no por SATA interno (`lsblk` → `TRAN=usb`, `lsusb -t` → `5000M`). Es el mismo SSD que me llevo a casa. `/` 58 GB + `/home` 381 GB (70 % usado) |
 | Disco interno | Samsung **NVMe** 1 TB (PM9A1) | Es el disco del portátil (Windows y otras particiones del aula): **no se usa** para el proyecto |
 | Puertos USB | El controlador del disco es de **20 Gb/s** (`lsusb -t` → `20000M/x2`), pero la caja negocia **5 Gb/s** | El puente JMS583 admite 10 Gb/s: con un cable USB-C 3.2 Gen 2 se podría doblar el techo |
 | Gráfica | Intel **Arc** integrada (Meteor Lake-P) | No interviene en la virtualización |

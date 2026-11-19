@@ -7,7 +7,7 @@
 | Función | Gateway por defecto activo de LAN23 + NAT + cortafuegos |
 | Recursos | 2 vCPU · 512 MB RAM · disco 2 GB |
 | Interfaces | `ether1` = WAN (NAT VirtualBox, DHCP) · `ether2` = LAN23 `192.168.23.1/24` |
-| Estado | ✅ Configurado y verificado |
+| Estado | ✓ Configurado y verificado |
 
 ## 1. Requisitos, licencia e imagen
 

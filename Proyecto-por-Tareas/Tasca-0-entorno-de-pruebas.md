@@ -1,6 +1,6 @@
 # Tasca 0 · Entorno de pruebas
 
-**Módulos:** FDM-RA1, FDM-RA4 · **Estado:** ✅ Apte · ✅ Apte+
+**Módulos:** FDM-RA1, FDM-RA4 · **Estado:** ✓ Apte · ✓ Apte+
 
 ## Qué pide el enunciado
 

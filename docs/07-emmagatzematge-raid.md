@@ -1,6 +1,6 @@
 # 07 · Almacenamiento y RAID
 
-**Tasca 6** · Estado: ✅ Apte (3 tipos de RAID creados, verificados con fallo real y reconstrucción) · ✅ Apte+ (espejo entre 2 equipos con DRBD, caída de un servidor probada)
+**Tasca 6** · Estado: ✓ Apte (3 tipos de RAID creados, verificados con fallo real y reconstrucción) · ✓ Apte+ (espejo entre 2 equipos con DRBD, caída de un servidor probada)
 
 | | |
 |---|---|
@@ -11,7 +11,7 @@
 
 ## 1. Predicción e investigación
 
-> ✍️ *Mis predicciones antes de empezar están en [00-prediccions.md](00-prediccions.md).*
+> *Mis predicciones antes de empezar están en [00-prediccions.md](00-prediccions.md).*
 
 **¿Por qué RAID por software (`mdadm`) y no la controladora de VirtualBox?** VirtualBox no emula controladoras RAID. Además, `mdadm` es lo que se usa en servidores Linux reales sin tarjeta RAID, y deja ver y **provocar** los fallos con comandos.
 
@@ -58,13 +58,13 @@ Método: se escriben **100 MB aleatorios** en cada RAID y se guarda su **SHA256*
 
 | Prueba | Qué se hace | Resultado | ¿Datos? |
 |---|---|---|---|
-| **RAID 0** sin un disco | Se para `md0` y se intenta arrancar solo con `sdb` | ❌ *"Not enough devices to start the array"*: **no arranca** | Inaccesibles (vuelven al poner los 2 discos) |
-| **RAID 1** pierde `sde` | `mdadm --fail` → `--remove` → `--add sdi` | ✅ Sigue funcionando `[U_]` · **22 lecturas correctas, 0 fallidas** | SHA256 coincide en modo degradado y tras reconstruir |
-| Reconstrucción RAID 1 | Copia completa de `sdd` → `sdi` | ✅ **54,3 s** (1 GB) · estado final `[UU]` | ✅ |
-| **RAID 5** pierde `sdg` | `--fail` → `--remove` → `--add sde` (el disco "reparado") | ✅ Sigue funcionando `[U_U]` · **7 lecturas correctas, 0 fallidas** | SHA256 coincide |
-| Reconstrucción RAID 5 | Recalcula el disco que falta con la **paridad** | ✅ **14,6 s** · estado final `[UUU]` | ✅ |
-| **RAID 5 + disco de reserva** | `--add-spare sdg` y se rompe `sdf` **sin tocar nada más** | ✅ La reserva entra **automáticamente** y se reconstruye en **21,2 s** | ✅ |
-| **Reinicio** | `systemctl reboot` | ✅ Los 3 RAID se montan solos | ✅ Los 3 SHA256 coinciden |
+| **RAID 0** sin un disco | Se para `md0` y se intenta arrancar solo con `sdb` | ✗ *"Not enough devices to start the array"*: **no arranca** | Inaccesibles (vuelven al poner los 2 discos) |
+| **RAID 1** pierde `sde` | `mdadm --fail` → `--remove` → `--add sdi` | ✓ Sigue funcionando `[U_]` · **22 lecturas correctas, 0 fallidas** | SHA256 coincide en modo degradado y tras reconstruir |
+| Reconstrucción RAID 1 | Copia completa de `sdd` → `sdi` | ✓ **54,3 s** (1 GB) · estado final `[UU]` | ✓ |
+| **RAID 5** pierde `sdg` | `--fail` → `--remove` → `--add sde` (el disco "reparado") | ✓ Sigue funcionando `[U_U]` · **7 lecturas correctas, 0 fallidas** | SHA256 coincide |
+| Reconstrucción RAID 5 | Recalcula el disco que falta con la **paridad** | ✓ **14,6 s** · estado final `[UUU]` | ✓ |
+| **RAID 5 + disco de reserva** | `--add-spare sdg` y se rompe `sdf` **sin tocar nada más** | ✓ La reserva entra **automáticamente** y se reconstruye en **21,2 s** | ✓ |
+| **Reinicio** | `systemctl reboot` | ✓ Los 3 RAID se montan solos | ✓ Los 3 SHA256 coinciden |
 
 **Observaciones de la prueba:**
 - En modo degradado el RAID 5 hizo **7 lecturas en 20 s** y el RAID 1 **22**. Con un disco menos, cada lectura del RAID 5 tiene que **recalcular los datos que faltan con la paridad** (XOR), así que va más lenta. En cambio, el RAID 1 sigue teniendo una copia completa.
@@ -87,7 +87,7 @@ Se midió con `fio` (escritura y lectura secuencial de 1 MiB, escritura aleatori
 2. El A400 tiene una caché rápida pequeña. Cuando se llena, la escritura cae a ~15–25 MB/s, y eso se ve igual en **todos** los destinos, incluido el disco solo.
 3. Los VDI son **dinámicos**: la primera escritura en una zona nueva obliga a VirtualBox a hacer crecer el fichero.
 
-👉 **El cuello de botella es el disco del anfitrión**, no el RAID. Esto conecta con la [Tasca 2](02-inventari.md) (el SSD en caja USB da las mismas ~350 IOPS en clase y en casa) y la [Tasca 7](08-rendiment.md).
+**El cuello de botella es el disco del anfitrión**, no el RAID. Esto conecta con la [Tasca 2](02-inventari.md) (el SSD en caja USB da las mismas ~350 IOPS en clase y en casa) y la [Tasca 7](08-rendiment.md).
 
 ## 5. Comparativa: qué ganamos con cada tipo
 
@@ -95,9 +95,9 @@ Se midió con `fio` (escritura y lectura secuencial de 1 MiB, escritura aleatori
 |---|---|---|---|
 | Discos mínimos | 2 | 2 | 3 |
 | Espacio útil | 100 % | 50 % | (N−1)/N → 67 % con 3 |
-| ¿Aguanta un disco roto? | ❌ **No**, y con N discos el riesgo se multiplica por N | ✅ Sí | ✅ Sí (solo **uno**) |
-| Lectura (teoría) | ⬆️⬆️ N discos en paralelo | ⬆️ puede leer de los dos | ⬆️ de N discos |
-| Escritura (teoría) | ⬆️⬆️ | = (escribe en los dos) | ⬇️ *penalización de escritura*: leer, recalcular la paridad y escribir |
+| ¿Aguanta un disco roto? | ✗ **No**, y con N discos el riesgo se multiplica por N | ✓ Sí | ✓ Sí (solo **uno**) |
+| Lectura (teoría) | Muy alta: N discos en paralelo | Mejor: puede leer de los dos | Mejor: lee de N discos |
+| Escritura (teoría) | Muy alta | = (escribe en los dos) | Peor: *penalización de escritura*: leer, recalcular la paridad y escribir |
 | En modo degradado | — (perdido) | Igual de rápido | **Más lento** (recalcula con la paridad; lo hemos visto: 7 lecturas frente a 22) |
 | Uso típico | Datos temporales, caché, edición de vídeo **con copia aparte** | Disco del sistema, servidores pequeños, el pool del NAS | Servidor de ficheros: buen equilibrio de espacio y seguridad |
 | En mi sistema | No se usaría para datos de la empresa | **Pool `copias` del TrueNAS** (espejo) | Carpetas de departamentos en DEB13-SRV2 |
@@ -113,7 +113,7 @@ Se midió con `fio` (escritura y lectura secuencial de 1 MiB, escritura aleatori
 
 ## 7. (Apte+) RAID en espejo entre dos equipos
 
-✅ Hecho con **DRBD** (*Distributed Replicated Block Device*) entre **DEB13-SRV2** y **DEB13-SRV3**. Log completo: [`drbd-espejo-red.txt`](../evidencies/logs/drbd-espejo-red.txt) · configuración: [`configs/drbd/r0.res`](../configs/drbd/r0.res).
+✓ Hecho con **DRBD** (*Distributed Replicated Block Device*) entre **DEB13-SRV2** y **DEB13-SRV3**. Log completo: [`drbd-espejo-red.txt`](../evidencies/logs/drbd-espejo-red.txt) · configuración: [`configs/drbd/r0.res`](../configs/drbd/r0.res).
 
 ### 7.1 Qué es y por qué DRBD
 
@@ -126,7 +126,7 @@ Un RAID 1 normal copia cada escritura en **dos discos del mismo equipo**: si se 
 |---|---|
 | `mdadm` RAID 1 con un disco **iSCSI** del NAS | Funciona, pero el NAS pasa a ser imprescindible para el servidor de ficheros: un punto de fallo más |
 | Replicación de ZFS (TrueNAS) | No es en tiempo real: copia por instantáneas (pierdes lo escrito desde la última) |
-| **DRBD** ✅ | Viene en el kernel de Debian (módulo `drbd` 8.4.11), es **síncrono** y está pensado justo para esto: dos servidores, uno activo y otro de reserva |
+| **DRBD** ✓ | Viene en el kernel de Debian (módulo `drbd` 8.4.11), es **síncrono** y está pensado justo para esto: dos servidores, uno activo y otro de reserva |
 
 **Protocolo C** = una escritura no se da por terminada hasta que está en **los dos** discos → si cae el primario, el secundario tiene **exactamente** lo mismo (RPO = 0).
 
@@ -154,11 +154,11 @@ mount /dev/drbd0 /srv/espejo
 |---|---|---|---|
 | 1 | Sincronización inicial de 1 GB (SRV2 → SRV3) | `UpToDate/UpToDate` | **53 s** (19,8 MB/s: DRBD limita el ritmo para no ahogar la red; se ajusta con `resync-rate`) |
 | 2 | Escribir 100 MB aleatorios en SRV2 + SHA256 | `e293a9a2…ca6f99` | — |
-| 3 | Montar el disco en SRV3 mientras SRV2 es primario | ❌ *Can't open blockdev* — **correcto**: solo un nodo puede escribir a la vez (si no, se corrompe el ext4) | — |
-| 4 | **Apagado brusco de SRV2** (`VBoxManage controlvm poweroff`, como un corte de luz) → en SRV3: `drbdadm primary r0` + `mount` | ✅ Datos montados en SRV3, **SHA256 idéntico** | **~13 s** (casi todo es DRBD detectando que el otro no responde: `ping-int` 10 s) |
-| 5 | Escribir 50 MB nuevos en SRV3 con SRV2 apagado | ✅ DRBD apunta lo pendiente: `oos:51272` KB | — |
+| 3 | Montar el disco en SRV3 mientras SRV2 es primario | ✗ *Can't open blockdev* — **correcto**: solo un nodo puede escribir a la vez (si no, se corrompe el ext4) | — |
+| 4 | **Apagado brusco de SRV2** (`VBoxManage controlvm poweroff`, como un corte de luz) → en SRV3: `drbdadm primary r0` + `mount` | ✓ Datos montados en SRV3, **SHA256 idéntico** | **~13 s** (casi todo es DRBD detectando que el otro no responde: `ping-int` 10 s) |
+| 5 | Escribir 50 MB nuevos en SRV3 con SRV2 apagado | ✓ DRBD apunta lo pendiente: `oos:51272` KB | — |
 | 6 | SRV2 vuelve | Entra como **secundario**, sin *split-brain*. Solo copia **206 MB** (50 MB nuevos + 156 MB que marca por precaución por haber caído siendo primario) | **25 s** (no el disco entero) |
-| 7 | Cambio controlado de vuelta: SRV3 `umount` + `secondary`, SRV2 `primary` + `mount` | ✅ Los 2 ficheros con su SHA256 correcto | **2,6 s** |
+| 7 | Cambio controlado de vuelta: SRV3 `umount` + `secondary`, SRV2 `primary` + `mount` | ✓ Los 2 ficheros con su SHA256 correcto | **2,6 s** |
 | 8 | Reinicio de SRV3 | Se reconecta solo: `Connected Primary/Secondary UpToDate/UpToDate` | — |
 
 ### 7.4 Caso de uso en la empresa
@@ -167,11 +167,11 @@ El **servidor de ficheros** de los departamentos. Hoy, si DEB13-SRV2 se rompe (n
 
 | | RAID 1 local (`md1`) | Espejo por red (DRBD) |
 |---|---|---|
-| Se rompe un disco | ✅ sigue funcionando | ✅ sigue funcionando |
-| Se rompe **el servidor** | ❌ datos inaccesibles hasta repararlo | ✅ el otro servidor los monta en ~13 s |
+| Se rompe un disco | ✓ sigue funcionando | ✓ sigue funcionando |
+| Se rompe **el servidor** | ✗ datos inaccesibles hasta repararlo | ✓ el otro servidor los monta en ~13 s |
 | Coste | 2 discos | 2 servidores + red |
 | Escritura | velocidad del disco | velocidad del disco **+ ida y vuelta por la red** |
-| ¿Es una copia de seguridad? | ❌ | ❌ — un borrado o un ransomware se replica al instante. Sigue haciendo falta la copia en el NAS |
+| ¿Es una copia de seguridad? | ✗ | ✗ — un borrado o un ransomware se replica al instante. Sigue haciendo falta la copia en el NAS |
 
 **Limitaciones de mi montaje:** el cambio de primario es **manual** (en producción lo haría **Pacemaker/Corosync** con una IP flotante, para que los clientes no tengan que cambiar de servidor), y las dos VMs están en el **mismo PC** (en la empresa serían dos máquinas físicas, idealmente con una red dedicada para la réplica).
 

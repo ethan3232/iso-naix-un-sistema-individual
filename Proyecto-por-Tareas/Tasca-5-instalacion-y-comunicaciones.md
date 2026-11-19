@@ -1,6 +1,6 @@
 # Tasca 5 · Instalación y comunicaciones
 
-**Módulos:** ISO-RA1, FDM-RA1 · **Estado:** ✅ Apte · ✅ Apte+
+**Módulos:** ISO-RA1, FDM-RA1 · **Estado:** ✓ Apte · ✓ Apte+
 
 ## Qué pide el enunciado
 

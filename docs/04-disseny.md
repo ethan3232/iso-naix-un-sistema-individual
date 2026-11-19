@@ -1,6 +1,6 @@
 # 04 · Diseño físico y lógico
 
-**Tasca 4** · Estado: ✅ · Red de mi puesto: **192.168.23.0/24** (puesto 23 del aula)
+**Tasca 4** · Estado: ✓ · Red de mi puesto: **192.168.23.0/24** (puesto 23 del aula)
 
 ## 1. Esquema lógico
 
@@ -75,9 +75,9 @@ Comprobación en cada caso: `ip route` (gateway) + `traceroute -T` (el primer sa
 | Nodos | **3** (PMX1, PMX2, PMX3) → quórum = 2 votos: **si cae un nodo, el clúster sigue funcionando** |
 | Red | Corosync sobre LAN23 (en producción: red separada y redundante) |
 | Almacenamiento | `local-lvm` en cada nodo (local) + `nas-copias` (NFS de TrueNAS, compartido, para copias) |
-| Gestión conjunta | ✅ |
-| Migración | ✅ medida ([Proxmox](06-installacio/proxmox.md#8-migraciones-medidas-log-completo)) |
-| Alta disponibilidad | 🧪 Diseño: necesitaría almacenamiento compartido para los **discos** de las VMs (NFS/iSCSI/Ceph) |
+| Gestión conjunta | ✓ |
+| Migración | ✓ medida ([Proxmox](06-installacio/proxmox.md#8-migraciones-medidas-log-completo)) |
+| Alta disponibilidad | Diseño: necesitaría almacenamiento compartido para los **discos** de las VMs (NFS/iSCSI/Ceph) |
 
 ### 5.1 Servidores dentro del clúster (simulados)
 
@@ -88,7 +88,7 @@ En el diseño, los servidores de la empresa **no son máquinas sueltas**: corren
 | DEB13-SRV2 (ficheros + RAID + DRBD primario) | VM en **PMX1**, puente `vmbr0` → LAN23 | VM de VirtualBox en LAN23 | .21 |
 | WS2025-DC (AD DS + DNS) | VM en **PMX2**, puente `vmbr0` → LAN23 | VM de VirtualBox en LAN23 | .20 |
 | DEB13-SRV3 (web + DRBD secundario) | VM en **PMX3**, puente `vmbr0` → LAN23 | VM de VirtualBox en LAN23 | .22 |
-| srv-infra (intranet, LXC) | Contenedor en PMX2 | ✅ **Real**, dentro del clúster | .30 |
+| srv-infra (intranet, LXC) | Contenedor en PMX2 | ✓ **Real**, dentro del clúster | .30 |
 
 **Cálculo de por qué no cabe (clase, ~24 GB para VMs):** 3 nodos Proxmox + NAS ≈ 10 GB ya en marcha. Llevar dentro SRV2 (1 GB) + SRV3 (1 GB) + WS2025-DC (4 GB) obliga a subir la RAM de los nodos esos 6 GB más ~1 GB de sobrecarga por nodo, y además Windows dentro de una VM anidada va muy lento (sin aceleración de hardware real). En casa (~10 GB) es imposible.
 

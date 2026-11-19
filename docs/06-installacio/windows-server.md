@@ -7,7 +7,7 @@
 | Función | Controlador de dominio **AD DS** + **DNS** del dominio `asix23.lan` (NetBIOS `ASIX23`) |
 | Recursos | 2 vCPU · 4 GB RAM · 50 GB · **UEFI + TPM 2.0** |
 | Red | `Ethernet` en `LAN23` · 192.168.23.20/24 · gw 192.168.23.1 · DNS 127.0.0.1 · **fija** |
-| Estado | ✅ Instalado, promovido y verificado |
+| Estado | ✓ Instalado, promovido y verificado |
 
 ## 1. Requisitos, licencia e imagen
 
@@ -125,7 +125,7 @@ Un **dominio** es un grupo de equipos y usuarios que comparten **una base de dat
 | Script de configuración | Ya está en Git |
 | **No** hace falta: el sistema operativo completo | Se reinstala; lo valioso es AD |
 
-✅ **Copia hecha** con [`scripts/windows/copia-ad.ps1`](../../scripts/windows/copia-ad.ps1):
+✓ **Copia hecha** con [`scripts/windows/copia-ad.ps1`](../../scripts/windows/copia-ad.ps1):
 
 ```powershell
 ntdsutil "activate instance ntds" "ifm" "create sysvol full C:\copias\ifm-<fecha>" quit quit

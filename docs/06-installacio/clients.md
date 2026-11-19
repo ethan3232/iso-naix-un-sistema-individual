@@ -6,8 +6,8 @@
 | Sistema | Windows 11 **Pro** 25H2 (26200.6584) | Debian 13 con GNOME |
 | Recursos | 2 vCPU · 4 GB · 64 GB · **UEFI + TPM 2.0** | 1 vCPU · 4 GB · 20 GB · BIOS |
 | Red | 192.168.23.51/24 · gw .1 · **DNS .20 (el DC)** | 192.168.23.54/24 · gw .1 (cambiable) · DNS según el gateway |
-| Dominio | ✅ Miembro de `asix23.lan` (OU Administracion) | No (justificado abajo) |
-| Estado | ✅ | ✅ |
+| Dominio | ✓ Miembro de `asix23.lan` (OU Administracion) | No (justificado abajo) |
+| Estado | ✓ | ✓ |
 
 ## ¿Por qué Windows para Administración y Linux para Informática?
 
@@ -15,7 +15,7 @@
 |---|---|---|
 | Administración | Windows 11 Pro | Usa programas de gestión, contabilidad y ofimática que en las pymes suelen ser solo para Windows. La edición **Pro** es obligatoria para unirse a un dominio (la Home no puede). |
 | Informática | Debian | Herramientas de administración (SSH, `nmap`, `tcpdump`, scripts), sin coste de licencia y con control total. Es además el equipo con el que se hacen las pruebas de los routers. |
-| Dirección, Comercial, Producción | 🧪 Solo diseño | No caben más VMs en la RAM del equipo; se dejan en el diseño con Windows 11 (Dirección y Comercial: ofimática y CRM) y Linux (Producción: puesto fijo con una sola aplicación web). |
+| Dirección, Comercial, Producción | Solo diseño | No caben más VMs en la RAM del equipo; se dejan en el diseño con Windows 11 (Dirección y Comercial: ofimática y CRM) y Linux (Producción: puesto fijo con una sola aplicación web). |
 
 ## W11-CLI
 

@@ -1,6 +1,6 @@
 # 09 · Plan de contingencia
 
-Estado: 🟡 en curso (falta añadir el tiempo real del fallo de disco del RAID, Tasca 6)
+Estado: completado. 13 escenarios, 9 de ellos probados con tiempos reales (incluido el fallo de disco del RAID de la Tasca 6).
 
 ## 1. Conceptos
 
@@ -24,21 +24,21 @@ Estado: 🟡 en curso (falta añadir el tiempo real del fallo de disco del RAID,
 
 ## 3. Escenarios
 
-| Escenario | Función afectada | RTO objetivo | RPO objetivo | Tiempo real | Pérdida real | ¿Probado o 🧪 simulado? |
+| Escenario | Función afectada | RTO objetivo | RPO objetivo | Tiempo real | Pérdida real | ¿Probado o simulado? |
 |---|---|---|---|---|---|---|
-| **Comunicaciones** — MikroTik con la configuración borrada | Internet de toda la LAN | 5 min | 24 h | **26 s** sin servicio | 0 | ✅ Probado ([mikrotik §7](06-installacio/mikrotik.md)) |
-| **Comunicaciones** — DEB13-SRV1-NFT con nftables roto + reinicio | Internet (router alternativo) | 5 min | 24 h | **21 s** | 0 | ✅ Probado ([debian-srv §7](06-installacio/debian-srv.md)) |
-| **Comunicaciones** — OPNsense con una regla errónea | Internet (router alternativo) | 5 min | último cambio | **15 s** | 0 | ✅ Probado ([opnsense §8](06-installacio/opnsense.md)) |
-| **Comunicaciones** — router activo totalmente caído | Internet | 5 min | — | Cambio de gateway con `scripts/canvi-gw.sh` a `.2` o `.3` | 0 | ✅ Probado (gateways intercambiables, [04-disseny](04-disseny.md)) |
-| **Servidor virtual** — mantenimiento de un nodo Proxmox | Intranet (CT `srv-infra`) | 2 min | 0 | VM: **8 ms** de corte (migración en caliente) · CT: **~84 s** | 0 | ✅ Probado ([proxmox §8](06-installacio/proxmox.md)) |
-| **Servidor virtual** — se cae un nodo del clúster | Gestión del clúster | Inmediato | 0 | El clúster sigue con quórum **2 de 3** | 0 | ✅ Probado (quórum) · 🧪 restaurar la VM desde `vzdump` en otro nodo |
-| **Servidor virtual** — VM que no arranca (error en `fstab`) | Servidor Linux | 30 min | 0 | Diagnosticado y resuelto con el método síntoma → hipótesis → comprobación | 0 | ✅ Probado ([10-incidencies](10-incidencies.md)) |
-| **Servidor** — DC de Windows perdido | Inicio de sesión del dominio, DNS | 1 h | Última copia IFM | — | Cambios en AD desde la copia | 🧪 Simulado (copia IFM hecha y verificada en el NAS) |
-| **Cliente** — W11-CLI o DEB13-CLI estropeado | Puesto de un departamento | 1 h | 0 en datos del servidor | — | Solo lo guardado en local | 🧪 Simulado: reinstalar desde ISO y volver a unir al dominio; los datos viven en el servidor |
-| **Host** — el PC anfitrión se rompe | **Todo** el sistema (punto único de fallo) | 1 día | 24 h | — | Hasta 24 h | 🧪 Simulado: otro PC con VirtualBox + copias del NAS. En la empresa real: varios hosts físicos y el NAS fuera del host |
-| **Almacenamiento** — falla un disco del NAS | Copias de seguridad | 0 (sigue funcionando) | 0 | — | 0 | 🧪 Simulado: espejo `copias` (ZFS mirror) |
-| **Almacenamiento** — falla un disco de un RAID 1/5 | Datos del servidor de ficheros | 0 (modo degradado) | 0 | **0 s** sin servicio (0 lecturas fallidas) · reconstrucción RAID 1: **54,3 s** · RAID 5: **14,6 s** · con disco de reserva: **21,2 s** automática | 0 (SHA256 iguales) | ✅ Probado ([07 §3](07-emmagatzematge-raid.md)) |
-| **Almacenamiento** — se cae el **servidor de ficheros entero** (DEB13-SRV2) | Datos del espejo DRBD | 5 min | 0 | **~13 s** hasta tener los datos montados en SRV3 · reincorporación: 206 MB en 25 s | 0 (SHA256 iguales; protocolo C) | ✅ Probado ([07 §7](07-emmagatzematge-raid.md)) |
+| **Comunicaciones** — MikroTik con la configuración borrada | Internet de toda la LAN | 5 min | 24 h | **26 s** sin servicio | 0 | ✓ Probado ([mikrotik §7](06-installacio/mikrotik.md)) |
+| **Comunicaciones** — DEB13-SRV1-NFT con nftables roto + reinicio | Internet (router alternativo) | 5 min | 24 h | **21 s** | 0 | ✓ Probado ([debian-srv §7](06-installacio/debian-srv.md)) |
+| **Comunicaciones** — OPNsense con una regla errónea | Internet (router alternativo) | 5 min | último cambio | **15 s** | 0 | ✓ Probado ([opnsense §8](06-installacio/opnsense.md)) |
+| **Comunicaciones** — router activo totalmente caído | Internet | 5 min | — | Cambio de gateway con `scripts/canvi-gw.sh` a `.2` o `.3` | 0 | ✓ Probado (gateways intercambiables, [04-disseny](04-disseny.md)) |
+| **Servidor virtual** — mantenimiento de un nodo Proxmox | Intranet (CT `srv-infra`) | 2 min | 0 | VM: **8 ms** de corte (migración en caliente) · CT: **~84 s** | 0 | ✓ Probado ([proxmox §8](06-installacio/proxmox.md)) |
+| **Servidor virtual** — se cae un nodo del clúster | Gestión del clúster | Inmediato | 0 | El clúster sigue con quórum **2 de 3** | 0 | ✓ Probado (quórum) · simulado restaurar la VM desde `vzdump` en otro nodo |
+| **Servidor virtual** — VM que no arranca (error en `fstab`) | Servidor Linux | 30 min | 0 | Diagnosticado y resuelto con el método síntoma → hipótesis → comprobación | 0 | ✓ Probado ([10-incidencies](10-incidencies.md)) |
+| **Servidor** — DC de Windows perdido | Inicio de sesión del dominio, DNS | 1 h | Última copia IFM | — | Cambios en AD desde la copia | Simulado (copia IFM hecha y verificada en el NAS) |
+| **Cliente** — W11-CLI o DEB13-CLI estropeado | Puesto de un departamento | 1 h | 0 en datos del servidor | — | Solo lo guardado en local | Simulado: reinstalar desde ISO y volver a unir al dominio; los datos viven en el servidor |
+| **Host** — el PC anfitrión se rompe | **Todo** el sistema (punto único de fallo) | 1 día | 24 h | — | Hasta 24 h | Simulado: otro PC con VirtualBox + copias del NAS. En la empresa real: varios hosts físicos y el NAS fuera del host |
+| **Almacenamiento** — falla un disco del NAS | Copias de seguridad | 0 (sigue funcionando) | 0 | — | 0 | Simulado: espejo `copias` (ZFS mirror) |
+| **Almacenamiento** — falla un disco de un RAID 1/5 | Datos del servidor de ficheros | 0 (modo degradado) | 0 | **0 s** sin servicio (0 lecturas fallidas) · reconstrucción RAID 1: **54,3 s** · RAID 5: **14,6 s** · con disco de reserva: **21,2 s** automática | 0 (SHA256 iguales) | ✓ Probado ([07 §3](07-emmagatzematge-raid.md)) |
+| **Almacenamiento** — se cae el **servidor de ficheros entero** (DEB13-SRV2) | Datos del espejo DRBD | 5 min | 0 | **~13 s** hasta tener los datos montados en SRV3 · reincorporación: 206 MB en 25 s | 0 (SHA256 iguales; protocolo C) | ✓ Probado ([07 §7](07-emmagatzematge-raid.md)) |
 
 ## 3 bis. Fichas por escenario
 
@@ -90,7 +90,7 @@ Responsable en todos los casos: **izan** (único administrador del entorno indiv
 | Pasos | 1) ¿la VM está encendida? ¿responde al ping? · 2) servicios `NTDS`, `DNS`, `ADWS` · 3) si el sistema está roto: volver a la instantánea o reinstalar y promover desde el medio IFM |
 | Parada | Una instantánea antigua de un DC puede **romper el canal seguro** con los equipos: comprobar después con `Test-ComputerSecureChannel` |
 | Prueba final | W11-CLI inicia sesión con un usuario del dominio |
-| Estado | 🧪 Simulado |
+| Estado | Simulado |
 
 ### C5 · Almacenamiento — falla un disco del RAID de DEB13-SRV2
 
@@ -112,7 +112,7 @@ Responsable en todos los casos: **izan** (único administrador del entorno indiv
 | Recursos | ISO + guía de instalación ([clients](06-installacio/clients.md)); los datos de usuario están en el servidor |
 | Pasos | 1) ¿es el cliente o la red? (otro cliente funciona) · 2) si es el sistema: reinstalar, IP fija, unir al dominio |
 | Prueba final | El usuario vuelve a abrir su fichero del servidor con el contenido y los permisos correctos |
-| Estado | 🧪 Simulado |
+| Estado | Simulado |
 
 ### C7 · Host — el PC anfitrión falla
 
@@ -122,7 +122,7 @@ Responsable en todos los casos: **izan** (único administrador del entorno indiv
 | Recursos | El SSD con las VMs se puede conectar a otro PC (de hecho lo hago: clase ↔ casa por USB) · copias en el NAS (que está **dentro** del mismo SSD) |
 | Limitación | **Punto único de fallo**: si se rompe el SSD, se pierden las VMs **y** el NAS a la vez. No hay continuidad automática |
 | Mejora | Copia periódica de las configuraciones (ya están en Git = fuera del PC) y de los VDI críticos a otro disco |
-| Estado | 🧪 Simulado (comprobado en parte: el entorno arranca en otro PC) |
+| Estado | Simulado (comprobado en parte: el entorno arranca en otro PC) |
 
 ## 4. Procedimiento general ante un fallo
 
@@ -151,7 +151,7 @@ Responsable en todos los casos: **izan** (único administrador del entorno indiv
 
 | Punto débil | Evidencia | Mejora posible |
 |---|---|---|
-| NAS y VMs en el **mismo SSD** | Inventario: todo está en el Kingston A400 | Copia de las configuraciones fuera del PC (Git ✅) y de los VDI críticos a otro disco |
+| NAS y VMs en el **mismo SSD** | Inventario: todo está en el Kingston A400 | Copia de las configuraciones fuera del PC (Git ✓) y de los VDI críticos a otro disco |
 | Copia del DC **manual** | `copia-ad.ps1` se lanza a mano | Tarea programada de Windows |
 | RPO de 24 h en los routers | Cron diario a las 02:00 | Copia tras cada cambio (como el historial de OPNsense) |
 | Migración del contenedor con **~84 s** de corte | Discos locales en cada nodo | Almacenamiento compartido (NFS del NAS) → solo se copia la RAM |

@@ -1,5 +1,22 @@
 # Transversal · Predicciones y plan de contingencia
 
+## Fet: subtareas del enunciado
+
+> **Enunciado (part individual):** Partes comunes a todo el proyecto: la fase **PREDIU** (predicciones antes de investigar), el plan de contingencia (punto 4 de la Tasca 6, hecho también en el entorno individual) y el registro de incidencias.
+
+| # | Subtarea | Nivel | Fet | Dónde / nota |
+|---|---|---|:---:|---|
+| 1 | Predicciones antes de cada fase y comparación con el resultado | — | ✓ | Predicciones |
+| 2 | Plan de contingencia con RTO/RPO | — | ✓ | Plan de contingencia |
+| 3 | Probar el plan y medir el tiempo sin servicio | — | ✓ | 9 de 13 escenarios probados |
+| 4 | Valorar si el plan es adecuado o debe mejorar | — | ✓ | Puntos débiles y valoración personal |
+| 5 | Registro de incidencias con su solución | — | ✓ | 26 incidencias (Tasca 0) |
+
+**Resumen:** 5 de 5 subtareas completas.
+
+**Leyenda:** ✓ Fet · ◐ Fet en parte (se explica en la nota) · ⏳ Pendiente de fecha
+
+
 ## 1. Predicciones (antes de investigar)
 
 Antes de cada fase escribí lo que esperaba que pasara, para compararlo después con el resultado (método ThinkLoop: predicción → investigación → implementación → verificación → análisis).
@@ -51,6 +68,16 @@ Antes de cada fase escribí lo que esperaba que pasara, para compararlo después
 26 problemas reales encontrados durante el montaje, cada uno con síntoma, causa, solución y lección aprendida. La tabla completa está en la Tasca 0.
 
 ## Desarrollo
+
+### De dónde salen las copias
+
+| Origen | Qué se copia | Cuándo | Destino | RPO resultante |
+|---|---|---|---|---|
+| MikroTik, DEB13-SRV1-NFT, OPNsense | Configuración (`.backup`/`.rsc`, `/etc`, `config.xml`) | Cron de TrueNAS **diario 02:00** (`scripts/copia-configs.sh`) | NAS `/mnt/copias/configs/` | 24 h |
+| OPNsense (además) | Historial local de `config.xml` | **En cada cambio** | El propio OPNsense | ≈ 0 (último cambio) |
+| Proxmox (CT 100, VM 101) | Imagen completa (`vzdump`) | Tarea **diaria 02:30**, se guardan 3 | `nas-copias` (NFS del NAS) | 24 h |
+| WS2025-DC | Base de datos de AD + SYSVOL (`ntdsutil ifm`) | Manual (`scripts/windows/copia-ad.ps1`) | NAS `/mnt/copias/configs/ws2025-dc/` | Desde la última ejecución manual |
+| TrueNAS | Las propias copias | Siempre (pool **espejo** `copias`) | 2 discos | 0 frente a fallo de **un** disco |
 
 ### Conceptos
 

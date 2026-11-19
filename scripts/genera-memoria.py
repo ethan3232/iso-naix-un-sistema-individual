@@ -61,7 +61,7 @@ CAPITULOS = [
 # Símbolos que se sustituyen por texto o por un signo tipográfico (no emoji)
 SUSTITUCIONES = {"✅": "✓", "✔️": "✓", "✔": "✓", "❌": "✗", "🚫": "✗", "⬜": "Pendiente", "🟡": "En curso",
                  "🧪": "(simulado)", "⚠️": "Atención:", "⚠": "Atención:", "➖": "—"}
-EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-⛿✀-➿⬀-⯿️‍]")
+EMOJI = re.compile("(?![✓✗])[\U0001F000-\U0001FAFF☀-⛿✀-➿⬀-⯿️‍]")
 
 
 def limpia_emojis(texto: str) -> str:

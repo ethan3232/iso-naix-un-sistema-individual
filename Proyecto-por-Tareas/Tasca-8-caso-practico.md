@@ -2,9 +2,21 @@
 
 **Examen:** miércoles 25/11/2026 · **Estado:** ✓ guía de intervención y banco de preguntas
 
-## Qué pide el enunciado
+## Fet: subtareas del enunciado
 
-El profesorado provocará un fallo en mi entorno y yo tendré que **acotar el impacto → formular una hipótesis → consultar el plan de contingencia → aplicarlo → comprobar que la función se recupera**. Se valora el razonamiento y no perder datos, no la rapidez. Como Apte+ hay un cuestionario teórico-práctico.
+> **Enunciado (part individual):** *«Igual que en grup, però esta vegada la situació haurà de solucionar-se de forma individual sobre l'entorn de proves de cada alumne.»* · Apte+: *«Realització de un qüestionari teòric/pràctic els conceptes desenvolupats durant tota l'activitat.»*
+
+| # | Subtarea | Nivel | Fet | Dónde / nota |
+|---|---|---|:---:|---|
+| 1 | Entorno individual listo para el caso práctico | Apte | ✓ | Todo el entorno funciona y tiene copias |
+| 2 | Plan de contingencia y método de intervención preparados | Apte | ✓ | Guía de intervención y chuleta |
+| 3 | Resolver el caso práctico el 25/11/2026 | Apte | ⏳ | Se hace el día del examen |
+| 4 | Preparar el cuestionario teórico-práctico | Apte+ | ✓ | Banco de preguntas |
+| 5 | Hacer el cuestionario | Apte+ | ⏳ | Se hace el día del examen |
+
+**Resumen:** 3 de 5 subtareas completas.
+
+**Leyenda:** ✓ Fet · ◐ Fet en parte (se explica en la nota) · ⏳ Pendiente de fecha
 
 ## Qué he preparado
 
@@ -45,6 +57,45 @@ El profesorado provocará un fallo en mi entorno y yo tendré que **acotar el im
 | **×80 en `fsync`** | Caché del host, revertida por seguridad |
 
 ## Desarrollo
+
+### Antes de empezar (2 min)
+
+1. Abrir este documento, el [09](../docs/09-contingencia.md) y el [10](../docs/10-incidencies.md).
+2. Arrancar **solo** el escenario necesario (ver [05-recursos](../docs/05-recursos.md)). En clase caben ~24 GB de VMs; en casa, ~10 GB.
+3. Acceso a todo por SSH con la configuración del laboratorio:
+
+| Equipo | Comando | Web desde el PC |
+|---|---|---|
+| MikroTik `.1` | `ssh -F ~/iso-lab/ssh/config mk` | `http://127.0.0.1:8001` |
+| OPNsense `.2` | (web) | `https://127.0.0.1:8402` |
+| DEB13-SRV1-NFT `.3` | `ssh -F ~/iso-lab/ssh/config deb-srv` | — |
+| TrueNas `.10` | `ssh -F ~/iso-lab/ssh/config truenas` | `https://127.0.0.1:8410` |
+| PMX1/2/3 `.11–.13` | `ssh -F ~/iso-lab/ssh/config pmx1` (pmx2, pmx3) | `https://127.0.0.1:8411` (8412, 8413) |
+| WS2025-DC `.20` | RDP `127.0.0.1:8420` | — |
+| DEB13-SRV2 `.21` | `ssh -F ~/iso-lab/ssh/config srv2` | — |
+| DEB13-SRV3 `.22` | `ssh -F ~/iso-lab/ssh/config srv3` | `http://127.0.0.1:8422` |
+| DEB13-CLI `.54` | `ssh -F ~/iso-lab/ssh/config cli-info` (a través de deb-srv) | — |
+
+Si la red falla, la **consola de VirtualBox** (doble clic en la VM) siempre funciona.
+
+> Atención: **En el aula el cortafuegos del centro filtra el ICMP hacia Internet** (comprobado el 18/11: `ping 1.1.1.1` y `ping 8.8.8.8` desde el propio PC → 100 % de pérdida, pero HTTPS funciona). Desde las VMs pasa lo mismo, porque salen por la NAT del PC. Para comprobar Internet en clase: `curl -sI https://deb.debian.org | head -1` y `getent hosts debian.org`. Un `ping 1.1.1.1` fallido **no** prueba que el router esté roto.
+
+### Banco de preguntas (cuestionario teórico-práctico, Apte+)
+
+Las preguntas con su respuesta están al final de cada documento («Preguntas probables de la defensa»):
+
+| Tema | Dónde |
+|---|---|
+| Virtualización, recursos, escenarios | [05](../docs/05-recursos.md) |
+| Router, NAT, cortafuegos, logs | [mikrotik](../docs/06-installacio/mikrotik.md) · [opnsense](../docs/06-installacio/opnsense.md) · [debian-srv](../docs/06-installacio/debian-srv.md) |
+| NAS, ZFS, espejo frente a copia | [truenas](../docs/06-installacio/truenas.md) |
+| Clúster, quórum, contenedor frente a VM, migración | [proxmox](../docs/06-installacio/proxmox.md) |
+| Dominio, DNS, Kerberos, canal seguro | [windows-server](../docs/06-installacio/windows-server.md) · [clients](../docs/06-installacio/clients.md) |
+| RAID 0/1/5, reconstrucción, disco de reserva, espejo por red (DRBD) | [07](../docs/07-emmagatzematge-raid.md) |
+| Rendimiento, cuellos de botella, cuántas VMs, virtio, caché del host | [02](../docs/02-inventari.md) · [08](../docs/08-rendiment.md) |
+| RTO, RPO, contingencia | [09](../docs/09-contingencia.md) |
+
+**Conceptos que tengo que saber explicar sin mirar:** hipervisor tipo 1 y tipo 2 · NAT frente a red interna frente a puente · máscara /24 y gateway · DNS directo e inverso · qué es un dominio · RAID frente a copia · RTO/RPO · quórum · *thin provisioning* (VDI dinámico) · `iowait` · swap · SHA256 · paravirtualización (virtio) · caché de escritura y `fsync` · DRBD y split-brain.
 
 ### Método de intervención (escribirlo mientras se hace)
 

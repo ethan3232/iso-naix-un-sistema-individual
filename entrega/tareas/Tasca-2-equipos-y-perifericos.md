@@ -4,16 +4,28 @@
 
 **Repositorio del proyecto:** [https://github.com/ethan3232/iso-naix-un-sistema-individual](https://github.com/ethan3232/iso-naix-un-sistema-individual) · **Esta tarea en GitHub:** [https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/Proyecto-por-Tareas/Tasca-2-equipos-y-perifericos.md](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/Proyecto-por-Tareas/Tasca-2-equipos-y-perifericos.md)
 
-**Módulos:** FDM-RA1, FDM-RA4 · **Estado:**  Apte ·  Apte+
+**Módulos:** FDM-RA1, FDM-RA4 · **Estado:** ✓ Apte · ✓ Apte+
 
-## Qué pide el enunciado
+## Fet: subtareas del enunciado
 
-| Nivel | Criterio |
-|---|---|
-| Apte | Inventario del equipo de clase |
-| Apte | Inventario del equipo de casa |
-| Apte | Comparativa y cuellos de botella, con soluciones |
-| Apte+ | Tests de memoria, disco y red en clase y en casa: herramienta, condiciones, resultado e interpretación |
+> **Enunciado (part individual):** *«Realitza un inventari del teu equip de classe i també del de casa. Fes una comparativa dels dos i identifica els possibles colls de botella […] intenta donar possibles solucions.»* · Apte+: *«Executar tests de diagnòstic (memòria, disc i xarxa) en el teu equip de classe i en el de casa, registrar l'eina utilitzada, les condicions i el resultat, i justificar amb les dades obtingudes si els colls de botella identificats es confirmen o no.»*
+
+| # | Subtarea | Nivel | Fet | Dónde / nota |
+|---|---|---|:---:|---|
+| 1 | Inventario del equipo de clase (CPU y virtualización, RAM, discos, red, firmware, periféricos, alimentación) | Apte | ✓ | Equipo de clase |
+| 2 | Inventario del equipo de casa (con SMART y `dmidecode`) | Apte | ✓ | Equipo de casa |
+| 3 | Comparativa de los dos equipos | Apte | ✓ | Resultados |
+| 4 | Cuellos de botella de cada equipo | Apte | ✓ | Conclusión: disco por USB y RAM de casa |
+| 5 | Posibles soluciones | Apte | ✓ | Tabla de cuellos de botella y soluciones |
+| 6 | Test de memoria en clase y en casa | Apte+ | ✓ | Diagnósticos (copia de 512 MiB; memtest86+ como prueba completa) |
+| 7 | Test de disco en clase y en casa | Apte+ | ✓ | 3 rondas de escritura, lectura y 4K síncrono |
+| 8 | Test de red en clase y en casa | Apte+ | ✓ | `ping` + descarga de 50 MB |
+| 9 | Registrar herramienta, condiciones y resultado | Apte+ | ✓ | Diagnósticos |
+| 10 | Justificar con datos si se confirman los cuellos de botella | Apte+ | ✓ | Mismas ~350 IOPS en los dos PCs → el límite es el disco |
+
+**Resumen:** 10 de 10 subtareas completas.
+
+**Leyenda:** ✓ Fet · ◐ Fet en parte (se explica en la nota) · ⏳ Pendiente de fecha
 
 ## Qué he hecho
 
@@ -61,6 +73,20 @@ Ejecución 3: escritura 391 MB/s · lectura 397 MB/s · 4K sync 348 IOPS
 | Internet del aula lento y con ICMP filtrado | Descargar las ISOs en casa; comprobar Internet con `curl` y DNS, no solo con `ping` |
 
 ## Desarrollo
+
+### Comparativa clase vs. casa
+
+| | Clase | Casa | Consecuencia |
+|---|---|---|---|
+| Tipo de equipo | Portátil ASUS ExpertBook | Torre Gigabyte B560M | El portátil se calienta más (61 ºC en reposo frente a 45 ºC): con carga larga puede bajar frecuencia |
+| CPU | Core Ultra 5 125H · **18 hilos** (híbrida) | i5-11400F · **12 hilos** (todos iguales) | En clase caben más vCPU repartidas; en casa cada hilo es "completo" |
+| RAM | **30 GiB** | **16 GB** | **La diferencia que más importa**: en clase ~24 GB para VMs (los 4 escenarios), en casa ~10 GB (un escenario cada vez, sin el clúster de 3 nodos + NAS) |
+| Disco de las VMs | El SSD A400 en la caja **USB 5 Gb/s** | **El mismo SSD y la misma caja**, USB 5 Gb/s | **Igual en los dos sitios.** Antes pensaba que en clase iba por SATA: el inventario lo ha desmentido |
+| Red | 1 Gb/s (Intel) | 1 Gb/s (Realtek) | Igual. La red de las VMs es interna (no sale del PC) |
+| Diagnóstico de disco | 110–391 MB/s escr. · 308–397 MB/s lect. · **347–351 IOPS** 4K sync (3 ejecuciones) | 303–344 MB/s escr. · 351–363 MB/s lect. · **347–350 IOPS** (2 ejecuciones) | **Prácticamente idénticos** → el límite es el SSD + el puente USB, no el ordenador |
+| Diagnóstico de RAM | 3,1 GB/s (copia en Python, sin errores) | 3,3 GB/s | Igual: la prueba en Python mide sobre todo al propio Python, no la RAM |
+| Red local | 0 % pérdida · **0,5 ms** al router del aula | 0 % pérdida · 1,7 ms | Las dos bien |
+| Internet | Ping a 1.1.1.1 y 8.8.8.8 **bloqueado** (100 % pérdida) · descarga **~14 Mb/s** (50 MB en 28,6 s) | 17 ms · ~210–260 Mb/s | En el aula el ICMP hacia fuera está filtrado y la salida es compartida por toda la clase. **Las ISOs grandes se descargan en casa** |
 
 ### Equipo de clase (puesto 23)
 

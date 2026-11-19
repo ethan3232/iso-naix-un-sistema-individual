@@ -4,6 +4,22 @@
 
 **Repositorio del proyecto:** [https://github.com/ethan3232/iso-naix-un-sistema-individual](https://github.com/ethan3232/iso-naix-un-sistema-individual) · **Esta tarea en GitHub:** [https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/Proyecto-por-Tareas/Transversal.md](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/Proyecto-por-Tareas/Transversal.md)
 
+## Fet: subtareas del enunciado
+
+> **Enunciado (part individual):** Partes comunes a todo el proyecto: la fase **PREDIU** (predicciones antes de investigar), el plan de contingencia (punto 4 de la Tasca 6, hecho también en el entorno individual) y el registro de incidencias.
+
+| # | Subtarea | Nivel | Fet | Dónde / nota |
+|---|---|---|:---:|---|
+| 1 | Predicciones antes de cada fase y comparación con el resultado | — | ✓ | Predicciones |
+| 2 | Plan de contingencia con RTO/RPO | — | ✓ | Plan de contingencia |
+| 3 | Probar el plan y medir el tiempo sin servicio | — | ✓ | 9 de 13 escenarios probados |
+| 4 | Valorar si el plan es adecuado o debe mejorar | — | ✓ | Puntos débiles y valoración personal |
+| 5 | Registro de incidencias con su solución | — | ✓ | 26 incidencias (Tasca 0) |
+
+**Resumen:** 5 de 5 subtareas completas.
+
+**Leyenda:** ✓ Fet · ◐ Fet en parte (se explica en la nota) · ⏳ Pendiente de fecha
+
 ## 1. Predicciones (antes de investigar)
 
 Antes de cada fase escribí lo que esperaba que pasara, para compararlo después con el resultado (método ThinkLoop: predicción → investigación → implementación → verificación → análisis).
@@ -55,6 +71,16 @@ Antes de cada fase escribí lo que esperaba que pasara, para compararlo después
 
 ## Desarrollo
 
+### De dónde salen las copias
+
+| Origen | Qué se copia | Cuándo | Destino | RPO resultante |
+|---|---|---|---|---|
+| MikroTik, DEB13-SRV1-NFT, OPNsense | Configuración (`.backup`/`.rsc`, `/etc`, `config.xml`) | Cron de TrueNAS **diario 02:00** (`scripts/copia-configs.sh`) | NAS `/mnt/copias/configs/` | 24 h |
+| OPNsense (además) | Historial local de `config.xml` | **En cada cambio** | El propio OPNsense | ≈ 0 (último cambio) |
+| Proxmox (CT 100, VM 101) | Imagen completa (`vzdump`) | Tarea **diaria 02:30**, se guardan 3 | `nas-copias` (NFS del NAS) | 24 h |
+| WS2025-DC | Base de datos de AD + SYSVOL (`ntdsutil ifm`) | Manual (`scripts/windows/copia-ad.ps1`) | NAS `/mnt/copias/configs/ws2025-dc/` | Desde la última ejecución manual |
+| TrueNAS | Las propias copias | Siempre (pool **espejo** `copias`) | 2 discos | 0 frente a fallo de **un** disco |
+
 ### Conceptos
 
 | Término | Qué significa | Ejemplo en mi sistema |
@@ -86,7 +112,7 @@ Antes de cada fase escribí lo que esperaba que pasara, para compararlo después
 
 | Punto débil | Evidencia | Mejora posible |
 |---|---|---|
-| NAS y VMs en el **mismo SSD** | Inventario: todo está en el Kingston A400 | Copia de las configuraciones fuera del PC (Git ) y de los VDI críticos a otro disco |
+| NAS y VMs en el **mismo SSD** | Inventario: todo está en el Kingston A400 | Copia de las configuraciones fuera del PC (Git ✓) y de los VDI críticos a otro disco |
 | Copia del DC **manual** | `copia-ad.ps1` se lanza a mano | Tarea programada de Windows |
 | RPO de 24 h en los routers | Cron diario a las 02:00 | Copia tras cada cambio (como el historial de OPNsense) |
 | Migración del contenedor con **~84 s** de corte | Discos locales en cada nodo | Almacenamiento compartido (NFS del NAS) → solo se copia la RAM |

@@ -2,12 +2,22 @@
 
 **Módulo:** ISO-RA3 · **Estado:** ✓ Apte · ✓ Apte+
 
-## Qué pide el enunciado
+## Fet: subtareas del enunciado
 
-| Nivel | Criterio |
-|---|---|
-| Apte | Crear 3 tipos de RAID, verificarlos y explicar qué se gana con cada uno |
-| Apte+ | RAID en espejo entre 2 equipos, con un caso de uso |
+> **Enunciado (part individual):** Apte: *«Crea almenys 3 tipus de RAID en un dels equips, verifica el seu funcionament i explica que guanyem en cada un dels diferents tipus de RAID.»* · Apte+: *«Investiga com crear un RAID en espill entre 2 discos que es troben en 2 equips diferents. Indica alguna funcionalitat en la que puga ser interessant i dur-la a terme.»*
+
+| # | Subtarea | Nivel | Fet | Dónde / nota |
+|---|---|---|:---:|---|
+| 1 | Crear al menos 3 tipos de RAID | Apte | ✓ | RAID 0, 1 y 5 con `mdadm` en DEB13-SRV2 |
+| 2 | Verificar su funcionamiento con fallos provocados | Apte | ✓ | Verificación: fallos provocados |
+| 3 | Explicar qué se gana con cada tipo | Apte | ✓ | Comparativa |
+| 4 | Investigar cómo hacer un espejo entre 2 discos de 2 equipos | Apte+ | ✓ | DRBD |
+| 5 | Indicar una funcionalidad útil | Apte+ | ✓ | Servidor de ficheros de la empresa |
+| 6 | Llevarlo a cabo y probarlo | Apte+ | ✓ | Caída de SRV2: ~13 s y RPO 0 |
+
+**Resumen:** 6 de 6 subtareas completas.
+
+**Leyenda:** ✓ Fet · ◐ Fet en parte (se explica en la nota) · ⏳ Pendiente de fecha
 
 ## Qué he hecho
 
@@ -58,6 +68,73 @@
 - Configuración: [`configs/drbd/r0.res`](../configs/drbd/r0.res)
 
 ## Desarrollo
+
+### Predicción e investigación
+
+> *Mis predicciones antes de empezar están en [00-prediccions.md](../docs/00-prediccions.md).*
+
+**¿Por qué RAID por software (`mdadm`) y no la controladora de VirtualBox?** VirtualBox no emula controladoras RAID. Además, `mdadm` es lo que se usa en servidores Linux reales sin tarjeta RAID, y deja ver y **provocar** los fallos con comandos.
+
+**¿Por qué discos de 1 GB?** Para que la sincronización y la reconstrucción tarden segundos y se puedan repetir en clase. El comportamiento es el mismo que con discos grandes; solo cambia el tiempo.
+
+#### Reparto de discos
+
+| RAID | Dispositivo | Discos | Montado en | Sistema de ficheros |
+|---|---|---|---|---|
+| RAID 0 | `/dev/md0` | `sdb` + `sdc` | `/srv/raid0` | ext4 (etiqueta `raid-0`) |
+| RAID 1 | `/dev/md1` | `sdd` + `sde` | `/srv/raid1` | ext4 (`raid-1`) |
+| RAID 5 | `/dev/md5` | `sdf` + `sdg` + `sdh` | `/srv/raid5` | ext4 (`raid-5`) |
+| Repuesto | — | `sdi` | — | Disco "nuevo" para sustituir al roto |
+
+### Rendimiento medido y su límite en este entorno
+
+Se midió con `fio` (escritura y lectura secuencial de 1 MiB, escritura aleatoria de 4 KiB, sin caché de la VM), en **3 rondas intercaladas**. Los datos completos están en el [log](../evidencies/logs/raid-rendimiento-fio.txt).
+
+| Destino | Escritura MB/s (mediana) | Lectura MB/s (mediana) | 4K IOPS (mediana) | Dispersión entre rondas |
+|---|---|---|---|---|
+| 1 disco | 25 | 370 | 5 909 | Escritura de **14 a 391** MB/s |
+| RAID 0 | 17 | 110 | 2 204 | Escritura de **15 a 436** MB/s |
+| RAID 1 | 15 | 117 | 1 236 | Lectura de **98 a 339** MB/s |
+| RAID 5 | 15 | 248 | 1 433 | IOPS de **853 a 9 061** |
+
+**Análisis:** las cifras **no permiten comparar los tipos de RAID**, y saber por qué es parte del resultado:
+
+1. Los 8 "discos" son **ficheros `.vdi` en el mismo SSD físico** del anfitrión (Kingston A400 en caja USB). Un RAID 0 reparte los datos entre dos discos para escribir en paralelo, pero aquí los dos discos son el mismo hardware: no hay paralelismo real.
+2. El A400 tiene una caché rápida pequeña. Cuando se llena, la escritura cae a ~15–25 MB/s, y eso se ve igual en **todos** los destinos, incluido el disco solo.
+3. Los VDI son **dinámicos**: la primera escritura en una zona nueva obliga a VirtualBox a hacer crecer el fichero.
+
+**El cuello de botella es el disco del anfitrión**, no el RAID. Esto conecta con la [Tasca 2](../docs/02-inventari.md) (el SSD en caja USB da las mismas ~350 IOPS en clase y en casa) y la [Tasca 7](../docs/08-rendiment.md).
+
+### Verificación: caída de un servidor entero
+
+| # | Prueba | Resultado | Tiempo |
+|---|---|---|---|
+| 1 | Sincronización inicial de 1 GB (SRV2 → SRV3) | `UpToDate/UpToDate` | **53 s** (19,8 MB/s: DRBD limita el ritmo para no ahogar la red; se ajusta con `resync-rate`) |
+| 2 | Escribir 100 MB aleatorios en SRV2 + SHA256 | `e293a9a2…ca6f99` | — |
+| 3 | Montar el disco en SRV3 mientras SRV2 es primario | ✗ *Can't open blockdev* — **correcto**: solo un nodo puede escribir a la vez (si no, se corrompe el ext4) | — |
+| 4 | **Apagado brusco de SRV2** (`VBoxManage controlvm poweroff`, como un corte de luz) → en SRV3: `drbdadm primary r0` + `mount` | ✓ Datos montados en SRV3, **SHA256 idéntico** | **~13 s** (casi todo es DRBD detectando que el otro no responde: `ping-int` 10 s) |
+| 5 | Escribir 50 MB nuevos en SRV3 con SRV2 apagado | ✓ DRBD apunta lo pendiente: `oos:51272` KB | — |
+| 6 | SRV2 vuelve | Entra como **secundario**, sin *split-brain*. Solo copia **206 MB** (50 MB nuevos + 156 MB que marca por precaución por haber caído siendo primario) | **25 s** (no el disco entero) |
+| 7 | Cambio controlado de vuelta: SRV3 `umount` + `secondary`, SRV2 `primary` + `mount` | ✓ Los 2 ficheros con su SHA256 correcto | **2,6 s** |
+| 8 | Reinicio de SRV3 | Se reconecta solo: `Connected Primary/Secondary UpToDate/UpToDate` | — |
+
+![DRBD secundario en SRV3](../evidencies/captures/debian-servidors/07-srv3-drbd-secundario.png)
+
+*Demuestra: SRV3 es secundario y tiene una copia al día (`UpToDate`), pero no monta el disco: solo el primario puede usarlo.*
+
+### Caso de uso en la empresa
+
+El **servidor de ficheros** de los departamentos. Hoy, si DEB13-SRV2 se rompe (no un disco: **el equipo**), los RAID 1 y 5 no sirven de nada porque sus discos están dentro. Con DRBD, los datos ya están en DEB13-SRV3 y el servicio vuelve en segundos:
+
+| | RAID 1 local (`md1`) | Espejo por red (DRBD) |
+|---|---|---|
+| Se rompe un disco | ✓ sigue funcionando | ✓ sigue funcionando |
+| Se rompe **el servidor** | ✗ datos inaccesibles hasta repararlo | ✓ el otro servidor los monta en ~13 s |
+| Coste | 2 discos | 2 servidores + red |
+| Escritura | velocidad del disco | velocidad del disco **+ ida y vuelta por la red** |
+| ¿Es una copia de seguridad? | ✗ | ✗ — un borrado o un ransomware se replica al instante. Sigue haciendo falta la copia en el NAS |
+
+**Limitaciones de mi montaje:** el cambio de primario es **manual** (en producción lo haría **Pacemaker/Corosync** con una IP flotante, para que los clientes no tengan que cambiar de servidor), y las dos VMs están en el **mismo PC** (en la empresa serían dos máquinas físicas, idealmente con una red dedicada para la réplica).
 
 ### Implementación
 

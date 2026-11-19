@@ -4,14 +4,26 @@
 
 **Repositorio del proyecto:** [https://github.com/ethan3232/iso-naix-un-sistema-individual](https://github.com/ethan3232/iso-naix-un-sistema-individual) · **Esta tarea en GitHub:** [https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/Proyecto-por-Tareas/Tasca-0-entorno-de-pruebas.md](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/Proyecto-por-Tareas/Tasca-0-entorno-de-pruebas.md)
 
-**Módulos:** FDM-RA1, FDM-RA4 · **Estado:**  Apte ·  Apte+
+**Módulos:** FDM-RA1, FDM-RA4 · **Estado:** ✓ Apte · ✓ Apte+
 
-## Qué pide el enunciado
+## Fet: subtareas del enunciado
 
-| Nivel | Criterio |
-|---|---|
-| Apte | Preparar en mi equipo un entorno de pruebas que simule el del grupo |
-| Apte+ | Documentar el montaje en Markdown y publicarlo en un repositorio Git personal: esquema de VMs, recursos y problemas encontrados con su solución |
+> **Enunciado (part individual):** *«Preparar un entorn de proves en l'equip de cadascú […] haurà de simular més o menys (no tot ni exactament igual) l'entorn de prova que es fa en grup.»* · Apte+: *«Documentar el muntatge del teu entorn de proves en Markdown i publicar-lo en un repositori Git personal, incloent l'esquema de màquines virtuals, els recursos assignats a cadascuna i els problemes trobats amb la seua solució.»*
+
+| # | Subtarea | Nivel | Fet | Dónde / nota |
+|---|---|---|:---:|---|
+| 1 | Preparar el entorno de pruebas en mi equipo, sobre el disco de clase | Apte | ✓ | Qué he hecho §1 · SSD de clase por USB en los dos equipos |
+| 2 | Simular el entorno del grupo (no todo ni exactamente igual) | Apte | ✓ | 12 VMs + 1 contenedor. DC, SRV2 y SRV3 van en VirtualBox en vez de dentro de Proxmox, por RAM (Tasca 4) |
+| 3 | Adaptar el montaje a mi equipo (qué VMs se pueden arrancar a la vez) | Apte | ✓ | Escenarios de arranque A, B, C y D |
+| 4 | Documentar el montaje en Markdown | Apte+ | ✓ | Todo el repositorio |
+| 5 | Publicarlo en un repositorio Git personal | Apte+ | ✓ | github.com/ethan3232/iso-naix-un-sistema-individual |
+| 6 | Esquema de máquinas virtuales | Apte+ | ✓ | Montaje en VirtualBox |
+| 7 | Recursos asignados a cada VM | Apte+ | ✓ | Tabla de máquinas |
+| 8 | Problemas encontrados con su solución | Apte+ | ✓ | 26 incidencias |
+
+**Resumen:** 8 de 8 subtareas completas.
+
+**Leyenda:** ✓ Fet · ◐ Fet en parte (se explica en la nota) · ⏳ Pendiente de fecha
 
 ## Qué he hecho
 
@@ -75,6 +87,35 @@ Cada problema se resolvió con el método **síntoma → hipótesis → comproba
 | 26 | PMX3 | PMX3 no vuelve a entrar en el clúster tras arrancar (2 de 3 votos) | Copiar `authkey` de PMX1 (mismo SHA256 `a74c4537…` que el resto de nodos) y `systemctl restart corosync`. El archivo roto se guardó en `/root/authkey.vacia.2026-11-18` |
 
 ## Desarrollo
+
+### Esquema "físico" (montaje en VirtualBox)
+
+Todo corre en **un solo equipo físico**: el portátil de clase (eth4n). Los "cables" son adaptadores virtuales:
+
+| Elemento real | Equivalente en VirtualBox |
+|---|---|
+| Conmutador de la LAN | **Red interna `LAN23`** (`--nic intnet --intnet LAN23`): un switch virtual aislado, solo para mis VMs |
+| Router del ISP / red del rack | **NAT de VirtualBox** (adaptador 1 de cada router): cada router recibe 10.0.2.15 por DHCP y sale por el PC |
+| Cable de cada equipo al switch | Adaptador conectado a `LAN23` (`cableconnected on`) |
+| Acceso del técnico a la gestión | Redirecciones de puertos **solo en 127.0.0.1** (no se ven desde la red del aula) |
+
+**¿Por qué red interna y no puente (bridge)?** Con puente, mis VMs aparecerían en la red compartida del aula (172.16.222.0/24) y un DHCP o una IP repetida molestaría a los compañeros. El enunciado prohíbe lanzar un DHCP de pruebas en la red compartida. La red interna aísla mi LAN y **obliga a que todo el tráfico pase por el router**, que es lo que queremos demostrar.
+
+### Cuello de botella observado
+
+Durante la instalación simultánea de WS2025-DC, W11-CLI y OPNsense ([log](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/evidencies/logs/host-carga-3-instalaciones.txt)):
+
+```
+procs  ... -cpu-------
+ r  b  ... us sy id wa
+ 0  3  ...  1  2 81 16
+ 3  1  ...  1  3 83 13
+```
+
+- `id` 80–83 % → la **CPU está casi libre**.
+- `wa` 13–16 % y `b` = 3 → **procesos bloqueados esperando al disco**.
+
+El cuello de botella es el **SSD** (Kingston A400, sin caché DRAM, en caja USB 5 Gb/s), no la CPU ni la RAM. Mejora propuesta: no instalar varios sistemas a la vez y conectar la caja a 10 Gb/s (el NVMe del portátil no se puede usar: es el disco del aula). Ver [02](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/docs/02-inventari.md).
 
 ### Tabla de máquinas
 

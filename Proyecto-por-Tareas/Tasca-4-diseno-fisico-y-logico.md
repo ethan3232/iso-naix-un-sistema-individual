@@ -2,13 +2,27 @@
 
 **Módulos:** FDM-RA4, ISO-RA1, ISO-RA3 · **Estado:** ✓ Apte · ✓ Apte+
 
-## Qué pide el enunciado
+## Fet: subtareas del enunciado
 
-| Nivel | Criterio |
-|---|---|
-| Apte | Esquema de red de mi sistema (configuración, montaje en VirtualBox, red `192.168.23.0/24`) |
-| Apte | Tabla de máquinas, recursos simultáneos y reserva del hipervisor |
-| Apte+ | Implementar el esquema y verificar la conectividad (ping, traceroute, rutas, interfaces) |
+> **Enunciado (part individual):** *«Cada alumne haurà de fer un esquema de xarxa del seu sistema de prova indicant la configuració que crearà, el seu muntatge a Virtual Box (o similar) i la xarxa que utilitzarà […] 192.168.XX.0/24 on XX indica la posició del seu equip.»* · Apte+: *«Implementar l'esquema de xarxa dissenyat en VirtualBox i verificar la connectivitat entre totes les màquines i cap a l'exterior, aportant evidències (ping, traceroute, taula d'encaminament i configuració de cada interfície).»*
+
+| # | Subtarea | Nivel | Fet | Dónde / nota |
+|---|---|---|:---:|---|
+| 1 | Esquema de red con la configuración de cada equipo | Apte | ✓ | Esquema lógico |
+| 2 | Montaje en VirtualBox | Apte | ✓ | Montaje en VirtualBox |
+| 3 | Red `192.168.23.0/24` (puesto 23) | Apte | ✓ | Plan de direccionamiento |
+| 4 | WAN del servidor de comunicaciones por DHCP | Apte | ✓ | Parámetros de red de cada interfaz |
+| 5 | Todos los parámetros de cada interfaz (IP, máscara, gateway, DNS) | Apte | ✓ | Parámetros de red de cada interfaz |
+| 6 | Tabla de máquinas (nombre, función, SO, vCPU, RAM, disco, red, host) | Apte | ✓ | Tabla de máquinas |
+| 7 | Recursos simultáneos y reserva del hipervisor | Apte | ✓ | Recursos simultáneos y reserva del hipervisor |
+| 8 | Clúster: nodos, quórum, red y almacenamiento; gestión conjunta, migración y alta disponibilidad | Apte | ✓ | Clúster |
+| 9 | Implementar el esquema en VirtualBox | Apte+ | ✓ | 12 VMs en la red interna LAN23 |
+| 10 | Verificar la conectividad interna y hacia el exterior | Apte+ | ✓ | Pruebas desde el cliente con cada uno de los 3 routers |
+| 11 | Evidencias: ping, traceroute, tabla de rutas y configuración de cada interfaz | Apte+ | ✓ | Extracto de la prueba + captura |
+
+**Resumen:** 11 de 11 subtareas completas.
+
+**Leyenda:** ✓ Fet · ◐ Fet en parte (se explica en la nota) · ⏳ Pendiente de fecha
 
 ## Qué he hecho
 
@@ -75,6 +89,40 @@ HTTP/2 200
 - Fuentes de los esquemas: [`diagrames/`](../diagrames) (`bash diagrames/generar.sh` los regenera)
 
 ## Desarrollo
+
+### Tabla de máquinas
+
+Host de todas: **eth4n** (Linux Mint 22.3, Core Ultra 5 125H 14C/18T, 30 GiB RAM, SSD Kingston A400 960 GB en caja USB 5 Gb/s). Hipervisor: VirtualBox 7.0.20. Grupo de VMs: `ISO-INDV`.
+
+| Nombre (VM) | Función | SO | vCPU | RAM | Disco | Red (VirtualBox) | Firmware |
+|---|---|---|---|---|---|---|---|
+| Mikrotik-IND | Comunicaciones · gateway .1 | RouterOS 7.24.5 x86 | 2 | 512 MB | 2 GB | NAT + LAN23 | BIOS |
+| OPNsense | Comunicaciones · .2 | OPNsense 26.7 | 2 | 2 GB | 20 GB | NAT + LAN23 | BIOS |
+| DEB13-SRV1-NFT | Comunicaciones · .3 (nftables) | Debian 13 | 1 | 2 GB | 20 GB | NAT + LAN23 | BIOS |
+| TrueNas | NAS · .10 | TrueNAS SCALE 25.10.7 | 2 | 4 GB | 32 + 20 + 20 GB | LAN23 | BIOS |
+| PMX1 | Virtualización · nodo 1 · .11 | Proxmox VE 9.2 | 2 | 4 GB | 20 GB | LAN23 (promiscuo) | BIOS |
+| PMX2 | Virtualización · nodo 2 · .12 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN23 (promiscuo) | BIOS |
+| PMX3 | Virtualización · nodo 3 · .13 | Proxmox VE 9.2 | 2 | 4 GB | 20 GB | LAN23 (promiscuo) | BIOS |
+| DEB13-SRV2 (*) | Ficheros · RAID 0/1/5 (mdadm) · espejo DRBD · .21 | Debian 13 | 1 | 1 GB | 20 GB + 8 × 1 GB (RAID) + 1 GB (DRBD) | LAN23 (**virtio**) | BIOS |
+| DEB13-SRV3 (*) | Web (Apache) · espejo DRBD · .22 | Debian 13 | 1 | 1 GB | 20 GB + 1 GB (DRBD) | LAN23 (**virtio**) | BIOS |
+| WS2025-DC (*) | Dominio AD DS + DNS · .20 | Windows Server 2025 Std (escritorio) | 2 | 4 GB | 50 GB | LAN23 | **UEFI + TPM 2.0** |
+| (LXC en PMX) | Servidor de infraestructura · .30 | Debian 13 (contenedor) | 1 | 512 MB | 8 GB | vmbr0 → LAN23 | — |
+| W11-CLI | Cliente Administración · .51 | Windows 11 Pro 25H2 | 2 | 4 GB | 64 GB | LAN23 | **UEFI + TPM 2.0** |
+| DEB13-CLI | Cliente Informática · .54 | Debian 13 (GNOME) | 1 | 4 GB | 20 GB | LAN23 | BIOS |
+
+> (*) **DEB13-SRV2, DEB13-SRV3 y WS2025-DC** van, en el diseño, **dentro del clúster Proxmox** (PMX1, PMX3 y PMX2). Por falta de RAM para la virtualización anidada se ejecutan como VMs de VirtualBox en LAN23, con la misma IP y función. Explicación y cálculo en [04 §5.1](../docs/04-disseny.md#51-servidores-dentro-del-clúster-simulados).
+
+Discos: **VDI de reserva dinámica** (solo ocupan lo que se usa). Ocupación real: ver [inventario](../docs/02-inventari.md).
+
+### Decisiones y alternativas
+
+| Decisión | Alternativas | Por qué esta |
+|---|---|---|
+| Red interna `LAN23` | Puente al aula, red host-only | Aislada y sin riesgo para la red compartida |
+| WAN por NAT de VirtualBox | Puente con IP del rack | El enunciado lo permite en la parte individual |
+| Dominio `asix23.lan` | `.local`, subdominio público | `.local` choca con mDNS; no tenemos dominio público |
+| DNS del dominio en el DC | DNS en el router | AD necesita registros SRV que solo gestiona su DNS |
+| Copias "pull" desde el NAS | Cada equipo envía | Los equipos no guardan credenciales del NAS |
 
 ### Parámetros de red de cada interfaz
 

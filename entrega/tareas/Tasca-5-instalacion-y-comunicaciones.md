@@ -4,22 +4,38 @@
 
 **Repositorio del proyecto:** [https://github.com/ethan3232/iso-naix-un-sistema-individual](https://github.com/ethan3232/iso-naix-un-sistema-individual) · **Esta tarea en GitHub:** [https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/Proyecto-por-Tareas/Tasca-5-instalacion-y-comunicaciones.md](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/Proyecto-por-Tareas/Tasca-5-instalacion-y-comunicaciones.md)
 
-**Módulos:** ISO-RA1, FDM-RA1 · **Estado:**  Apte ·  Apte+
+**Módulos:** ISO-RA1, FDM-RA1 · **Estado:** ✓ Apte · ✓ Apte+
 
-## Qué pide el enunciado
+## Fet: subtareas del enunciado
 
-| Nivel | Criterio |
-|---|---|
-| Apte | MikroTik, OPNsense y Debian nftables: administración, WAN/LAN, Internet a la LAN, copia en el NAS, fallo y recuperación |
-| Apte | En cada router: una conexión permitida y otra bloqueada, con la interpretación del registro |
-| Apte | TrueNAS: administración, red y disco adicional para copias |
-| Apte | Proxmox: administración, red, clúster, servidores, ventajas e inconvenientes, contenedor frente a VM, migración (tiempo y espacio), copias |
-| Apte | Windows Server 2025: administración, red, qué es un dominio y qué aporta, copias |
-| Apte | Servidores de infraestructura Linux: administración, red, servicio y copia |
-| Apte | Clientes Windows 11 y Linux: administración, red, dominio (si se justifica) y copia |
-| Apte | Requisitos, licencia y origen de cada imagen, y comprobación SHA256 |
-| Apte | Una incidencia de instalación o arranque en una VM desechable |
-| Apte+ | Copias automáticas de las configuraciones de los servidores críticos |
+> **Enunciado (part individual):** *«Cada alumne haurà de configurar en el seu entorn de prova els mateixos sistemes operatius que han fet a classe.»* · Apte+: *«Implementar un sistema per a realitzar còpies de la informació de configuració i/o configuracions importants dels diferents servidors crítics de la xarxa.»*
+
+| # | Subtarea | Nivel | Fet | Dónde / nota |
+|---|---|---|:---:|---|
+| 1 | 5.1 Requisitos, licencia, recursos y origen de cada imagen; integridad SHA256 | Apte | ✓ | §1. OPNsense y Windows: el fabricante no publica el hash de la ISO (justificado) |
+| 2 | 5.2 Firmware, orden de arranque, particionado y sistema de ficheros (UEFI, TPM) | Apte | ✓ | §2 |
+| 3 | 5.3 Instalar y registrar las opciones, versión, dispositivos y software | Apte | ✓ | §2 |
+| 4 | 5.4 Actualizar y comprobar el funcionamiento; vía de recuperación | Apte | ◐ | Vías de recuperación probadas en los 3 routers. **Falta registrar la actualización de cada sistema** |
+| 5 | 5.5 Incidencia en una VM desechable (síntoma, hipótesis, comprobación, solución, retorno) | Apte | ✓ | §10 |
+| 6 | Routers: usuario de administración y red WAN/LAN | Apte | ✓ | §3 |
+| 7 | Routers: Internet para la LAN | Apte | ✓ | §3 |
+| 8 | Routers: una conexión permitida, otra bloqueada e interpretación del registro | Apte | ✓ | §3, en los tres |
+| 9 | Routers: copia en el NAS, fallo provocado y recuperación | Apte | ✓ | §3: 26 s, 15 s y 21 s |
+| 10 | TrueNAS: usuarios, red, instalación y disco adicional para copias | Apte | ✓ | §4 |
+| 11 | Proxmox: usuario, red y clúster | Apte | ✓ | §5 |
+| 12 | Proxmox: crear los servidores virtualizados | Apte | ◐ | `srv-infra` (LXC) y una VM dentro del clúster; DC, SRV2 y SRV3 en VirtualBox por falta de RAM |
+| 13 | Proxmox: ventajas e inconvenientes; contenedor frente a VM | Apte | ✓ | §5 |
+| 14 | Proxmox: migración de un contenedor y de una VM (tiempo, espacio, mejoras) | Apte | ✓ | §5: ~84 s y 8 ms |
+| 15 | Proxmox: copias al NAS; qué tiene sentido guardar | Apte | ✓ | §5 |
+| 16 | Windows Server: usuarios, red, qué es un dominio y qué aporta, copias | Apte | ✓ | §6 |
+| 17 | Servidores Linux: usuario, red, servicio y copia | Apte | ✓ | §7 |
+| 18 | Clientes: usuario, red y dominio (si se justifica) | Apte | ✓ | §8: W11 unido; Debian sin unir, justificado |
+| 19 | Clientes: copia de la configuración o del sistema | Apte | ◐ | Explicado qué se copia; no hay registro de una copia hecha de los clientes |
+| 20 | Copias automáticas de las configuraciones de los servidores críticos | Apte+ | ✓ | §11 |
+
+**Resumen:** 17 de 20 subtareas completas.
+
+**Leyenda:** ✓ Fet · ◐ Fet en parte (se explica en la nota) · ⏳ Pendiente de fecha
 
 ## 1. Sistemas, licencias e imágenes (SHA256)
 
@@ -27,19 +43,37 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 | Función | Sistema y versión | Licencia | SHA256 |
 |---|---|---|---|
-| Comunicaciones (principal) | MikroTik RouterOS 7.24.5 (x86) | Propietaria; x86 sin clave = demo de 24 h |  coincide |
+| Comunicaciones (principal) | MikroTik RouterOS 7.24.5 (x86) | Propietaria; x86 sin clave = demo de 24 h | ✓ coincide |
 | Comunicaciones (alternativo) | OPNsense 26.7 | BSD 2-Clause (libre) | N/C ¹ |
-| Comunicaciones (alternativo) | Debian 13.1 + nftables | Libre (DFSG) |  coincide |
-| NAS | TrueNAS SCALE 25.10.7 | Libre (GPL) |  coincide |
-| Virtualización | Proxmox VE 9.2-1 | AGPLv3; suscripción opcional |  coincide |
+| Comunicaciones (alternativo) | Debian 13.1 + nftables | Libre (DFSG) | ✓ coincide |
+| NAS | TrueNAS SCALE 25.10.7 | Libre (GPL) | ✓ coincide |
+| Virtualización | Proxmox VE 9.2-1 | AGPLv3; suscripción opcional | ✓ coincide |
 | Dominio | Windows Server 2025 Standard (evaluación) | Propietaria; 180 días | N/C ² |
-| Clientes | Windows 11 Pro 25H2 · Debian 13.1 | Propietaria · Libre | N/C ² ·  |
+| Clientes | Windows 11 Pro 25H2 · Debian 13.1 | Propietaria · Libre | N/C ² · ✓ |
 
 ¹ OPNsense publica el hash del archivo comprimido (`.iso.bz2`), no de la ISO. ² Microsoft no publica un fichero de sumas; se guarda el hash calculado para comprobar en el futuro que la imagen no ha cambiado.
 
 **¿Por qué verificar el SHA256?** Si cambia un solo bit de la ISO (descarga corrupta o imagen manipulada), la huella sale totalmente distinta. Coincidir con la del fabricante demuestra que la imagen es íntegra y auténtica.
 
-## 2. Servidores de comunicaciones
+## 2. Instalación: requisitos, firmware, particionado y opciones
+
+| Sistema | Requisito oficial → asignado | Firmware | Disco y sistema de ficheros | Instalación |
+|---|---|---|---|---|
+| MikroTik RouterOS 7.24.5 | Muy poca RAM → **512 MB** (usa ~200 MB; bajado de 4 GB) | BIOS | Disco único, formato propio de RouterOS | Instalador de la ISO; `admin` obliga a cambiar la contraseña |
+| OPNsense 26.7 | 2 GB recomendados (el instalador pide 3) → **2 GB** | BIOS | 20 GB · **UFS** | Modo *live* → *Install (UFS)* → se quita la ISO |
+| Debian 13.1 (router y servidores) | 1 GB → 1 GB (servidores) | BIOS | ext4 + swap (particionado guiado) | Instalación **desatendida** de VirtualBox; servidores **sin escritorio** |
+| TrueNAS SCALE 25.10.7 | **8 GB** → 4 GB (suficiente para unos MB de copias) | BIOS | Sistema en `sda` (ZFS `boot-pool`); datos **siempre en otros discos** | Ya instalado; se quitó la ISO del orden de arranque (incidencia 1) |
+| Proxmox VE 9.2-1 | 64 bits con VT-x → virtualización **anidada** activada | BIOS | `/dev/sda` · **ext4 + LVM-thin** (un disco: ZFS no aporta redundancia y gasta RAM) | Instalador *Terminal UI*, IP fija; repositorio `pve-no-subscription` |
+| Windows Server 2025 | 2 GB y 32 GB, UEFI + TPM recomendados → 4 GB · 50 GB | **UEFI + TPM 2.0** | GPT · NTFS | Desatendida, edición *Standard (experiencia de escritorio)* |
+| Windows 11 Pro 25H2 | **4 GB, 64 GB, UEFI + Secure Boot, TPM 2.0** → justo el mínimo | **UEFI + TPM 2.0** | GPT · NTFS | Desatendida (imagen 6 = Pro, necesaria para el dominio) |
+
+**¿Por qué UEFI + TPM solo en Windows?** Windows 11 lo exige y en Server 2025 es lo recomendado (arranque seguro, BitLocker). El resto funciona igual con BIOS, que es lo más sencillo en VirtualBox.
+
+**Orden de arranque:** durante la instalación arranca primero el DVD. Después se **quita la ISO** y se deja solo el disco: si no, la VM vuelve a arrancar el instalador (incidencias 1 y 17).
+
+**Problemas de instalación resueltos:** Windows esperando una tecla para arrancar el DVD en UEFI (incidencia 6), el instalador de Windows 11 parado en la clave de producto (7) y la instalación desatendida de Debian colgada por arrancar desde el disco a medio instalar (17).
+
+## 3. Servidores de comunicaciones
 
 | | MikroTik `.1` | OPNsense `.2` | Debian nftables `.3` |
 |---|---|---|---|
@@ -114,7 +148,7 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 **Fallo y recuperación:** se dejó un error de sintaxis en `/etc/nftables.conf` y se reinició el servidor. Al arrancar, `nftables: failed` con **0 reglas** (sin filtro y sin NAT). `journalctl -u nftables` señaló la línea exacta; se recuperó el fichero de la copia del NAS, se comprobó con `nft -c -f` y se aplicó: **21 s** sin Internet (casi todo es el reinicio).
 
-## 3. TrueNAS SCALE · NAS `.10`
+## 4. TrueNAS SCALE · NAS `.10`
 
 - Administración por la web con `truenas_admin` (TrueNAS 25 ya no deja entrar como `root`) y el usuario `izan` (administrador, con clave SSH para las copias). IP fija 192.168.23.10/24 en LAN23.
 - **Disco adicional para copias:** dos discos de 20 GB en **espejo ZFS** (pool `copias`), con dos datasets: `configs` (configuraciones) y `sistemas` (copias de Proxmox, compartido por NFS).
@@ -133,7 +167,7 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 **¿Por qué espejo?** Si se rompe un disco del NAS, las copias siguen en el otro. ZFS además comprueba cada bloque con una suma de verificación y el *scrub* semanal detecta datos dañados antes de que hagan falta.
 
-## 4. Proxmox VE · clúster `asix23` (`.11`, `.12`, `.13`)
+## 5. Proxmox VE · clúster `asix23` (`.11`, `.12`, `.13`)
 
 - **Clúster de 3 nodos** (`pvecm create` + `pvecm add`). Se probó apagando un nodo: con 2 de 3 votos sigue habiendo **quórum** y todo funciona.
 - **Servidores:** contenedor LXC `srv-infra` (`.30`, intranet con nginx) y una VM KVM de prueba para las migraciones.
@@ -179,7 +213,7 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 *Demuestra: las copias del contenedor (`.tar.zst`, 205 MB) y de la VM (`.vma.zst`) están en el NFS del TrueNAS y se pueden restaurar desde aquí.*
 
-## 5. Windows Server 2025 · controlador de dominio `.20`
+## 6. Windows Server 2025 · controlador de dominio `.20`
 
 - Instalación desatendida, IP fija 192.168.23.20/24, gateway `.1` y DNS `127.0.0.1` (él mismo).
 - Roles **AD DS + DNS**: dominio `asix23.lan` (NetBIOS `ASIX23`), una **OU por departamento** y reenviador DNS al gateway para los nombres de Internet.
@@ -206,7 +240,7 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 **Copia:** con `ntdsutil ifm` se hizo una copia coherente de la base de datos de AD (`ntds.dit`) y de SYSVOL con el DC en marcha: 4,9 MB guardados en el NAS. El sistema operativo no se copia porque se reinstala; lo valioso es AD.
 
-## 6. Servidores Debian 13 (infraestructura) · SRV2 `.21` y SRV3 `.22`
+## 7. Servidores Debian 13 (infraestructura) · SRV2 `.21` y SRV3 `.22`
 
 - Instalación desatendida **sin escritorio** (arrancan con ~230 MB de RAM y tienen menos superficie de ataque), IP fija en LAN23, DNS al DC.
 - **SRV2:** servidor de ficheros con Samba (recurso `compartida` sobre el RAID 1) y los RAID de la Tasca 6. **SRV3:** servidor web Apache con la intranet.
@@ -220,13 +254,13 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 *Demuestra: Apache está activo, escucha en el puerto 80 y sirve la página de la intranet en 192.168.23.22.*
 
-## 7. Clientes · W11-CLI `.51` y DEB13-CLI `.54`
+## 8. Clientes · W11-CLI `.51` y DEB13-CLI `.54`
 
 | | W11-CLI (Administración) | DEB13-CLI (Informática) |
 |---|---|---|
 | Por qué este sistema | Programas de gestión y contabilidad para Windows; la edición **Pro** es necesaria para unirse a un dominio | Herramientas de administración (SSH, `tcpdump`, scripts), sin licencia |
 | Red | IP fija, gateway `.1`, DNS `.20` (el DC) | IP fija con NetworkManager, gateway según la prueba |
-| Dominio |  Unido a `asix23.lan` en la OU Administracion |  No: es el puesto de pruebas que cambia de gateway constantemente; unirlo no aporta nada a las pruebas |
+| Dominio | ✓ Unido a `asix23.lan` en la OU Administracion | ✗ No: es el puesto de pruebas que cambia de gateway constantemente; unirlo no aporta nada a las pruebas |
 | Copia | Los datos del usuario van al servidor; el sistema se reinstala | `/etc` y `/home` al NAS cuando se necesite |
 
 ![Red, ping al DC y pertenencia al dominio](https://github.com/ethan3232/iso-naix-un-sistema-individual/raw/main/evidencies/captures/w11-cli/01-red-ping-dc-miembro-dominio.png)
@@ -237,7 +271,21 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 *Demuestra: en *Propiedades del sistema* el nombre completo del equipo es `W11-CLI.asix23.lan` y su dominio, `asix23.lan`.*
 
-## 8. Incidencia provocada en una VM desechable
+## 9. Actualizaciones y vías de recuperación
+
+| Sistema | Cómo se actualiza | Vía de recuperación ante un cambio fallido |
+|---|---|---|
+| MikroTik | `/system package update` | Copia `.backup` en el propio router + `/export` en Git + copia en el NAS (**probada: 26 s**) |
+| OPNsense | *System → Firmware → Updates* | *Configuration → History*: una versión de `config.xml` por cambio (**probada: 15 s**) |
+| Debian | `apt update && apt full-upgrade` | Copia de `/etc` en el NAS y `nft -c -f` antes de aplicar reglas (**probada: 21 s**) |
+| TrueNAS | *System → Update* (permite volver al entorno de arranque anterior) | Copia de su base de datos de configuración en el pool |
+| Proxmox | `apt update && apt full-upgrade` con el repositorio `pve-no-subscription` | Copia de `/etc/pve` en el NAS; las VMs, con `vzdump` |
+| Windows | Windows Update | Copia del AD (`ntdsutil ifm`) en el NAS |
+| Todas | — | **Instantánea de VirtualBox antes de cualquier cambio importante** |
+
+> **Pendiente:** las vías de recuperación están probadas provocando fallos (§3), pero falta dejar registrada la actualización de cada sistema con su salida y la comprobación posterior.
+
+## 10. Incidencia provocada en una VM desechable
 
 En un **clon enlazado** de DEB13-CLI (si algo sale mal se borra y el original no se toca) añadí a `/etc/fstab` un disco que no existe.
 
@@ -263,7 +311,7 @@ En un **clon enlazado** de DEB13-CLI (si algo sale mal se borra y el original no
 
 **Cómo evitarlo:** comprobar con `mount -a` o `findmnt --verify` antes de reiniciar, y usar `nofail` en discos que no son imprescindibles.
 
-## 9. Apte+: copias automáticas de las configuraciones
+## 11. Apte+: copias automáticas de las configuraciones
 
 El NAS **recoge** (*pull*) cada noche a las 02:00 las configuraciones con el script `copia-configs.sh`, lanzado por una tarea cron. Los equipos **no guardan credenciales del NAS**: si alguien compromete un router, no puede entrar al NAS a borrar las copias.
 

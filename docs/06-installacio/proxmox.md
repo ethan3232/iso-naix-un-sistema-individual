@@ -68,8 +68,13 @@ Con **2 nodos** esto no pasaba: al caer uno quedaba 1 de 2 votos y el clúster s
 
 > El primer `pvecm add` falló con *"cluster not ready - no quorum?"* porque se lanzó justo mientras PMX1 reiniciaba corosync. Al repetirlo, se unió en **14 s**.
 
-![Estado del clúster](../../evidencies/captures/proxmox/03-cluster-quorum-recursos.png)
-*Demuestra: clúster `asix23` con 2 nodos, quórum 2/2 (`Quorate: Yes`), el contenedor 100 y la VM 101, y el almacenamiento `nas-copias` del NAS.*
+![Resumen del centro de datos](../../evidencies/captures/proxmox/05-web-datacenter-resumen.png)
+
+*Demuestra: en la interfaz web, el clúster `asix23` tiene quórum (`Quorate: Yes`) con los 3 nodos en línea y ninguno caído; el contenedor está en marcha y la VM de prueba, parada.*
+
+![Nodos del clúster](../../evidencies/captures/proxmox/06-web-cluster-nodos.png)
+
+*Demuestra: los 3 nodos (pmx1, pmx2 y pmx3) forman parte del clúster, cada uno con 1 voto y su enlace de corosync en la red LAN23.*
 
 ### Nodos, quórum, red y almacenamiento
 
@@ -78,9 +83,17 @@ Con **2 nodos** esto no pasaba: al caer uno quedaba 1 de 2 votos y el clúster s
 | **Quórum** | Mayoría de votos (más de la mitad) para que el clúster acepte cambios y evitar el *split-brain*. Con **3 nodos** el quórum es 2: **aguanta la caída de un nodo** (probado). Con 2 nodos no aguantaba ninguna |
 | **Red del clúster (corosync)** | Comparte la red de gestión LAN23. En producción va en una red separada, porque corosync necesita latencia baja |
 | **Almacenamiento** | Cada nodo tiene su `local-lvm` (**local**, no compartido) + `nas-copias` (NFS del NAS, **compartido**, solo para copias) |
-| Gestión conjunta | ✅ Una sola web para los dos nodos |
+| Gestión conjunta | ✅ Una sola web para los tres nodos |
 | Migración | ✅ Manual, probada (ver abajo) |
 | **Alta disponibilidad (HA)** | ❌ No: necesita almacenamiento compartido para los discos y 3 votos. Diferencia clave: migrar = lo muevo yo; HA = se mueve solo si un nodo muere |
+
+![Recursos del clúster](../../evidencies/captures/proxmox/07-web-recursos-cluster.png)
+
+*Demuestra: desde una sola web se ven todos los recursos de los 3 nodos: el contenedor 100, la VM 101 y los almacenamientos de cada nodo.*
+
+![Almacenamiento del clúster](../../evidencies/captures/proxmox/08-web-almacenamiento.png)
+
+*Demuestra: `local` y `local-lvm` son de cada nodo (no compartidos) y `nas-copias` es un NFS compartido (`Shared: Yes`) que solo guarda copias (`Backup`).*
 
 ## 5. Servidores virtualizados
 
@@ -93,6 +106,10 @@ Con **2 nodos** esto no pasaba: al caer uno quedaba 1 de 2 votos y el clúster s
 $ curl -s http://192.168.23.30 | grep h1        (desde PMX2)
 <h1>Intranet de la empresa (ASIX23)</h1>
 ```
+
+![Contenedor srv-infra en marcha](../../evidencies/captures/proxmox/10-web-srv-infra.png)
+
+*Demuestra: el contenedor `srv-infra` (sin privilegios) está en marcha en el nodo pmx2 con la IP `192.168.23.30` y consume solo ~48 MB de los 512 MB de RAM asignados.*
 
 ## 6. Contenedores vs. máquinas virtuales
 
@@ -140,6 +157,14 @@ $ curl -s http://192.168.23.30 | grep h1        (desde PMX2)
 | **Imagen completa** del CT 100 y la VM 101 (`vzdump`, modo snapshot, zstd) | `nas-copias` = NFS de TrueNAS `/mnt/copias/sistemas` | CT: **205 MB** en 47 s · VM: 73 KB (disco vacío) |
 | **Tarea programada** diaria 02:30, se guardan las 3 últimas | `nas-copias` | ✅ |
 | Configuración de los nodos (`/etc/pve`, red, corosync) | NAS por `copia-configs.sh` (pull) | ✅ `pve-config.tgz` |
+
+![Tarea de copia programada](../../evidencies/captures/proxmox/09-web-tarea-copia-nas.png)
+
+*Demuestra: hay una tarea de copia activa para todos los nodos, cada día a las 02:30, que guarda el contenedor 100 y la VM 101 en `nas-copias`.*
+
+![Copias guardadas en el NAS](../../evidencies/captures/proxmox/11-web-copias-en-nas.png)
+
+*Demuestra: las copias del contenedor (`.tar.zst`, 205 MB) y de la VM (`.vma.zst`) están guardadas en el NFS del TrueNAS y se pueden restaurar desde aquí (botón Restore).*
 
 **¿Qué tiene sentido guardar y qué no?**
 - ✅ Las **VMs y contenedores** (es donde están los servicios y datos) y la **configuración del clúster** (`/etc/pve`: definiciones de VMs, almacenamiento, usuarios, corosync).

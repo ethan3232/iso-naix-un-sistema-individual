@@ -40,14 +40,17 @@ async function login(page) {
   await espera(8000);
 }
 
+// "1:Texto" pulsa la PRIMERA coincidencia (p. ej. el menú) en vez de la última.
 async function pulsarTexto(page, texto) {
-  const ok = await page.mainFrame().evaluate((t) => {
+  const primero = texto.startsWith('1:');
+  if (primero) texto = texto.slice(2);
+  const ok = await page.mainFrame().evaluate((t, primero) => {
     const els = [...document.querySelectorAll('a, button, span, div, td, li')]
       .filter((e) => e.offsetParent !== null && e.textContent.trim() === t);
     if (!els.length) return false;
-    els[els.length - 1].click();
+    (primero ? els[0] : els[els.length - 1]).click();
     return true;
-  }, texto);
+  }, texto, primero);
   if (!ok) console.error(`  aviso: no se encontró "${texto}"`);
 }
 

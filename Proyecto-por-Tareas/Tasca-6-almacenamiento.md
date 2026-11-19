@@ -23,6 +23,18 @@
 | RAID 1 | 1,0 GB (50 %) | ✓ Sí | 0 lecturas fallidas en modo degradado · reconstrucción en **54 s** |
 | RAID 5 | 2,0 GB (67 %) | ✓ Sí (solo uno) | 0 lecturas fallidas · reconstrucción en **15 s** · **disco de reserva automático en 21 s** |
 
+![Los tres RAID activos en SRV2](../evidencies/captures/debian-servidors/01-srv2-tres-raid-activos.png)
+
+*Demuestra: los tres RAID (`md0` nivel 0, `md1` nivel 1 y `md5` nivel 5) están activos con todos sus discos y montados en `/srv`.*
+
+![RAID 5 degradado con los datos intactos](../evidencies/captures/debian-servidors/02-srv2-raid5-degradado.png)
+
+*Demuestra: con un disco menos el RAID 5 queda `clean, degraded` y el archivo de prueba sigue íntegro (`La suma coincide`).*
+
+![RAID 5 reconstruido](../evidencies/captures/debian-servidors/03-srv2-raid5-reconstruido.png)
+
+*Demuestra: al volver a añadir el disco se reconstruye (`recovery`) y el RAID vuelve a `clean` con los 3 discos en `active sync`.*
+
 **Qué se gana con cada uno:** RAID 0 da rendimiento sin seguridad (datos temporales). RAID 1 da seguridad sencilla (disco del sistema, pool del NAS). RAID 5 equilibra espacio y seguridad (carpetas de los departamentos).
 
 **Límite del entorno:** los 8 "discos" son archivos en el mismo SSD físico, así que el RAID 0 no puede ir más rápido. El cuello de botella es el disco del anfitrión, no el RAID.
@@ -34,6 +46,10 @@
 - **DRBD** replica un disco de 1 GB entre SRV2 (primario) y SRV3 (secundario) por la red, con **protocolo C** (síncrono): una escritura no termina hasta que está en los dos.
 - **Caso de uso:** el servidor de ficheros de la empresa. Un RAID 1 normal protege de que se rompa un disco; DRBD protege de que se rompa **el servidor entero**.
 - **Prueba:** apagado brusco de SRV2 (como un corte de luz). En SRV3, `drbdadm primary r0` + `mount` → datos disponibles en **~13 s**, con el SHA256 idéntico (**RPO 0**). Al volver SRV2 se resincronizó solo, copiando únicamente lo que había cambiado (206 MB en 25 s).
+
+![DRBD primario en SRV2](../evidencies/captures/debian-servidors/06-srv2-drbd-primario.png)
+
+*Demuestra: SRV2 es primario, los dos discos están `UpToDate`, la replicación está establecida y el espejo conserva los archivos escritos en las pruebas de caída.*
 
 ## Evidencias
 

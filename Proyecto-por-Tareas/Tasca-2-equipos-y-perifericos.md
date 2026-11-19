@@ -32,6 +32,18 @@
 | Internet | ~14 Mb/s · ICMP filtrado en el aula | 210–260 Mb/s |
 | SMART | — (es el mismo SSD) | PASSED en los 3 discos |
 
+Extracto real del inventario de clase (`scripts/inventari.sh`):
+
+```
+$ lsblk -o NAME,SIZE,TYPE,ROTA,TRAN,MODEL
+NAME    SIZE   TYPE ROTA TRAN MODEL
+sda     894.3G disk    1 usb  KINGSTON SA400S37960G
+Escritura secuencial: 384 MB/s · Lectura secuencial: 308 MB/s
+Escritura 4K síncrona: 347 IOPS
+Ejecución 2: escritura 110 MB/s · lectura 397 MB/s · 4K sync 351 IOPS
+Ejecución 3: escritura 391 MB/s · lectura 397 MB/s · 4K sync 348 IOPS
+```
+
 **Conclusión:** el disco da las **mismas ~350 IOPS en los dos ordenadores**, así que el límite es el SSD (sin DRAM) y el puente USB, no el PC. Lo que sí cambia entre los dos equipos es la **RAM**: en clase caben ~24 GB de VMs y en casa ~10 GB.
 
 **Cuellos de botella y soluciones**

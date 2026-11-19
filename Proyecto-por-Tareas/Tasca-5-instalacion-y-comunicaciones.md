@@ -17,61 +17,203 @@
 | Apte | Una incidencia de instalación o arranque en una VM desechable |
 | Apte+ | Copias automáticas de las configuraciones de los servidores críticos |
 
-## Qué he hecho y resultados
+## 1. Sistemas, licencias e imágenes (SHA256)
 
-### Comunicaciones (los tres routers)
+Todas las imágenes se descargaron de la web oficial del fabricante y se comprobó su SHA256 con `sha256sum` contra el valor publicado.
+
+| Función | Sistema y versión | Licencia | SHA256 |
+|---|---|---|---|
+| Comunicaciones (principal) | MikroTik RouterOS 7.24.5 (x86) | Propietaria; x86 sin clave = demo de 24 h | ✓ coincide |
+| Comunicaciones (alternativo) | OPNsense 26.7 | BSD 2-Clause (libre) | N/C ¹ |
+| Comunicaciones (alternativo) | Debian 13.1 + nftables | Libre (DFSG) | ✓ coincide |
+| NAS | TrueNAS SCALE 25.10.7 | Libre (GPL) | ✓ coincide |
+| Virtualización | Proxmox VE 9.2-1 | AGPLv3; suscripción opcional | ✓ coincide |
+| Dominio | Windows Server 2025 Standard (evaluación) | Propietaria; 180 días | N/C ² |
+| Clientes | Windows 11 Pro 25H2 · Debian 13.1 | Propietaria · Libre | N/C ² · ✓ |
+
+¹ OPNsense publica el hash del archivo comprimido (`.iso.bz2`), no de la ISO. ² Microsoft no publica un fichero de sumas; se guarda el hash calculado para comprobar en el futuro que la imagen no ha cambiado.
+
+**¿Por qué verificar el SHA256?** Si cambia un solo bit de la ISO (descarga corrupta o imagen manipulada), la huella sale totalmente distinta. Coincidir con la del fabricante demuestra que la imagen es íntegra y auténtica.
+
+## 2. Servidores de comunicaciones
 
 | | MikroTik `.1` | OPNsense `.2` | Debian nftables `.3` |
 |---|---|---|---|
-| Configuración | Consola: NAT *masquerade*, cortafuegos input/forward, DNS | Interfaz web: interfaces, Unbound en reenvío, reglas | `ip_forward` + `nftables` persistente |
+| Administración | Usuario `izan` (grupo `full`), SSH con clave; Telnet, FTP y API desactivados | `root` (obligatorio) por la web, solo desde la LAN | `izan` en `sudo`, SSH con clave |
+| WAN / LAN | `ether1` DHCP (NAT de VirtualBox) / `ether2` 192.168.23.1 | `em0` DHCP / `em1` 192.168.23.2 | `enp0s3` DHCP / `enp0s8` 192.168.23.3 |
+| Internet a la LAN | NAT *masquerade* + DNS con reenvío | NAT automático + Unbound | `ip_forward=1` + `masquerade` |
 | Permitido | HTTPS → `HTTP/2 200` | HTTPS → `HTTP/2 200` | HTTPS → `HTTP/2 200` |
-| Bloqueado y registrado | Telnet (TCP 23) en el log | Telnet en *Live View* | Telnet → `BLOQUEADO-TELNET` en `journalctl -k` |
-| Fallo provocado | Configuración borrada | Regla errónea | `nftables.conf` roto + reinicio |
-| Recuperación | **26 s**, 0 pérdida | **15 s**, 0 pérdida | **21 s**, 0 pérdida |
+| Bloqueado y registrado | Telnet (TCP 23) | Telnet (TCP 23) | Telnet (TCP 23) |
+| Copia | `/export` + `/system backup` → NAS | `config.xml` → NAS | `/etc` + reglas → NAS |
+| Fallo provocado | Borrar la IP de la LAN y el NAT | Desactivar las reglas de salida | `nftables.conf` roto + reinicio |
+| **Recuperación** | **26 s**, 0 pérdida | **15 s**, 0 pérdida | **21 s**, 0 pérdida |
 
-### Servidores
+**¿Por qué *masquerade*?** La WAN recibe la IP por DHCP y *masquerade* usa siempre la IP actual de la interfaz; con `src-nat` habría que cambiar la regla cada vez que cambiara la IP.
 
-| Servidor | Lo principal |
+**Orden de las reglas:** en los tres routers la regla que bloquea Telnet va **antes** que la que permite HTTPS y que la salida general, porque se aplica la primera regla que coincide.
+
+### MikroTik RouterOS
+
+![Direcciones, rutas y NAT](../evidencies/captures/mikrotik/01-red-ruta-nat.png)
+
+*Demuestra: `ether1` (WAN) tiene IP por DHCP (10.0.2.15), `ether2` (LAN) tiene 192.168.23.1/24, la ruta por defecto sale por 10.0.2.2 y existe la regla de NAT *masquerade* de LAN23 hacia Internet.*
+
+![Log permitido y bloqueado](../evidencies/captures/mikrotik/04-log-permitido-bloqueado.png)
+
+*Demuestra: el cortafuegos registra una sola vez la conexión HTTPS permitida (`PERMITIDO-HTTPS`) y varias veces el mismo intento de Telnet bloqueado (`BLOQUEADO-TELNET`).*
+
+**Interpretación del registro:** la conexión HTTPS aparece **una vez** porque solo se registra el primer paquete (`connection-state:new`); el resto de la conexión pasa como *established*. Telnet aparece **una vez por segundo con el mismo puerto de origen**: son los reintentos del SYN del cliente, que nunca recibe respuesta.
+
+**Fallo y recuperación:** se borraron la IP de la LAN y el NAT (toda la empresa sin gateway). Se recuperó con `/system backup load name=copia-nas.backup` en **26 s** sin servicio. En el primer intento la copia estaba solo en el NAS y **no se podía alcanzar**, porque al NAS se llega a través del propio MikroTik. Lección: la copia tiene que poder alcanzarse sin el equipo que ha fallado. Ahora hay tres copias: en el router, en el NAS y el `/export` en Git.
+
+### OPNsense
+
+![Reglas de la LAN](../evidencies/captures/opnsense/03-reglas-cortafuegos-lan.png)
+
+*Demuestra: en la interfaz LAN la regla que bloquea Telnet (puerto 23) está la primera, antes que la que permite HTTPS (443) y que las reglas por defecto que dejan salir a la LAN.*
+
+![Live View del cortafuegos](../evidencies/captures/opnsense/04-live-view-permitido-bloqueado.png)
+
+*Demuestra: en Firewall → Log Files → Live View, filtrado por el cliente 192.168.23.54, la conexión HTTPS sale en verde (`pass`) y los intentos de Telnet en rojo (`block`).*
+
+**Fallo y recuperación:** se desactivaron las reglas que dejan salir a la LAN (solo quedaba la denegación por defecto). Se recuperó desde *System → Configuration → History*, que guarda una versión de `config.xml` por cada cambio: **15 s** sin Internet en el cliente.
+
+### Debian 13 con nftables
+
+![Reenvío, reglas forward y NAT](../evidencies/captures/debian-srv/01-reenvio-reglas-forward-nat.png)
+
+*Demuestra: el reenvío está activo (`ip_forward = 1`); la cadena `forward` tiene política `drop`, bloquea Telnet antes de permitir HTTPS y la salida LAN → Internet, y la tabla `nat` hace masquerade por la WAN.*
+
+![Pruebas desde el cliente](../evidencies/captures/debian-srv/03-cliente-pruebas-por-gw-debian.png)
+
+*Demuestra: en DEB13-CLI la ruta por defecto es 192.168.23.3, el primer salto del `traceroute` es el Debian, HTTPS responde `HTTP/2 200` y Telnet se queda sin respuesta (timed out).*
+
+**Política `drop` por defecto:** todo lo que no se permite explícitamente se bloquea, así no hace falta conocer de antemano todos los ataques.
+
+**Fallo y recuperación:** se dejó un error de sintaxis en `/etc/nftables.conf` y se reinició el servidor. Al arrancar, `nftables: failed` con **0 reglas** (sin filtro y sin NAT). `journalctl -u nftables` señaló la línea exacta; se recuperó el fichero de la copia del NAS, se comprobó con `nft -c -f` y se aplicó: **21 s** sin Internet (casi todo es el reinicio).
+
+## 3. TrueNAS SCALE · NAS `.10`
+
+- Administración por la web con `truenas_admin` (TrueNAS 25 ya no deja entrar como `root`) y el usuario `izan` (administrador, con clave SSH para las copias). IP fija 192.168.23.10/24 en LAN23.
+- **Disco adicional para copias:** dos discos de 20 GB en **espejo ZFS** (pool `copias`), con dos datasets: `configs` (configuraciones) y `sistemas` (copias de Proxmox, compartido por NFS).
+
+![Pool copias](../evidencies/captures/truenas/02-pool-copias.png)
+
+*Demuestra: el pool `copias` es un espejo de 2 discos con 18,89 GiB útiles, sano (`Online, no errors`) y con una comprobación (scrub) programada cada domingo.*
+
+## 4. Proxmox VE · clúster `asix23` (`.11`, `.12`, `.13`)
+
+- **Clúster de 3 nodos** (`pvecm create` + `pvecm add`). Se probó apagando un nodo: con 2 de 3 votos sigue habiendo **quórum** y todo funciona.
+- **Servidores:** contenedor LXC `srv-infra` (`.30`, intranet con nginx) y una VM KVM de prueba para las migraciones.
+- **Almacenamiento:** `local` y `local-lvm` en cada nodo, y `nas-copias` (NFS del TrueNAS) compartido para las copias.
+
+![Resumen del centro de datos](../evidencies/captures/proxmox/05-web-datacenter-resumen.png)
+
+*Demuestra: el clúster `asix23` tiene quórum (`Quorate: Yes`) con los 3 nodos en línea; el contenedor está en marcha y la VM de prueba, parada.*
+
+| | Contenedor (LXC) | Máquina virtual (KVM) |
+|---|---|---|
+| Qué virtualiza | Solo el sistema operativo (comparte el kernel) | Todo el hardware (kernel propio) |
+| Sistemas | Solo Linux | Cualquiera |
+| Consumo | Muy bajo (~48 MB de RAM en reposo) | Más alto |
+| Aislamiento | Menor | Mayor |
+| **Migración medida** | `pct migrate --restart`: **~84 s sin servicio**, copió los **4 GB** del disco | `qm migrate --online`: **12,7 s** en total y solo **8 ms** sin servicio |
+
+**Espacio:** al migrar con discos locales se copia el disco entero bloque a bloque (el contenedor usaba 0,9 GB y se copiaron 4 GB; la VM de 2 GB vacía quedó 100 % ocupada en el destino). Se mejoraría con almacenamiento compartido (solo se copia la RAM) o con ZFS y replicación.
+
+| Ventajas de virtualizar | Inconvenientes |
 |---|---|
-| **TrueNAS `.10`** | Pool `copias` en **espejo ZFS** con 2 discos adicionales · NFS para Proxmox · destino de todas las copias |
-| **Proxmox `.11–.13`** | Clúster `asix23` de 3 nodos (quórum 2 de 3, probado apagando uno) · contenedor `srv-infra` (intranet nginx) · migración en caliente de una VM: **12,7 s, 8 ms sin servicio** · migración de un contenedor: ~84 s (copia el disco entero) · copia `vzdump` al NAS: 205 MB en 47 s |
-| **Windows Server 2025 `.20`** | Dominio `asix23.lan` (AD DS + DNS), OUs por departamento · copia del AD (IFM) en el NAS: 4,9 MB |
-| **Debian SRV2 `.21` / SRV3 `.22`** | Ficheros + RAID (SRV2) y web Apache (SRV3), instalación desatendida, copias al NAS |
-| **Clientes** | W11-CLI unido al dominio (canal seguro verificado) · DEB13-CLI como cliente de pruebas de los tres routers, sin dominio (justificado) |
+| Varios servidores en un equipo: menos hardware, luz y espacio | Punto único de fallo: si cae el host, caen sus VMs |
+| Copias e instantáneas de máquinas enteras | Pequeño coste de rendimiento |
+| Migrar servidores entre nodos | Unas VMs pueden frenar a otras (lo vimos con el disco) |
 
-### Imágenes y SHA256
+**Copias:** `vzdump` del contenedor (205 MB en 47 s) y de la VM al NFS del NAS, con una tarea programada diaria a las 02:30.
 
-Todas las ISOs se descargaron de la web oficial y se comprobó su SHA256 contra el publicado por el fabricante. Licencias y requisitos mínimos en [03-sistemes](../docs/03-sistemes.md).
+![Copias guardadas en el NAS](../evidencies/captures/proxmox/11-web-copias-en-nas.png)
 
-### Incidencia provocada
+*Demuestra: las copias del contenedor (`.tar.zst`, 205 MB) y de la VM (`.vma.zst`) están en el NFS del TrueNAS y se pueden restaurar desde aquí.*
 
-Error en `/etc/fstab` en una VM desechable → no arranca y entra en modo de emergencia. Lo resolví siguiendo el método síntoma → hipótesis → comprobación → solución → vuelta atrás. La VM se borró al terminar.
+## 5. Windows Server 2025 · controlador de dominio `.20`
 
-### Apte+: copias automáticas
+- Instalación desatendida, IP fija 192.168.23.20/24, gateway `.1` y DNS `127.0.0.1` (él mismo).
+- Roles **AD DS + DNS**: dominio `asix23.lan` (NetBIOS `ASIX23`), una **OU por departamento** y reenviador DNS al gateway para los nombres de Internet.
 
-El NAS **recoge** (*pull*) cada noche las configuraciones de los routers y servidores por SSH/API. Los equipos no guardan credenciales del NAS, así que si se compromete un router no puede borrar las copias. Hay retención por días y un registro de cada ejecución.
+![Administrador del servidor](../evidencies/captures/windows-server/01-administrador-servidor-ad-ds-dns.png)
 
-## Evidencias
+*Demuestra: el servidor tiene instalados los roles AD DS y DNS y los dos están en buen estado.*
 
-- Guías por máquina: [MikroTik](../docs/06-installacio/mikrotik.md) · [OPNsense](../docs/06-installacio/opnsense.md) · [Debian SRV](../docs/06-installacio/debian-srv.md) · [TrueNAS](../docs/06-installacio/truenas.md) · [Proxmox](../docs/06-installacio/proxmox.md) · [Windows Server](../docs/06-installacio/windows-server.md) · [Debian servidores](../docs/06-installacio/debian-servidors.md) · [Clientes](../docs/06-installacio/clients.md)
-- Sistemas, licencias y SHA256: [03-sistemes](../docs/03-sistemes.md) · [`sha256-isos.txt`](../evidencies/logs/sha256-isos.txt)
-- Fallos y recuperaciones: [`fallo-recuperacion-mikrotik.txt`](../evidencies/logs/fallo-recuperacion-mikrotik.txt) · [`fallo-recuperacion-opnsense.txt`](../evidencies/logs/fallo-recuperacion-opnsense.txt) · [`fallo-recuperacion-debian-srv.txt`](../evidencies/logs/fallo-recuperacion-debian-srv.txt)
-- Clúster y migraciones: [`proxmox-cluster.txt`](../evidencies/logs/proxmox-cluster.txt) · [`proxmox-migraciones.txt`](../evidencies/logs/proxmox-migraciones.txt)
-- Dominio: [`ws2025-dc-dominio.txt`](../evidencies/logs/ws2025-dc-dominio.txt) · [`w11-cli-dominio.txt`](../evidencies/logs/w11-cli-dominio.txt)
-- Incidencia provocada: [10-incidencies](../docs/10-incidencies.md) · Capturas: [`evidencies/captures/`](../evidencies/captures)
-- Script de copias: [`scripts/copia-configs.sh`](../scripts/copia-configs.sh)
+![Unidades organizativas](../evidencies/captures/windows-server/02-ad-unidades-organizativas.png)
 
-## Cómo comprobarlo
+*Demuestra: el dominio `asix23.lan` tiene una unidad organizativa por departamento (Administracion, Comercial, Direccion, Informatica y Produccion).*
 
-```bash
-ssh -F ~/iso-lab/ssh/config mk '/ip firewall nat print'   # NAT del MikroTik
-curl -sI https://deb.debian.org | head -1                 # desde el cliente: Internet por el gateway
-ssh -F ~/iso-lab/ssh/config pmx1 'pvecm status'           # clúster y quórum
-ssh -F ~/iso-lab/ssh/config truenas 'zpool status copias' # espejo del NAS
-```
+**¿Qué es un dominio y qué aporta?** Un grupo de equipos y usuarios que comparten una base de datos central de cuentas (Active Directory). Con dominio hay **una sola cuenta por persona** válida en cualquier PC, las contraseñas se cambian una vez, las políticas (GPO) se aplican a todo un departamento y, si alguien se va, se deshabilita su cuenta y pierde el acceso a todo.
+
+**Copia:** con `ntdsutil ifm` se hizo una copia coherente de la base de datos de AD (`ntds.dit`) y de SYSVOL con el DC en marcha: 4,9 MB guardados en el NAS. El sistema operativo no se copia porque se reinstala; lo valioso es AD.
+
+## 6. Servidores Debian 13 (infraestructura) · SRV2 `.21` y SRV3 `.22`
+
+- Instalación desatendida **sin escritorio** (arrancan con ~230 MB de RAM y tienen menos superficie de ataque), IP fija en LAN23, DNS al DC.
+- **SRV2:** servidor de ficheros con Samba (recurso `compartida` sobre el RAID 1) y los RAID de la Tasca 6. **SRV3:** servidor web Apache con la intranet.
+- **Copia:** el NAS se lleva cada noche `/etc` (red, `fstab`, RAID, Samba, Apache). El sistema se reinstala en ~15 min.
+
+![Recurso Samba en SRV2](../evidencies/captures/debian-servidors/04-srv2-samba-compartida.png)
+
+*Demuestra: el recurso `[compartida]` está definido, el servicio `smbd` está activo y un usuario autenticado puede listar los archivos de la carpeta.*
+
+![Apache sirviendo la intranet en SRV3](../evidencies/captures/debian-servidors/05-srv3-apache-intranet.png)
+
+*Demuestra: Apache está activo, escucha en el puerto 80 y sirve la página de la intranet en 192.168.23.22.*
+
+## 7. Clientes · W11-CLI `.51` y DEB13-CLI `.54`
+
+| | W11-CLI (Administración) | DEB13-CLI (Informática) |
+|---|---|---|
+| Por qué este sistema | Programas de gestión y contabilidad para Windows; la edición **Pro** es necesaria para unirse a un dominio | Herramientas de administración (SSH, `tcpdump`, scripts), sin licencia |
+| Red | IP fija, gateway `.1`, DNS `.20` (el DC) | IP fija con NetworkManager, gateway según la prueba |
+| Dominio | ✓ Unido a `asix23.lan` en la OU Administracion | ✗ No: es el puesto de pruebas que cambia de gateway constantemente; unirlo no aporta nada a las pruebas |
+| Copia | Los datos del usuario van al servidor; el sistema se reinstala | `/etc` y `/home` al NAS cuando se necesite |
+
+![Red, ping al DC y pertenencia al dominio](../evidencies/captures/w11-cli/01-red-ping-dc-miembro-dominio.png)
+
+*Demuestra: IP fija 192.168.23.51/24, gateway .1 y DNS .20; el DC resuelve y responde; el equipo es miembro de `asix23.lan` (`PartOfDomain: True`) y su canal seguro con el DC funciona.*
+
+## 8. Incidencia provocada en una VM desechable
+
+En un **clon enlazado** de DEB13-CLI (si algo sale mal se borra y el original no se toca) añadí a `/etc/fstab` un disco que no existe.
+
+| Paso | Qué se hizo |
+|---|---|
+| **Síntoma** | Al reiniciar se queda en **modo de emergencia**: `Dependency failed for local-fs.target` |
+| **Hipótesis** | Una línea de `fstab` apunta a un disco que no está y, sin `nofail`, systemd no deja seguir el arranque |
+| **Comprobación** | `blkid` (discos que existen) frente a `grep datos /etc/fstab`: el UUID pedido no existe → hipótesis confirmada |
+| **Solución** | Comentar la línea, `mount -a` y `findmnt --verify` sin errores |
+| **Vuelta al estado normal** | Reinicio: arranca hasta la pantalla de inicio de sesión |
+
+![Modo de emergencia](../evidencies/captures/incidencia/02-sintoma-modo-emergencia.png)
+
+*Síntoma: el arranque espera 90 s al disco inexistente y entra en modo de emergencia.*
+
+**Cómo evitarlo:** comprobar con `mount -a` o `findmnt --verify` antes de reiniciar, y usar `nofail` en discos que no son imprescindibles.
+
+## 9. Apte+: copias automáticas de las configuraciones
+
+El NAS **recoge** (*pull*) cada noche a las 02:00 las configuraciones con el script `copia-configs.sh`, lanzado por una tarea cron. Los equipos **no guardan credenciales del NAS**: si alguien compromete un router, no puede entrar al NAS a borrar las copias.
+
+| Equipo | Qué se copia | Cómo |
+|---|---|---|
+| MikroTik | `/export` + `/system backup` | SSH con clave |
+| OPNsense | `config.xml` | API (HTTPS con clave) |
+| Debian SRV | `/etc` + reglas `nft` | SSH + `sudo tar` (solo ese comando) |
+| Proxmox | `/etc/pve`, red, corosync | SSH + `tar` |
+| TrueNAS | Su base de datos de configuración | Copia local |
+
+Cada copia va a una carpeta por equipo y fecha, se borran las de más de 14 días y, si un equipo está apagado, se anota un aviso y se sigue con los demás.
+
+![Copias guardadas en el NAS](../evidencies/captures/truenas/08-consola-copias-guardadas.png)
+
+*Demuestra: en `/mnt/copias/configs/` hay una carpeta por equipo con una subcarpeta por fecha, y el registro termina cada ejecución con `0 equipo(s) con error`.*
 
 ## Preguntas probables de la defensa
 
-- **¿Por qué *masquerade* y no `src-nat` con IP fija?** La WAN recibe la IP por DHCP (10.0.2.15) y *masquerade* usa siempre la IP actual de la interfaz.
-- **¿Contenedor o VM?** El contenedor comparte el kernel del nodo: arranca en segundos y gasta poca RAM, pero solo puede ejecutar Linux. La VM tiene su propio kernel, aísla más y permite migración en caliente (8 ms frente a ~84 s).
-- **¿Qué aporta un dominio a la empresa?** Usuarios y contraseñas centralizados, inicio de sesión en cualquier equipo, políticas (GPO) aplicadas a todos y DNS interno.
+- **¿Contenedor o VM?** El contenedor comparte el kernel del nodo: arranca en segundos y gasta poca RAM, pero solo ejecuta Linux. La VM tiene su propio kernel, aísla más y permite migración en caliente (8 ms frente a ~84 s).
+- **¿Por qué las copias las recoge el NAS y no las envían los equipos?** Para que ningún equipo guarde credenciales del NAS: un atacante en un router no podría borrar las copias.

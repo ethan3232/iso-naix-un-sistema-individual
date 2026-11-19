@@ -9,7 +9,7 @@ Esta carpeta organiza el proyecto **tarea por tarea**, tal como se entrega. Cada
 5. **Cómo comprobarlo** (los comandos para verificarlo en directo).
 6. **Preguntas probables de la defensa** con su respuesta.
 
-**Para Aules:** cada tarea tiene su PDF autónomo en [`entrega/tareas/`](../entrega/tareas) con esta ficha, el desarrollo completo de la documentación con todas las capturas y, como anexo, las salidas reales de los comandos.
+**Para Aules:** en [`entrega/tareas/`](../entrega/tareas) está cada ficha preparada para subirla sola: el `.md` con sus capturas en `img/`, el `.zip` con las dos cosas y una versión en PDF.
 
 | Tarea | Ficha | Módulos | Estado |
 |---|---|---|:---:|

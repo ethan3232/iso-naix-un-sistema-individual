@@ -40,7 +40,7 @@
 
 **Memoria técnica completa en PDF:** [`entrega/memoria-naix-un-sistema.pdf`](entrega/memoria-naix-un-sistema.pdf) (se genera a partir de `docs/` con `scripts/genera-memoria.py`).
 
-**Un PDF por tarea para la entrega en Aules:** [`entrega/tareas/`](entrega/tareas) (resumen de la tarea + desarrollo completo con capturas + salidas de los comandos; se genera con `scripts/genera-tareas.py`).
+**Entrega en Aules, tarea por tarea:** [`entrega/tareas/`](entrega/tareas). Cada tarea tiene su `.md` con las imágenes en `img/`, un `.zip` listo para subir y una versión en PDF (se genera con `scripts/genera-tareas.py` a partir de [Proyecto-por-Tareas](Proyecto-por-Tareas/README.md)).
 
 ## 2. Esquema de red
 
@@ -147,7 +147,7 @@ Todos los ítems **Apte** y **Apte+** de las tareas individuales están completa
 ```
 docs/          documentación por tarea (nombres de archivo del enunciado)
 Proyecto-por-Tareas/  una ficha por tarea para la entrega
-entrega/       memoria técnica en PDF y un PDF por tarea (entrega/tareas/)
+entrega/       memoria técnica en PDF y la entrega de cada tarea (entrega/tareas/: .md + img/, .zip y .pdf)
 diagrames/     esquemas (scripts .py → SVG y PNG con generar.sh)
 evidencies/    captures/<máquina>/*.png  y  logs/*.txt (salidas reales de comandos)
 configs/       configuraciones exportadas SIN credenciales (MikroTik, nftables, DRBD, Samba, Apache)

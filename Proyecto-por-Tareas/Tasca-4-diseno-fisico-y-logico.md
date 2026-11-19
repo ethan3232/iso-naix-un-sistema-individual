@@ -48,6 +48,26 @@
 - Desde el cliente, con cada router como gateway: `ip route` muestra el gateway correcto y `traceroute -T` da como primer salto el router elegido.
 - HTTPS desde la LAN por los tres routers → `HTTP/2 200`.
 
+Extracto real de la prueba desde el cliente DEB13-CLI con el MikroTik como gateway:
+
+```
+# ip route
+default via 192.168.23.1 dev enp0s3 proto static metric 100
+192.168.23.0/24 dev enp0s3 proto kernel scope link src 192.168.23.54
+# ping -c2 192.168.23.1 (gateway)
+2 packets transmitted, 2 received, 0% packet loss
+# traceroute TCP 443 a deb.debian.org
+ 1  _gateway (192.168.23.1)  0.807 ms
+ 2  10.0.2.2 (10.0.2.2)  1.530 ms
+ 3  151.101.130.132  209.025 ms
+# curl -sI https://deb.debian.org
+HTTP/2 200
+```
+
+![Pruebas desde el cliente con el Debian como gateway](../evidencies/captures/debian-srv/03-cliente-pruebas-por-gw-debian.png)
+
+*Demuestra: al cambiar el gateway a 192.168.23.3, la ruta por defecto y el primer salto del `traceroute` pasan a ser el Debian y HTTPS sigue funcionando.*
+
 ## Evidencias
 
 - Diseño completo: [04-disseny](../docs/04-disseny.md) · Recursos: [05-recursos](../docs/05-recursos.md)

@@ -37,6 +37,17 @@
 | **1. Tarjeta de red virtio-net** en lugar de Intel e1000 (SRV2 y SRV3) | 4,74 Gbit/s | **12,3 Gbit/s**, y la mitad de CPU por Gbit/s | ✓ Se mantiene |
 | **2. Caché de E/S del anfitrión** en el disco de SRV2 | sin caché | ×60 en escritura, **×80 en `fsync`** | ✗ **Revertida**: escribe en la RAM del PC y un corte de luz perdería datos "ya escritos". En un servidor con RAID y DRBD no compensa |
 
+Medida real de la optimización de red (`iperf3` entre SRV2 y SRV3, 3 rondas):
+
+```
+### antes-e1000 · NIC: 82540EM
+ronda 1: 4.73 Gbit/s · CPU del host 28,4 % · 6,0 % de CPU por cada Gbit/s
+ronda 3: 4.75 Gbit/s · CPU del host 27,5 % · 5,8 % de CPU por cada Gbit/s
+### despues-virtio · NIC: virtio
+ronda 1: 12.7 Gbit/s · CPU del host 33,7 % · 2,7 % de CPU por cada Gbit/s
+ronda 3: 12.2 Gbit/s · CPU del host 37,1 % · 3,0 % de CPU por cada Gbit/s
+```
+
 ## Evidencias
 
 - Documento completo: [08-rendiment](../docs/08-rendiment.md)

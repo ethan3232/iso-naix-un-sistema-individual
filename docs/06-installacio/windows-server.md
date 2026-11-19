@@ -80,6 +80,26 @@ PDC                         WS2025-DC.asix23.lan
 "CN=W11-CLI,OU=Administracion,DC=asix23,DC=lan"      ← el cliente ya es miembro
 ```
 
+![Administrador del servidor](../../evidencies/captures/windows-server/01-administrador-servidor-ad-ds-dns.png)
+
+*Demuestra: el servidor tiene instalados los roles **AD DS** y **DNS** y los dos están en buen estado (flecha verde).*
+
+![Unidades organizativas](../../evidencies/captures/windows-server/02-ad-unidades-organizativas.png)
+
+*Demuestra: el dominio `asix23.lan` existe y tiene una unidad organizativa por departamento (Administracion, Comercial, Direccion, Informatica y Produccion).*
+
+![Equipo W11-CLI en la OU Administracion](../../evidencies/captures/windows-server/03-ad-equipo-w11-en-ou-administracion.png)
+
+*Demuestra: el cliente Windows 11 (`W11-CLI`) está unido al dominio y colocado en la OU de su departamento, Administracion.*
+
+![Zona DNS asix23.lan](../../evidencies/captures/windows-server/04-dns-zona-asix23-lan.png)
+
+*Demuestra: la zona DNS `asix23.lan` está integrada en AD y tiene un registro A por cada equipo de LAN23 (routers, NAS, nodos Proxmox, intranet y clientes); el de `W11-CLI` se creó solo al unirse al dominio (tiene marca de tiempo).*
+
+![Red, dominio y servicios por PowerShell](../../evidencies/captures/windows-server/05-powershell-red-dominio-servicios.png)
+
+*Demuestra: el DC tiene la IP fija 192.168.23.20/24, gateway .1 y se usa a sí mismo como DNS (`127.0.0.1`); el dominio `asix23.lan` (NetBIOS `ASIX23`) tiene el DC como emulador de PDC y los servicios ADWS, DNS, Kerberos (Kdc) y Netlogon están en marcha.*
+
 > **Incidencia**: tras el reinicio, los cmdlets `Get-ADOrganizationalUnit` fallaban con *"No se pudo encontrar ningún servidor que ejecutara Servicios web de Active Directory"* aunque el servicio ADWS estaba en marcha. Causa: la sesión remota de `guestcontrol` no tiene credenciales Kerberos para ADWS. Solución: usar `dsadd`/`dsquery`, que hablan LDAP directamente. ([incidencia 9](../10-incidencies.md))
 
 ## 6. ¿Qué es un dominio y qué aporta a la empresa?

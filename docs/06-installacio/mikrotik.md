@@ -70,10 +70,19 @@ La LAN usa IPs privadas (192.168.23.x) que no se pueden enrutar en Internet. El 
 
 El orden importa: RouterOS evalúa las reglas de arriba abajo y aplica la primera que coincide. Por eso la regla que bloquea Telnet está **antes** de la que permite todo LAN → WAN.
 
+![Reglas de la cadena input](../../evidencies/captures/mikrotik/02-cortafuegos-input.png)
+
+*Demuestra: el router solo acepta respuestas, ping y gestión desde LAN23 o desde el PC (puertos 22, 80 y 8291); todo lo demás que va dirigido a él se descarta y se registra con el prefijo `IN-DROP`.*
+
+![Reglas de la cadena forward](../../evidencies/captures/mikrotik/03-cortafuegos-forward.png)
+
+*Demuestra: en el tráfico que atraviesa el router, el bloqueo de Telnet (regla 8) va antes que el permiso de HTTPS (9) y que la salida general LAN → Internet (10); al final, todo lo demás se descarta y se registra (`FWD-DROP`).*
+
 ## 5. Verificación
 
-![Direcciones, rutas y NAT](../../evidencies/captures/mikrotik/01-red-y-nat.png)
-*Demuestra: `ether1` tiene IP por DHCP (10.0.2.15), `ether2` tiene 192.168.23.1/24, la ruta por defecto sale por 10.0.2.2 y existe la regla de NAT masquerade.*
+![Direcciones, rutas y NAT](../../evidencies/captures/mikrotik/01-red-ruta-nat.png)
+
+*Demuestra: `ether1` (WAN) tiene IP por DHCP (10.0.2.15), `ether2` (LAN) tiene 192.168.23.1/24, la ruta por defecto sale por 10.0.2.2 y existe la regla de NAT *masquerade* de LAN23 hacia Internet.*
 
 Prueba desde el cliente `DEB13-CLI` (192.168.23.54) con gateway .1 — salida completa en [`evidencies/logs/prueba-gw-mikrotik.txt`](../../evidencies/logs/prueba-gw-mikrotik.txt):
 
@@ -97,8 +106,9 @@ Prueba desde el cliente `DEB13-CLI` (192.168.23.54) con gateway .1 — salida co
 - `PERMITIDO-HTTPS` aparece **una vez**: solo registramos el primer paquete (SYN) de la conexión; el resto pasa por la regla `established`.
 - `BLOQUEADO-TELNET` aparece **varias veces con el mismo puerto de origen (37528)**: como el router descarta el paquete sin responder, el cliente cree que se ha perdido y **reintenta el SYN** hasta agotar los 5 s de `nc -w5`.
 
-![Log permitido y bloqueado](../../evidencies/captures/mikrotik/02-log-permitido-bloqueado.png)
-*Demuestra: el cortafuegos registra la conexión HTTPS permitida y los intentos de Telnet bloqueados.*
+![Log permitido y bloqueado](../../evidencies/captures/mikrotik/04-log-permitido-bloqueado.png)
+
+*Demuestra: el cortafuegos registra una sola vez la conexión HTTPS permitida y varias veces el mismo intento de Telnet bloqueado (mismo puerto de origen 49706: son reintentos del SYN). En esta captura la prueba se repitió desde el cliente Windows 11 (192.168.23.51).*
 
 > **Nota sobre `ping` a Internet**: el ping desde las VMs a Internet no responde. No es culpa del router: la NAT de VirtualBox en Linux necesita que el anfitrión permita ICMP sin privilegios (`net.ipv4.ping_group_range`). Por eso se usa `traceroute -T` (TCP), que sí funciona. Ver [incidencias](../10-incidencies.md).
 
@@ -110,7 +120,11 @@ Configuración completa aplicada (direcciones, rutas, NAT, cortafuegos, sin cont
 |---|---|---|
 | `00-estado-inicial.backup` | `/system backup save` antes de configurar | Volver al estado de fábrica: `/system backup load name=00-estado-inicial` |
 | `mikrotik-export.rsc` | `/export terse` | Configuración en texto, legible y versionada en Git |
-| Copia en TrueNAS | ⬜ pendiente (cuando el NAS esté en LAN23) | Copia fuera del propio equipo |
+| `copia-nas.backup` + `/export`, copiados al **TrueNAS** | El NAS los recoge por SSH/SCP con `copia-configs.sh` y los guarda en `/mnt/copias/configs/mikrotik/<fecha>/` ([truenas §6](truenas.md)) | Copia **fuera** del propio equipo: si el router se pierde, la copia sigue en el NAS |
+
+![Copias guardadas en el router](../../evidencies/captures/mikrotik/05-copias-en-el-router.png)
+
+*Demuestra: en el router están la copia del estado inicial, la de antes de añadir SRV2/SRV3 y `copia-nas.backup`, que es la que recoge el NAS.*
 
 **Diferencia entre `/export` y `/system backup`**: el *export* es texto (se puede leer, comparar y aplicar en otro router) pero no incluye contraseñas; el *backup* es binario, incluye usuarios y contraseñas, y solo se restaura en el mismo modelo de equipo.
 

@@ -45,8 +45,9 @@ Set-DnsClientServerAddress -InterfaceIndex $a.ifIndex -ServerAddresses 192.168.2
 
 **El DNS tiene que ser el DC (.20)**, no el router: para unirse al dominio el equipo busca el registro `_ldap._tcp.asix23.lan`, que solo conoce el DNS del dominio.
 
-![Red y ping al DC](../../evidencies/captures/windows/01-w11-red-ping-dc.png)
-*Demuestra: IP 192.168.23.51/24, gateway .1, DNS .20 y ping correcto al controlador de dominio.*
+![Red, ping al DC y pertenencia al dominio](../../evidencies/captures/w11-cli/01-red-ping-dc-miembro-dominio.png)
+
+*Demuestra: IP fija 192.168.23.51/24, gateway .1 y DNS .20 (el DC); el nombre `ws2025-dc.asix23.lan` resuelve y responde al ping; el equipo `W11-CLI` es miembro de `asix23.lan` (`PartOfDomain: True`) y su canal seguro con el DC funciona (`Test-ComputerSecureChannel: True`).*
 
 ### Unión al dominio
 
@@ -55,8 +56,9 @@ Add-Computer -DomainName asix23.lan -OUPath "OU=Administracion,DC=asix23,DC=lan"
 Restart-Computer
 ```
 
-![Unión al dominio](../../evidencies/captures/windows/02-w11-unido-dominio.png)
-*Demuestra: `asix23.lan` resuelve a 192.168.23.20 y el equipo queda unido (efectivo tras reiniciar).*
+![Propiedades del sistema: dominio asix23.lan](../../evidencies/captures/w11-cli/02-propiedades-sistema-dominio-asix23.png)
+
+*Demuestra: en *Propiedades del sistema* el nombre completo del equipo es `W11-CLI.asix23.lan` y su dominio, `asix23.lan`.*
 
 Comprobación después del reinicio ([log](../../evidencies/logs/w11-cli-dominio.txt)):
 

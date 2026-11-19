@@ -23,6 +23,10 @@ La VM ya estaba instalada. Al revisarla arrancaba el **instalador** en vez del s
 - Firmware: BIOS. Disco de arranque: `sda` (32 GB), con el sistema en ZFS (`boot-pool`).
 - **Importante**: el disco de arranque de TrueNAS es solo para el sistema; los datos van **siempre en otros discos**. Por eso se añaden dos discos nuevos.
 
+![Panel principal de TrueNAS](../../evidencies/captures/truenas/01-panel-principal.png)
+
+*Demuestra: TrueNAS Community Edition 25.10.7 instalado y funcionando (`hostname: truenas`), gestionado por la web con el usuario `truenas_admin`.*
+
 ## 3. Usuarios de administración
 
 | Usuario | Uso |
@@ -39,8 +43,9 @@ Configurada desde el **menú de consola** de TrueNAS:
 
 > **Vuelta atrás automática**: al aplicar un cambio de red TrueNAS da **60 segundos** para confirmarlo. Si no se confirma (porque nos hemos quedado sin red), vuelve solo a la configuración anterior. Es exactamente la idea de "preparar cómo volver al estado anterior" que pide el enunciado.
 
-![Consola de TrueNAS con IP de LAN23](../../evidencies/captures/truenas/01-consola-ip-lan23.png)
-*Demuestra: la web de TrueNAS ya está en `192.168.23.10`.*
+![Consola de TrueNAS: red y pool](../../evidencies/captures/truenas/07-consola-red-y-pool-espejo.png)
+
+*Demuestra: la interfaz `enp0s3` tiene la IP fija 192.168.23.10/24 de LAN23 y el pool `copias` está `ONLINE` en espejo (`mirror-0`) con los dos discos sin errores.*
 
 Zona horaria cambiada a `Europe/Madrid` (venía en la de EE. UU. y las copias salían con la hora mal).
 
@@ -53,6 +58,22 @@ Zona horaria cambiada a `Europe/Madrid` (venía en la de EE. UU. y las copias sa
 | Capacidad útil | ~19 GB de 40 GB brutos | El espejo "gasta" la mitad en redundancia |
 | Datasets | `copias/configs` (configuraciones) · `copias/sistemas` (imágenes de sistemas) | Separar por tipo permite cuotas, permisos e instantáneas distintas |
 | Compresión | LZ4 | Casi gratis en CPU y los ficheros de texto se comprimen mucho |
+
+![Pool copias](../../evidencies/captures/truenas/02-pool-copias.png)
+
+*Demuestra: el pool `copias` es un espejo de 2 discos (`1 x MIRROR | 2 wide`) con 18,89 GiB útiles, sano (`Online, no errors`) y con una comprobación (*scrub*) programada cada domingo.*
+
+![Discos del espejo](../../evidencies/captures/truenas/03-vdev-espejo-sdb-sdc.png)
+
+*Demuestra: el espejo está formado por los discos adicionales `sdb` y `sdc` (20 GiB cada uno), los dos `ONLINE` y sin errores de lectura, escritura ni de suma de comprobación.*
+
+![Datasets](../../evidencies/captures/truenas/04-datasets-configs-sistemas.png)
+
+*Demuestra: dentro del pool hay dos datasets separados, `configs` (configuraciones) y `sistemas` (imágenes de VMs, compartido por NFS), con compresión LZ4.*
+
+![Recurso NFS](../../evidencies/captures/truenas/05-nfs-compartido.png)
+
+*Demuestra: el servicio NFS está en marcha y comparte `/mnt/copias/sistemas` para las copias de las VMs y contenedores de Proxmox (`nas-copias`).*
 
 Estado del pool ([log completo](../../evidencies/logs/truenas-estado.txt)):
 
@@ -69,7 +90,7 @@ errors: No known data errors
 
 ## 6. Copias automáticas de las configuraciones críticas (Apte+)
 
-Script: [`scripts/copia-configs.sh`](../../scripts/copia-configs.sh), instalado en el NAS en `~izan/bin/`.
+Script: [`scripts/copia-configs.sh`](../../scripts/copia-configs.sh), instalado en el NAS en `/mnt/copias/configs/bin/` (dentro del pool, así sobrevive a una reinstalación de TrueNAS) y lanzado por una tarea **cron diaria a las 02:00** como usuario `izan`.
 
 **Diseño "pull" (el NAS recoge)**: el NAS tiene su propia clave SSH (`id_copias`) autorizada en cada equipo. Los routers y servidores **no guardan credenciales del NAS**: si alguien compromete un router, no puede entrar al NAS a borrar las copias.
 
@@ -77,7 +98,7 @@ Script: [`scripts/copia-configs.sh`](../../scripts/copia-configs.sh), instalado 
 |---|---|---|
 | MikroTik (.1) | `/export` (texto) + `/system backup` (binario) | SSH + SCP con clave |
 | Debian SRV (.3) | `/etc` completo + reglas `nft` | SSH + `sudo tar` (solo ese comando) |
-| OPNsense (.2) | `/conf/config.xml` | SCP |
+| OPNsense (.2) | `config.xml` | API de OPNsense (HTTPS con clave de API) |
 | Proxmox (.11) | `/etc/pve`, red, corosync | SSH + `tar` |
 | TrueNAS | Base de datos de configuración `freenas-v1.db` | Copia local |
 
@@ -91,6 +112,14 @@ Primera ejecución:
 2026-11-17 11:20:16 OK mikrotik -> /mnt/copias/configs/mikrotik/2026-11-17_1120 (1.5K)
 2026-11-17 11:20:16 === Fin de copias: 0 equipo(s) con error ===
 ```
+
+![Tarea cron de copias](../../evidencies/captures/truenas/06-tarea-cron-copias.png)
+
+*Demuestra: la tarea programada ejecuta `copia-configs.sh` cada día a las 02:00 (`0 2 * * *`) con el usuario `izan` y está activada.*
+
+![Copias guardadas en el NAS](../../evidencies/captures/truenas/08-consola-copias-guardadas.png)
+
+*Demuestra: en `/mnt/copias/configs/` hay una carpeta por equipo (Debian SRV, MikroTik, OPNsense, Proxmox y el DC) con una subcarpeta por fecha, y el registro `copias.log` termina cada ejecución con `0 equipo(s) con error`.*
 
 ## 7. ¿Qué tiene sentido copiar y qué no?
 

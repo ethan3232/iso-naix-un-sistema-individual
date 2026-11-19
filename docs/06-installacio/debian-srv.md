@@ -72,8 +72,9 @@ Antes de aplicar: `cp /etc/nftables.conf /root/backups/nftables.conf.orig` y com
 
 ## 5. Verificación
 
-![Red, forward y NAT](../../evidencies/captures/debian-srv/01-red-forward-nat.png)
-*Demuestra: las dos interfaces con su IP, la ruta por defecto por la WAN, `ip_forward = 1` y la tabla NAT con masquerade.*
+![Reenvío, reglas forward y NAT](../../evidencies/captures/debian-srv/01-reenvio-reglas-forward-nat.png)
+
+*Demuestra: el reenvío de paquetes está activo (`ip_forward = 1`); la cadena `forward` tiene política `drop`, bloquea Telnet antes de permitir HTTPS y la salida LAN → Internet, y la tabla `nat` hace *masquerade* por la WAN (`enp0s3`).*
 
 Configuración completa: [`evidencies/logs/debian-srv-config.txt`](../../evidencies/logs/debian-srv-config.txt).
 
@@ -85,6 +86,10 @@ Prueba con el cliente `DEB13-CLI` usando **.3 como gateway** (`scripts/canvi-gw.
 | `traceroute -T -p 443 deb.debian.org` | salto 1 = 192.168.23.3, salto 2 = 10.0.2.2 | El tráfico sale **por Debian** |
 | `curl -sI https://deb.debian.org` | `HTTP/2 200` | **Conexión permitida** |
 | `nc -zv telehack.com 23` | *timed out* | **Conexión bloqueada** |
+
+![Pruebas desde el cliente](../../evidencies/captures/debian-srv/03-cliente-pruebas-por-gw-debian.png)
+
+*Demuestra: en DEB13-CLI la ruta por defecto es 192.168.23.3, el primer salto del `traceroute` es el Debian, HTTPS responde `HTTP/2 200` y Telnet se queda sin respuesta (*timed out*).*
 
 ### Interpretación del registro (`journalctl -k`)
 
@@ -102,7 +107,7 @@ DEB13-SRV kernel: BLOQUEADO-TELNET IN=enp0s8 OUT=enp0s3 SRC=192.168.23.54 DST=64
 | `SYN` | Primer paquete de la conexión TCP |
 
 ![Log de nftables](../../evidencies/captures/debian-srv/02-log-permitido-bloqueado.png)
-*Demuestra: nftables registra en el log del kernel la conexión HTTPS permitida y los intentos de Telnet bloqueados.*
+*Demuestra: nftables registra en el log del kernel cada conexión HTTPS permitida una sola vez (el primer paquete) y los intentos de Telnet bloqueados uno por segundo (los reintentos del cliente). La salida se ha filtrado para mostrar solo hora, prefijo, origen, destino y puerto.*
 
 ## 6. Copia de seguridad y vuelta atrás
 

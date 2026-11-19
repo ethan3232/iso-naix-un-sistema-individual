@@ -34,8 +34,13 @@
 - La autodetección había puesto las interfaces **al revés** ([incidencia 12](../10-incidencies.md)). Se comprobó con la MAC de cada adaptador en VirtualBox: `em0` = `08:00:27:F1:71:D7` = adaptador 1 (NAT).
 - **Sin DHCP en la LAN**: en LAN23 todos los equipos tienen IP fija, y tres routers con DHCP a la vez se pisarían.
 
-![Consola de OPNsense](../../evidencies/captures/opnsense/01-consola-lan-wan.png)
-*Demuestra: LAN (em1) = 192.168.23.2/24 y WAN (em0) = 10.0.2.15 por DHCP.*
+![Panel principal de OPNsense](../../evidencies/captures/opnsense/01-panel-principal.png)
+
+*Demuestra: OPNsense 26.7 funcionando, con la WAN (10.0.2.15/24, por DHCP) y la LAN (192.168.23.2/24) activas, la puerta de enlace `WAN_DHCP` (10.0.2.2) en línea y los servicios en verde.*
+
+![Interfaces de OPNsense](../../evidencies/captures/opnsense/02-interfaces-wan-lan.png)
+
+*Demuestra: WAN = `em0` por DHCP con la ruta por defecto hacia 10.0.2.2, y LAN = `em1` con IP fija 192.168.23.2/24.*
 
 ## 4. Usuario de administración
 
@@ -56,6 +61,10 @@ Reglas creadas en la interfaz **LAN** (por la API de OPNsense, igual que en *Fir
 | 20 | **pass** | TCP 443 | ✅ | PRUEBA PERMITIDA: HTTPS |
 | 50 | pass | cualquiera | — | Default allow LAN to any |
 
+![Reglas de la LAN](../../evidencies/captures/opnsense/03-reglas-cortafuegos-lan.png)
+
+*Demuestra: en la interfaz LAN, la regla que bloquea Telnet (puerto 23, aspa roja) está la primera, antes que la que permite HTTPS (443) y que las reglas por defecto que dejan salir a la LAN.*
+
 > **Error encontrado y corregido**: al principio la regla por defecto *Default allow LAN to any* tenía la **secuencia 1** y era `quick`, así que se aplicaba **antes** que el bloqueo y el Telnet pasaba (en el log solo salía `pass,out` por la WAN). En pf, con `quick`, **gana la primera regla que coincide**. Se movió la regla por defecto a la secuencia 50, después de guardar la configuración (`01-antes-de-reordenar.xml`) ([incidencia 16](../10-incidencies.md)).
 
 ### Verificación ([log completo](../../evidencies/logs/prueba-gw-opnsense.txt))
@@ -69,8 +78,9 @@ Cliente `DEB13-CLI` con gateway .2 (`scripts/canvi-gw.sh 2`):
 | `curl -sI https://deb.debian.org` | `HTTP/2 200` → **permitida** |
 | `nc -zv telehack.com 23` | *timed out* → **bloqueada** |
 
-![Log de OPNsense](../../evidencies/captures/opnsense/02-log-permitido-bloqueado.png)
-*Demuestra: la regla `c460fc24` (HTTPS) hace `pass,in` en em1 y la regla `a1f994e5` (Telnet) hace `block,in` en em1 para el cliente 192.168.23.54.*
+![Live View del cortafuegos](../../evidencies/captures/opnsense/04-live-view-permitido-bloqueado.png)
+
+*Demuestra: en *Firewall → Log Files → Live View*, filtrado por el cliente 192.168.23.54, la conexión HTTPS sale en verde (`pass`, regla "PRUEBA PERMITIDA") y los intentos de Telnet en rojo (`block`, regla "PRUEBA BLOQUEADA"), varias veces con el mismo puerto de origen porque el cliente reintenta.*
 
 Cómo se lee una línea del registro de pf:
 
@@ -85,7 +95,7 @@ a1f994e5-...,em1,match,block,in,4,...,tcp,60,192.168.23.54,64.13.139.230,42384,2
 |---|---|---|
 | `00-config-inicial.xml` | `~/iso-lab/backups/opnsense/` (fuera del repo: contiene el *hash* de root) | *System → Configuration → Backups → Restore* o menú de consola `13) Restore a backup` |
 | `01-antes-de-reordenar.xml` | ídem | ídem |
-| Copia en el NAS | ⬜ pendiente de automatizar en `copia-configs.sh` | |
+| Copia en el NAS | `/mnt/copias/configs/opnsense/<fecha>/config.xml`: la descarga `copia-configs.sh` desde el NAS por la API de OPNsense (con una clave de API, no con la contraseña de root) | *System → Configuration → Backups → Restore* subiendo ese `config.xml` |
 
 **¿Por qué el `config.xml` no se sube a Git?** Contiene los *hashes* de las contraseñas y certificados privados.
 
@@ -104,6 +114,10 @@ a1f994e5-...,em1,match,block,in,4,...,tcp,60,192.168.23.54,64.13.139.230,42384,2
 |---|---|
 | Tiempo sin Internet medido en el cliente | **15 s** |
 | Configuración perdida | **Ninguna** |
+
+![Historial de configuración](../../evidencies/captures/opnsense/05-historial-configuracion.png)
+
+*Demuestra: OPNsense guarda una versión de `config.xml` por cada cambio y permite compararlas: aquí se ve cómo las dos reglas pasan de desactivadas (`enabled 0`) a activadas (`enabled 1`) al deshacer el fallo provocado.*
 
 **Historial local vs. copia del NAS**: OPNsense guarda solo una copia de `config.xml` **cada vez que cambia algo** (las vimos en el historial: una por cada cambio hecho por la API). Es lo más rápido para deshacer un error. La copia del NAS sirve cuando se pierde el **disco entero**: se reinstala OPNsense y se carga el `config.xml` en *System → Configuration → Backups → Restore*.
 

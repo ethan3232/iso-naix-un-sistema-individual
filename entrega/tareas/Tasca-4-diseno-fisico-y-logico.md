@@ -88,6 +88,34 @@ HTTP/2 200
 
 ## Desarrollo
 
+### Cuello de botella observado
+
+Durante la instalación simultánea de WS2025-DC, W11-CLI y OPNsense ([log](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/evidencies/logs/host-carga-3-instalaciones.txt)):
+
+```
+procs  ... -cpu-------
+ r  b  ... us sy id wa
+ 0  3  ...  1  2 81 16
+ 3  1  ...  1  3 83 13
+```
+
+- `id` 80–83 % → la **CPU está casi libre**.
+- `wa` 13–16 % y `b` = 3 → **procesos bloqueados esperando al disco**.
+
+El cuello de botella es el **SSD** (Kingston A400, sin caché DRAM, en caja USB 5 Gb/s), no la CPU ni la RAM. Mejora propuesta: no instalar varios sistemas a la vez y conectar la caja a 10 Gb/s (el NVMe del portátil no se puede usar: es el disco del aula). Ver [02](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/docs/02-inventari.md).
+
+### Escenarios de arranque
+
+| Escenario | VMs encendidas | RAM | ¿Para qué? |
+|---|---|---|---|
+| **A · Comunicaciones** | router activo (.1, .2 o .3) + DEB13-CLI + TrueNas | 9–10,5 GB | Pruebas de gateway, NAT, cortafuegos, copias |
+| **B · Dominio** | Mikrotik-IND + WS2025-DC + W11-CLI + TrueNas | 12,5 GB | AD DS, DNS, unión al dominio |
+| **C · Clúster** | Mikrotik-IND + PMX1 + PMX2 + TrueNas | 12,5 GB | Clúster, migraciones, contenedor |
+| **D · RAID / rendimiento** | Mikrotik-IND + DEB13-SRV2 + DEB13-SRV3 | 2,5 GB | RAID con mdadm, espejo DRBD, carga y optimizaciones (Tasca 7) |
+| **E · Máximo** | Se van encendiendo mientras quede ≥ 1 GB libre | casa: 6,6 GB (5 VMs) | Tasca 7: límite real medido ([08 §4](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/docs/08-rendiment.md)) |
+
+> En **casa** (16 GB) caben A y D. B y C solo en clase (o en casa sin el NAS).
+
 ### Tabla de máquinas
 
 Host de todas: **eth4n** (Linux Mint 22.3, Core Ultra 5 125H 14C/18T, 30 GiB RAM, SSD Kingston A400 960 GB en caja USB 5 Gb/s). Hipervisor: VirtualBox 7.0.20. Grupo de VMs: `ISO-INDV`.

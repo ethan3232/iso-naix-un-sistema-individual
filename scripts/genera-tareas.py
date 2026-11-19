@@ -81,15 +81,44 @@ def md_autonomo(nombre, ficha):
 CSS_CORTO = """
 .ficha > h1 { font-size: 20pt; margin: 0 0 4pt; padding-bottom: 6pt; border-bottom: 4px solid var(--c); color: #0f172a; }
 .ficha > h1 + p, .ficha > h1 + p + p { color: var(--suave); font-size: 8.5pt; margin: 2pt 0; word-break: break-all; }
-img { max-height: 95mm; }
+
+/* Figuras: captura + pie en una tarjeta numerada */
+figure.fig { margin: 12pt 0 14pt; padding: 8pt 8pt 7pt; background: #f8fafc; border: 1px solid var(--linea);
+             border-left: 3px solid var(--c); border-radius: 6px; break-inside: avoid; }
+figure.fig .marco { text-align: center; background: #fff; border-radius: 4px; padding: 4pt; }
+figure.fig img { display: block; margin: 0 auto; max-width: 100%; max-height: 105mm; border: 1px solid #cbd5e1;
+                 border-radius: 3px; box-shadow: 0 1px 4px rgba(15, 23, 42, .12); }
+figure.fig figcaption { margin-top: 6pt; font-size: 8.2pt; line-height: 1.45; color: #334155; }
+figure.fig figcaption .num { display: inline-block; background: var(--c); color: #fff; font-weight: 700; font-size: 7.4pt;
+                             border-radius: 3px; padding: 0.5pt 5pt; margin-right: 5pt; letter-spacing: .02em; }
+figure.fig figcaption b { color: #0f172a; }
 """
+
+
+def figuras(html_txt):
+    """Convierte cada imagen (y el pie en cursiva que la sigue) en una figura numerada."""
+    n = [0]
+    patron = re.compile(r'<p>\s*(<img [^>]+>)\s*(?:<em>(.*?)</em>)?\s*</p>(?:\s*<p>\s*<em>(.*?)</em>\s*</p>)?', re.S)
+
+    def fig(m):
+        n[0] += 1
+        pie = (m.group(2) or m.group(3) or "").strip()
+        if not pie:
+            alt = re.search(r'alt="([^"]*)"', m.group(1))
+            pie = alt.group(1) if alt else ""
+        pie = re.sub(r"^(Demuestra|Síntoma|Comprobación|Solución):", r"<b>\1:</b>", pie)
+        return (f'<figure class="fig"><div class="marco">{m.group(1)}</div>'
+                f'<figcaption><span class="num">Figura {n[0]}</span>{pie}</figcaption></figure>')
+
+    return patron.sub(fig, html_txt)
+
 
 
 def pdf(nombre, texto_md, locales, color):
     texto = texto_md
     for url, ruta in locales.items():  # en el PDF las imágenes van incrustadas desde el disco
         texto = texto.replace(f"]({url})", f"]({ruta.as_uri()})")
-    cuerpo = M.markdown.markdown(texto, extensions=["tables", "fenced_code", "sane_lists", "attr_list", "md_in_html"])
+    cuerpo = figuras(M.markdown.markdown(texto, extensions=["tables", "fenced_code", "sane_lists", "attr_list", "md_in_html"]))
     titulo = re.search(r"^# +(.+)$", texto_md, flags=re.M).group(1)
     doc = (f'<!doctype html><html lang="es"><head><meta charset="utf-8"><title>{titulo}</title>'
            f'<style>{M.CSS}{CSS_CORTO}</style></head><body>'

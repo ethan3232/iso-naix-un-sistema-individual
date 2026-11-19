@@ -103,7 +103,37 @@ Se midió con `fio` (escritura y lectura secuencial de 1 MiB, escritura aleatori
 
 **El cuello de botella es el disco del anfitrión**, no el RAID. Esto conecta con la [Tasca 2](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/docs/02-inventari.md) (el SSD en caja USB da las mismas ~350 IOPS en clase y en casa) y la [Tasca 7](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/docs/08-rendiment.md).
 
-### Verificación: caída de un servidor entero
+### Verificación: caída### Qué es y por qué DRBD
+
+Un RAID 1 normal copia cada escritura en **dos discos del mismo equipo**: si se rompe un disco, bien; si se rompe **el servidor** (placa, fuente, sistema), los dos discos se quedan dentro. DRBD hace un **RAID 1 por la red**: cada escritura va al disco local **y** al disco del otro servidor.
+
+| Alternativa | Por qué no |
+|---|---|
+| `mdadm` RAID 1 con un disco **iSCSI** del NAS | Funciona, pero el NAS pasa a ser imprescindible para el servidor de ficheros: un punto de fallo más |
+| Replicación de ZFS (TrueNAS) | No es en tiempo real: copia por instantáneas (pierdes lo escrito desde la última) |
+| **DRBD** ✓ | Viene en el kernel de Debian (módulo `drbd` 8.4.11), es **síncrono** y está pensado justo para esto: dos servidores, uno activo y otro de reserva |
+
+**Protocolo C** = una escritura no se da por terminada hasta que está en **los dos** discos → si cae el primario, el secundario tiene **exactamente** lo mismo (RPO = 0).
+
+### Implementación
+
+1. VirtualBox: un disco nuevo de 1 GB en cada VM (`drbd-DEB13-SRV2.vdi`, `drbd-DEB13-SRV3.vdi`).
+2. En los dos: `apt install drbd-utils` y el mismo [`/etc/drbd.d/r0.res`](https://github.com/ethan3232/iso-naix-un-sistema-individual/blob/main/configs/drbd/r0.res).
+3. Discos nombrados por **número de serie** (`/dev/disk/by-id/ata-VBOX_HARDDISK_VB…`): al añadir el disco nuevo, en SRV2 **las letras `sdX` de los RAID cambiaron** (el disco nuevo salió como `sdi` y `sdj` pasó a ser de `md1`). mdadm no se enteró porque usa sus superbloques; DRBD tampoco porque usa el número de serie.
+4. Comandos:
+
+```bash
+# en los dos servidores
+drbdadm create-md r0          # metadatos DRBD al final del disco
+drbdadm up r0                 # conecta con el otro nodo
+systemctl enable drbd         # se conecta solo al arrancar
+# solo en SRV2 (la primera vez)
+drbdadm primary --force r0    # "mis datos mandan" → sincronización inicial
+mkfs.ext4 -L drbd-espejo /dev/drbd0
+mount /dev/drbd0 /srv/espejo
+```
+
+ de un servidor entero
 
 | # | Prueba | Resultado | Tiempo |
 |---|---|---|---|
@@ -204,6 +234,15 @@ cat /proc/drbd                         # Connected Primary/Secondary UpToDate/Up
 - **¿Un RAID es una copia de seguridad?** No. Si borras un archivo, se borra en todos los discos a la vez. El RAID protege de que se rompa un disco; la copia protege de errores, borrados y ransomware.
 - **¿Por qué no se nota que el RAID 0 vaya más rápido?** Porque todos los discos virtuales están en el mismo SSD físico. Con discos físicos separados sí se notaría.
 - **¿Qué diferencia hay entre DRBD y una copia en el NAS?** DRBD es en tiempo real (no se pierde nada, RPO 0); la copia es periódica (se pierde lo escrito desde la última).
+
+### Más preguntas del tema
+
+- **¿Un RAID es una copia de seguridad?** No. Si borro un fichero o entra un *ransomware*, el RAID copia el desastre a todos los discos al instante. El RAID protege de un **fallo de hardware**; la copia (NAS + `vzdump` + configuraciones) protege de **errores y ataques**. Por eso tenemos los dos.
+- **¿Qué pasa si fallan 2 discos de un RAID 5?** Se pierde todo. Por eso existe el **disco de reserva** (lo hemos probado: entra solo en 21 s) y el **RAID 6** (dos discos de paridad).
+- **¿Por qué la reconstrucción es un momento delicado?** Durante esos segundos (horas, con discos de varios TB) el RAID no tiene redundancia y los discos que quedan trabajan al máximo. Si falla otro, se pierde el RAID 5.
+- **¿Cómo te enteras de que un disco ha fallado?** `cat /proc/mdstat` (`[U_]`, `(F)`), `mdadm --detail` y el servicio `mdmonitor`, que puede enviar un correo (`MAILADDR` en `mdadm.conf`).
+- **¿Por qué no se ve que el RAID 0 vaya más rápido?** Porque todos los discos virtuales están en el mismo SSD físico (apartado 4). En un servidor real, con discos físicos separados, sí se nota.
+- **¿Hardware RAID o software RAID?** Hardware: una controladora con su propia CPU y caché con batería, transparente para el sistema operativo, pero si se rompe hace falta una igual. Software (`mdadm`): gratis, portátil (los discos se leen en cualquier Linux), gasta un poco de CPU.
 
 ---
 

@@ -65,6 +65,42 @@ ronda 3: 12.2 Gbit/s · CPU del host 37,1 % · 3,0 % de CPU por cada Gbit/s
 
 ## Desarrollo
 
+### (Apte+) Dos optimizaciones: antes y después
+
+#### Tarjeta de red **virtio-net** en lugar de Intel e1000 (DEB13-SRV2 y SRV3)
+
+- **Por qué:** con `82540EM` (e1000) VirtualBox **emula una tarjeta Intel real** registro a registro: cada paquete provoca salidas al hipervisor. Con **virtio** el invitado sabe que está virtualizado y se comunica por colas compartidas (paravirtualización). Debian trae el driver `virtio_net` de serie.
+- **Cambio:** `VBoxManage modifyvm DEB13-SRV2 --nictype1 virtio` (VM apagada). La interfaz sigue llamándose `enp0s3` (mismo slot PCI) → la configuración de red no cambia.
+- **Volver atrás:** `--nictype1 82540EM` (config anterior en [`optim-red-config-antes.txt`](../evidencies/logs/optim-red-config-antes.txt)).
+- **Medida:** [`red-iperf.sh`](../scripts/red-iperf.sh), 3 rondas de `iperf3` de 20 s SRV2 → SRV3 midiendo la CPU del host.
+
+| | Ronda 1 | Ronda 2 | Ronda 3 | **Media** | CPU del host | CPU por Gbit/s |
+|---|---:|---:|---:|---:|---:|---:|
+| Antes (e1000) | 4,73 | 4,73 | 4,75 | **4,74 Gbit/s** | 28 % | 5,9 % |
+| Después (virtio) | 12,7 | 12,0 | 12,2 | **12,3 Gbit/s** | 36,5 % | **3,0 %** |
+
+**Resultado: ×2,6 de velocidad y la mitad de CPU por cada Gbit/s.** Se mantiene. Comprobado después: IP, ping a Internet y el espejo DRBD funcionan.
+
+#### Caché de E/S del anfitrión en el disco de DEB13-SRV2
+
+- **Por qué:** por defecto VirtualBox escribe **directamente** en el SSD (`useHostIOCache=false`). Con la caché activada, las escrituras pasan por la **RAM del host** (caché de páginas de Linux) y la VM recibe el "ya está" antes.
+- **Cambio:** `VBoxManage storagectl DEB13-SRV2 --name SATA --hostiocache on` · **Volver atrás:** `--hostiocache off`.
+- **Medida:** [`disco-rondas.sh`](../scripts/disco-rondas.sh) → [`fio-disco.sh`](../scripts/fio-disco.sh) dentro de la VM, 4 pruebas × 3 rondas con 60 s de descanso. Se da la **mediana** ([antes](../evidencies/logs/optim-disco-antes-sin-cache.txt), [después](../evidencies/logs/optim-disco-despues-con-cache.txt)).
+
+| Prueba (`fio`, `direct=1`, datos aleatorios) | Antes (sin caché) | Después (con caché) | Cambio |
+|---|---:|---:|---:|
+| Escritura secuencial 1 MB | 38 MB/s (335 → 38 → 25) | **2306 MB/s** | ×60 |
+| Escritura aleatoria 4K | 37 MB/s (125 → 13 → 37) | **116 MB/s** | ×3 |
+| Lectura aleatoria 4K | 16 MB/s | **141 MB/s** | ×9 |
+| Escritura 4K **con `fsync`** (como una base de datos) | 172 IOPS | **13 883 IOPS** | ×80 |
+
+**Interpretación:**
+- **Sin caché** se ve el SSD de verdad: la 1.ª ronda va rápida y en las siguientes **se agota la caché SLC** del A400 y cae a 25–38 MB/s.
+- **Con caché** las cifras son **más rápidas que el propio SSD** (2,3 GB/s por un USB de 5 Gb/s es imposible): la VM está escribiendo en la **RAM del host**.
+- El ×80 del `fsync` es la clave: la VM cree que sus datos están **en el disco** cuando todavía están **en RAM**. Si el PC se apaga de golpe, **se pierden** escrituras que la VM daba por guardadas.
+
+**Decisión:** ✗ **se vuelve a desactivar** en SRV2 (`useHostIOCache=false`, comprobado). SRV2 guarda los RAID y el espejo DRBD: de nada sirve un RAID 1 si un corte de luz se lleva lo que "ya estaba escrito". La caché solo compensa en VMs **sin datos importantes** (clientes de pruebas, VMs desechables). Mejora real alternativa para el disco: conectar la caja USB a 10 Gb/s (en clase el disco también va por USB, con las mismas IOPS: no hay un "disco rápido" alternativo) — ver [02](../docs/02-inventari.md).
+
 ### Método (ThinkLoop)
 
 | Fase | Qué se hizo |

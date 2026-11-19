@@ -104,6 +104,58 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 **Fallo y recuperación:** se borraron la IP de la LAN y el NAT (toda la empresa sin gateway). Se recuperó con `/system backup load name=copia-nas.backup` en **26 s** sin servicio. En el primer intento la copia estaba solo en el NAS y **no se podía alcanzar**, porque al NAS se llega a través del propio MikroTik. Lección: la copia tiene que poder alcanzarse sin el equipo que ha fallado. Ahora hay tres copias: en el router, en el NAS y el `/export` en Git.
 
+#### Configuración aplicada y cortafuegos
+
+Archivo completo y comentado: [`configs/mikrotik/mikrotik-base.rsc`](../configs/mikrotik/mikrotik-base.rsc). Exportación real del router: [`configs/mikrotik/mikrotik-export.rsc`](../configs/mikrotik/mikrotik-export.rsc).
+
+Resumen:
+
+```routeros
+/ip dhcp-client add interface=ether1 comment=WAN
+/ip address add address=192.168.23.1/24 interface=ether2
+/ip dns set allow-remote-requests=yes servers=1.1.1.1,9.9.9.9
+/ip firewall nat add chain=srcnat out-interface-list=WAN action=masquerade
+```
+
+##### ¿Por qué *masquerade*?
+La LAN usa IPs privadas (192.168.23.x) que no se pueden enrutar en Internet. El NAT cambia la IP de origen de los paquetes por la IP de la WAN del router. Usamos `masquerade` (y no `src-nat` con IP fija) porque la WAN recibe la IP **por DHCP** y podría cambiar.
+
+##### Cortafuegos
+
+| Cadena | Regla | Para qué |
+|---|---|---|
+| input | aceptar `established,related` | Dejar pasar las respuestas de lo que el router pide |
+| input | descartar `invalid` | Paquetes rotos o sin conexión conocida |
+| input | aceptar ICMP | Poder hacer ping al router |
+| input | aceptar desde lista `LAN` | Gestión desde LAN23 |
+| input | aceptar TCP 22/80/8291 desde 10.0.2.2 | Gestión desde el PC anfitrión (NAT) |
+| input | **descartar el resto + log `IN-DROP`** | El router no se expone a Internet |
+| forward | aceptar `established,related` / descartar `invalid` | Igual que arriba, para el tráfico que lo atraviesa |
+| forward | **descartar TCP 23 + log `BLOQUEADO-TELNET`** | **Prueba de conexión bloqueada**: Telnet envía usuario y contraseña en claro |
+| forward | **aceptar TCP 443 nuevo + log `PERMITIDO-HTTPS`** | **Prueba de conexión permitida** |
+| forward | aceptar LAN → WAN | La LAN navega |
+| forward | descartar el resto + log `FWD-DROP` | Política por defecto: lo que no se permite, se bloquea |
+
+El orden importa: RouterOS evalúa las reglas de arriba abajo y aplica la primera que coincide. Por eso la regla que bloquea Telnet está **antes** de la que permite todo LAN → WAN.
+
+![Reglas de la cadena input](../evidencies/captures/mikrotik/02-cortafuegos-input.png)
+
+*Demuestra: el router solo acepta respuestas, ping y gestión desde LAN23 o desde el PC (puertos 22, 80 y 8291); todo lo demás que va dirigido a él se descarta y se registra con el prefijo `IN-DROP`.*
+
+#### Copia de seguridad y vuelta atrás
+
+| Copia | Cómo | Para qué |
+|---|---|---|
+| `00-estado-inicial.backup` | `/system backup save` antes de configurar | Volver al estado de fábrica: `/system backup load name=00-estado-inicial` |
+| `mikrotik-export.rsc` | `/export terse` | Configuración en texto, legible y versionada en Git |
+| `copia-nas.backup` + `/export`, copiados al **TrueNAS** | El NAS los recoge por SSH/SCP con `copia-configs.sh` y los guarda en `/mnt/copias/configs/mikrotik/<fecha>/` ([truenas §6](../docs/06-installacio/truenas.md)) | Copia **fuera** del propio equipo: si el router se pierde, la copia sigue en el NAS |
+
+![Copias guardadas en el router](../evidencies/captures/mikrotik/05-copias-en-el-router.png)
+
+*Demuestra: en el router están la copia del estado inicial, la de antes de añadir SRV2/SRV3 y `copia-nas.backup`, que es la que recoge el NAS.*
+
+**Diferencia entre `/export` y `/system backup`**: el *export* es texto (se puede leer, comparar y aplicar en otro router) pero no incluye contraseñas; el *backup* es binario, incluye usuarios y contraseñas, y solo se restaura en el mismo modelo de equipo.
+
 ### OPNsense
 
 ![Panel principal de OPNsense](../evidencies/captures/opnsense/01-panel-principal.png)
@@ -119,6 +171,47 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 *Demuestra: en Firewall → Log Files → Live View, filtrado por el cliente 192.168.23.54, la conexión HTTPS sale en verde (`pass`) y los intentos de Telnet en rojo (`block`).*
 
 **Fallo y recuperación:** se desactivaron las reglas que dejan salir a la LAN (solo quedaba la denegación por defecto). Se recuperó desde *System → Configuration → History*, que guarda una versión de `config.xml` por cada cambio: **15 s** sin Internet en el cliente.
+
+#### Instalación
+
+1. Arranque de la ISO en modo *live* → login `installer` / `opnsense`.
+2. Teclado US · **Install (UFS)** · disco `ada0` (20 GB) · contraseña de root `********` · *Complete Install* → *Halt*.
+3. Se quita la ISO y se arranca desde el disco (`/dev/gpt/rootfs`).
+
+**¿Por qué UFS y no ZFS?** Con un solo disco virtual, ZFS no da redundancia y usa más RAM (tenemos 2 GB). UFS es el sistema de ficheros clásico de FreeBSD, ligero y suficiente para un cortafuegos.
+
+#### Internet para la LAN
+
+- **NAT de salida automático**: OPNsense crea solo el NAT (*masquerade*) de la LAN hacia la WAN.
+- **DNS**: Unbound, en **modo reenvío** (*forwarding*) hacia el DNS que da el DHCP de la WAN. En modo recursivo no resolvía nada, porque desde la red del aula no se llega a los servidores raíz ([incidencia 15](../docs/10-incidencies.md)).
+
+#### Verificación ([log completo](../evidencies/logs/prueba-gw-opnsense.txt))
+
+Cliente `DEB13-CLI` con gateway .2 (`scripts/canvi-gw.sh 2`):
+
+| Prueba | Resultado |
+|---|---|
+| `ip route` | `default via 192.168.23.2` |
+| `traceroute -T -p 443 deb.debian.org` | salto 1 = **192.168.23.2**, salto 2 = 10.0.2.2 |
+| `curl -sI https://deb.debian.org` | `HTTP/2 200` → **permitida** |
+| `nc -zv telehack.com 23` | *timed out* → **bloqueada** |
+
+Cómo se lee una línea del registro de pf:
+
+```
+a1f994e5-...,em1,match,block,in,4,...,tcp,60,192.168.23.54,64.13.139.230,42384,23
+   regla      intf        acción dir IPv4   proto      origen          destino    puertos
+```
+
+#### Copia de seguridad y vuelta atrás
+
+| Copia | Dónde | Cómo volver |
+|---|---|---|
+| `00-config-inicial.xml` | `~/iso-lab/backups/opnsense/` (fuera del repo: contiene el *hash* de root) | *System → Configuration → Backups → Restore* o menú de consola `13) Restore a backup` |
+| `01-antes-de-reordenar.xml` | ídem | ídem |
+| Copia en el NAS | `/mnt/copias/configs/opnsense/<fecha>/config.xml`: la descarga `copia-configs.sh` desde el NAS por la API de OPNsense (con una clave de API, no con la contraseña de root) | *System → Configuration → Backups → Restore* subiendo ese `config.xml` |
+
+**¿Por qué el `config.xml` no se sube a Git?** Contiene los *hashes* de las contraseñas y certificados privados.
 
 ### Debian 13 con nftables
 
@@ -144,6 +237,61 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 **Fallo y recuperación:** se dejó un error de sintaxis en `/etc/nftables.conf` y se reinició el servidor. Al arrancar, `nftables: failed` con **0 reglas** (sin filtro y sin NAT). `journalctl -u nftables` señaló la línea exacta; se recuperó el fichero de la copia del NAS, se comprobó con `nft -c -f` y se aplicó: **21 s** sin Internet (casi todo es el reinicio).
 
+#### Red en VirtualBox
+
+| Adaptador VBox | Interfaz Debian | Red | IP | Asignación |
+|---|---|---|---|---|
+| 1 | enp0s3 | NAT de VirtualBox | 10.0.2.15/24, gw 10.0.2.2 | DHCP |
+| 2 | enp0s8 | Red interna `LAN23` | 192.168.23.3/24, **sin gateway** | Fija |
+
+La red la gestiona **NetworkManager** (viene con GNOME). Se configuró con `nmcli`:
+
+```bash
+# Copia previa para poder volver atrás
+tar czf /root/backups/00-red-inicial.tgz /etc/NetworkManager /etc/network
+
+nmcli con add type ethernet ifname enp0s3 con-name WAN ipv4.method auto ipv6.method disabled
+nmcli con mod "Wired connection 1" con-name LAN23 ipv4.method manual \
+      ipv4.addresses 192.168.23.3/24 ipv4.never-default yes ipv6.method disabled
+nmcli con up WAN; nmcli con up LAN23
+```
+
+**¿Por qué `ipv4.never-default yes` en la LAN?** Un equipo solo debe tener **una ruta por defecto**. Si la LAN también la tuviera, Debian podría intentar salir a Internet por la LAN (hacia sí mismo) en vez de por la WAN.
+
+#### Activar el reenvío (`ip_forward`)
+
+Por defecto Linux **no reenvía** paquetes entre interfaces (no es un router). Se activa de forma **persistente** en [`/etc/sysctl.d/99-router.conf`](../configs/debian-srv/99-router.conf):
+
+```
+net.ipv4.ip_forward = 1
+```
+
+#### Interpretación del registro (`journalctl -k`)
+
+```
+DEB13-SRV kernel: PERMITIDO-HTTPS IN=enp0s8 OUT=enp0s3 SRC=192.168.23.54 DST=151.101.134.132 ... PROTO=TCP SPT=56232 DPT=443 ... SYN
+DEB13-SRV kernel: BLOQUEADO-TELNET IN=enp0s8 OUT=enp0s3 SRC=192.168.23.54 DST=64.13.139.230 ... PROTO=TCP SPT=44890 DPT=23 ... SYN
+```
+
+| Campo | Significado |
+|---|---|
+| `IN=enp0s8 OUT=enp0s3` | Entra por la LAN y quiere salir por la WAN → cadena *forward* |
+| `SRC=192.168.23.54` | El cliente DEB13-CLI |
+| `DPT=443` / `DPT=23` | Puerto de destino: HTTPS (permitido) / Telnet (bloqueado) |
+| `TTL=63` | Era 64 en el cliente; el router lo ha restado al reenviarlo |
+| `SYN` | Primer paquete de la conexión TCP |
+
+#### Copia de seguridad y vuelta atrás
+
+| Copia | Dónde | Cómo volver |
+|---|---|---|
+| Red original | `/root/backups/00-red-inicial.tgz` | `tar xzf ... -C /` y `systemctl restart NetworkManager` |
+| nftables original | `/root/backups/nftables.conf.orig` | `cp` a `/etc/nftables.conf` + `nft -f /etc/nftables.conf` |
+| Configuración en Git | `configs/debian-srv/` | Copiar de nuevo con `scp` |
+| Copia de `/etc` y de las reglas en TrueNAS | `/mnt/copias/configs/debian-srv/<fecha>/`: la recoge `copia-configs.sh` desde el NAS por SSH (solo puede ejecutar `sudo tar`) | Descomprimir el `.tgz` en `/` y `nft -f /etc/nftables.conf` |
+
+Si una regla deja sin acceso por SSH: la **consola de VirtualBox** no depende de la red → `sudo nft flush ruleset` deja pasar todo.
+
 ## 4. TrueNAS SCALE · NAS `.10`
 
 - Administración por la web con `truenas_admin` (TrueNAS 25 ya no deja entrar como `root`) y el usuario `izan` (administrador, con clave SSH para las copias). IP fija 192.168.23.10/24 en LAN23.
@@ -162,6 +310,48 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 *Demuestra: el servicio NFS está en marcha y comparte `/mnt/copias/sistemas` para las copias de las VMs y contenedores de Proxmox (`nas-copias`).*
 
 **¿Por qué espejo?** Si se rompe un disco del NAS, las copias siguen en el otro. ZFS además comprueba cada bloque con una suma de verificación y el *scrub* semanal detecta datos dañados antes de que hagan falta.
+
+### Red
+
+Configurada desde el **menú de consola** de TrueNAS:
+
+1. `1) Configure network interfaces` → `enp0s3` → `ipv4_dhcp: No` → `aliases: 192.168.23.10/24` → *Save* → `a` (aplicar) → comprobación con ping desde MikroTik → `p` (**persistir**).
+2. `2) Configure network settings` → `domain: asix23.lan` · `ipv4gateway: 192.168.23.1` · `nameserver1: 192.168.23.1`.
+
+> **Vuelta atrás automática**: al aplicar un cambio de red TrueNAS da **60 segundos** para confirmarlo. Si no se confirma (porque nos hemos quedado sin red), vuelve solo a la configuración anterior. Es exactamente la idea de "preparar cómo volver al estado anterior" que pide el enunciado.
+
+![Consola de TrueNAS: red y pool](../evidencies/captures/truenas/07-consola-red-y-pool-espejo.png)
+
+*Demuestra: la interfaz `enp0s3` tiene la IP fija 192.168.23.10/24 de LAN23 y el pool `copias` está `ONLINE` en espejo (`mirror-0`) con los dos discos sin errores.*
+
+Zona horaria cambiada a `Europe/Madrid` (venía en la de EE. UU. y las copias salían con la hora mal).
+
+### Disco adicional para las copias: pool `copias` en espejo
+
+| Elemento | Valor | Por qué |
+|---|---|---|
+| Pool | `copias` | Agrupa los discos de datos |
+| Disposición | **MIRROR** (espejo, equivalente a RAID 1) con `sdb` + `sdc` | Si falla un disco, las copias siguen disponibles en el otro |
+| Capacidad útil | ~19 GB de 40 GB brutos | El espejo "gasta" la mitad en redundancia |
+| Datasets | `copias/configs` (configuraciones) · `copias/sistemas` (imágenes de sistemas) | Separar por tipo permite cuotas, permisos e instantáneas distintas |
+| Compresión | LZ4 | Casi gratis en CPU y los ficheros de texto se comprimen mucho |
+
+![Datasets](../evidencies/captures/truenas/04-datasets-configs-sistemas.png)
+
+*Demuestra: dentro del pool hay dos datasets separados, `configs` (configuraciones) y `sistemas` (imágenes de VMs, compartido por NFS), con compresión LZ4.*
+
+Estado del pool ([log completo](../evidencies/logs/truenas-estado.txt)):
+
+```
+  pool: copias
+ state: ONLINE
+	NAME          STATE     READ WRITE CKSUM
+	copias        ONLINE       0     0     0
+	  mirror-0    ONLINE       0     0     0
+	    <disco 1> ONLINE       0     0     0
+	    <disco 2> ONLINE       0     0     0
+errors: No known data errors
+```
 
 ## 5. Proxmox VE · clúster `asix23` (`.11`, `.12`, `.13`)
 
@@ -209,6 +399,65 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 *Demuestra: las copias del contenedor (`.tar.zst`, 205 MB) y de la VM (`.vma.zst`) están en el NFS del TrueNAS y se pueden restaurar desde aquí.*
 
+### Clúster
+
+```bash
+# en PMX1
+pvecm create asix23
+# en PMX2 y en PMX3
+pvecm add 192.168.23.11 --use_ssh
+```
+
+PMX3 se unió en **12 s**. Estado final ([log](../evidencies/logs/proxmox-cluster.txt)): `Expected votes: 3 · Total votes: 3 · Quorum: 2 · Quorate`.
+
+#### Prueba de quórum: se apaga un nodo
+
+| | Antes | PMX3 apagado |
+|---|---|---|
+| Votos | 3 de 3 | **2 de 3** |
+| Quórum necesario | 2 | 2 |
+| Estado | Quorate | **Quorate ✓** — el clúster sigue gestionando |
+
+Con **2 nodos** esto no pasaba: al caer uno quedaba 1 de 2 votos y el clúster se bloqueaba. **Por eso se usan 3 nodos** (o 2 + un QDevice): siempre queda mayoría con un nodo caído.
+
+> El primer `pvecm add` falló con *"cluster not ready - no quorum?"* porque se lanzó justo mientras PMX1 reiniciaba corosync. Al repetirlo, se unió en **14 s**.
+
+#### Nodos, quórum, red y almacenamiento
+
+| Concepto | En nuestro clúster |
+|---|---|
+| **Quórum** | Mayoría de votos (más de la mitad) para que el clúster acepte cambios y evitar el *split-brain*. Con **3 nodos** el quórum es 2: **aguanta la caída de un nodo** (probado). Con 2 nodos no aguantaba ninguna |
+| **Red del clúster (corosync)** | Comparte la red de gestión LAN23. En producción va en una red separada, porque corosync necesita latencia baja |
+| **Almacenamiento** | Cada nodo tiene su `local-lvm` (**local**, no compartido) + `nas-copias` (NFS del NAS, **compartido**, solo para copias) |
+| Gestión conjunta | ✓ Una sola web para los tres nodos |
+| Migración | ✓ Manual, probada (ver abajo) |
+| **Alta disponibilidad (HA)** | ✗ No: necesita almacenamiento compartido para los discos y 3 votos. Diferencia clave: migrar = lo muevo yo; HA = se mueve solo si un nodo muere |
+
+![Recursos del clúster](../evidencies/captures/proxmox/07-web-recursos-cluster.png)
+
+*Demuestra: desde una sola web se ven todos los recursos de los 3 nodos: el contenedor 100, la VM 101 y los almacenamientos de cada nodo.*
+
+![Almacenamiento del clúster](../evidencies/captures/proxmox/08-web-almacenamiento.png)
+
+*Demuestra: `local` y `local-lvm` son de cada nodo (no compartidos) y `nas-copias` es un NFS compartido (`Shared: Yes`) que solo guarda copias (`Backup`).*
+
+### Migraciones medidas ([log completo](../evidencies/logs/proxmox-migraciones.txt))
+
+| | Contenedor 100 → pmx2 | VM 101 → pmx2 |
+|---|---|---|
+| Comando | `pct migrate 100 pmx2 --restart` | `qm migrate 101 pmx2 --online --with-local-disks` |
+| Duración total | **1 min 25 s** | **12,7 s** |
+| Corte de servicio | **~84 s** (intranet medida desde el NAS cada segundo) | **8 ms** |
+| Disco | 4 GB asignados, **~0,9 GB usados** → se copiaron **los 4 GB** | 2 GB vacíos → en el destino quedaron **100 % ocupados** |
+| Velocidad | 50–190 MB/s (baja al llenarse la caché) | 528 MiB/s (RAM) |
+
+#### ¿Se puede mejorar?
+
+1. **Almacenamiento compartido** (NFS/iSCSI del NAS o Ceph): los discos no se copian, solo la RAM → migración en segundos y sin corte también para el contenedor.
+2. **ZFS en los nodos** + replicación (`pvesr`): se copia solo lo que cambia desde la última réplica.
+3. Al migrar con discos locales, el LVM-thin **pierde la reserva dinámica** (copia bloque a bloque). Con `fstrim` dentro del invitado (o `qm disk rescan` + *discard*) se recupera el espacio.
+4. Red dedicada para migraciones (10 GbE en producción).
+
 ## 6. Windows Server 2025 · controlador de dominio `.20`
 
 - Instalación desatendida, IP fija 192.168.23.20/24, gateway `.1` y DNS `127.0.0.1` (él mismo).
@@ -236,6 +485,65 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 
 **Copia:** con `ntdsutil ifm` se hizo una copia coherente de la base de datos de AD (`ntds.dit`) y de SYSVOL con el DC en marcha: 4,9 MB guardados en el NAS. El sistema operativo no se copia porque se reinstala; lo valioso es AD.
 
+### Usuarios de administración
+
+| Cuenta | Uso |
+|---|---|
+| `Administrador` (local → pasa a ser `ASIX23\Administrador`) | Administrador del dominio |
+| `izan` (local, grupo Administradores) | Creado por la instalación |
+
+> **Contraseña compleja obligatoria**: Windows exige al menos 3 de 4 tipos de carácter (mayúscula, minúscula, número, símbolo). Por eso en Windows se usa una variante con mayúscula de la contraseña del proyecto (`********`).
+
+### Red
+
+Script: [`scripts/windows/ws2025-dc.ps1`](../scripts/windows/ws2025-dc.ps1) (fase `red`).
+
+```powershell
+New-NetIPAddress -InterfaceAlias Ethernet -IPAddress 192.168.23.20 -PrefixLength 24 -DefaultGateway 192.168.23.1
+Set-DnsClientServerAddress -InterfaceAlias Ethernet -ServerAddresses 192.168.23.1   # antes de ser DC
+Enable-NetFirewallRule -Name FPS-ICMP4-ERQ-In                                        # permitir ping
+```
+
+**¿Por qué IP fija?** Todos los equipos del dominio buscan al DC por su IP (es su servidor DNS). Si cambiara, nadie encontraría el dominio.
+
+### AD DS + DNS: dominio `asix23.lan`
+
+```powershell
+Install-WindowsFeature AD-Domain-Services, DNS -IncludeManagementTools
+Install-ADDSForest -DomainName asix23.lan -DomainNetbiosName ASIX23 -InstallDns -SafeModeAdministratorPassword <********>
+```
+
+Después del reinicio:
+
+| Ajuste | Valor | Por qué |
+|---|---|---|
+| DNS del propio DC | `127.0.0.1` | El DC se resuelve a sí mismo y a los registros SRV del dominio |
+| Reenviador DNS | `192.168.23.1` (gateway) | Lo que no es `asix23.lan` (p. ej. `deb.debian.org`) se pregunta fuera |
+| Unidades organizativas | Direccion, Administracion, Comercial, Produccion, Informatica | Una por departamento → se pueden aplicar GPO distintas a cada uno |
+
+**¿Por qué `.lan` y no `.local`?** `.local` está reservado para mDNS (Bonjour/Avahi) y da conflictos con Linux y macOS. Microsoft recomienda usar un subdominio de un dominio propio; en el laboratorio usamos `.lan`, que no es un dominio público.
+
+#### Verificación ([log completo](../evidencies/logs/ws2025-dc-dominio.txt) · [registros DNS de la zona](../evidencies/logs/ws2025-dns-registros.txt))
+
+```
+ADWS     Running Servicios web de Active Directory
+DNS      Running Servidor DNS
+Netlogon Running Net Logon
+NTDS     Running Servicios de dominio de Active Directory
+
+Maestro de esquema          WS2025-DC.asix23.lan      ← los 5 roles FSMO en este DC
+PDC                         WS2025-DC.asix23.lan
+
+"OU=Administracion,DC=asix23,DC=lan"  ... (5 OUs)
+"CN=W11-CLI,OU=Administracion,DC=asix23,DC=lan"      ← el cliente ya es miembro
+```
+
+![Red, dominio y servicios por PowerShell](../evidencies/captures/windows-server/05-powershell-red-dominio-servicios.png)
+
+*Demuestra: el DC tiene la IP fija 192.168.23.20/24, gateway .1 y se usa a sí mismo como DNS (`127.0.0.1`); el dominio `asix23.lan` (NetBIOS `ASIX23`) tiene el DC como emulador de PDC y los servicios ADWS, DNS, Kerberos (Kdc) y Netlogon están en marcha.*
+
+> **Incidencia**: tras el reinicio, los cmdlets `Get-ADOrganizationalUnit` fallaban con *"No se pudo encontrar ningún servidor que ejecutara Servicios web de Active Directory"* aunque el servicio ADWS estaba en marcha. Causa: la sesión remota de `guestcontrol` no tiene credenciales Kerberos para ADWS. Solución: usar `dsadd`/`dsquery`, que hablan LDAP directamente. ([incidencia 9](../docs/10-incidencies.md))
+
 ## 7. Servidores Debian 13 (infraestructura) · SRV2 `.21` y SRV3 `.22`
 
 - Instalación desatendida **sin escritorio** (arrancan con ~230 MB de RAM y tienen menos superficie de ataque), IP fija en LAN23, DNS al DC.
@@ -249,6 +557,47 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 ![Apache sirviendo la intranet en SRV3](../evidencies/captures/debian-servidors/05-srv3-apache-intranet.png)
 
 *Demuestra: Apache está activo, escucha en el puerto 80 y sirve la página de la intranet en 192.168.23.22.*
+
+### Instalación (desatendida)
+
+Debian 13.1 *netinst* (misma ISO y SHA256 que en [03-sistemes](../docs/03-sistemes.md)), con la instalación desatendida de VirtualBox. Sin escritorio: solo «utilidades estándar» + SSH.
+
+```bash
+VBoxManage unattended install DEB13-SRV2 --iso=debian-13.1.0-amd64-netinst.iso --user=izan \
+  --password-file=<fichero> --hostname=deb13-files.asix23.lan --locale=es_ES --country=ES \
+  --time-zone=Europe/Madrid --start-vm=headless
+```
+
+- Durante la instalación, el adaptador 1 está en **NAT** para descargar paquetes. Después se pasa a `LAN23`.
+- Problemas encontrados: arranque desde el disco a medio instalar, el script post-instalación que falla (sin `sudo`) y `dhcpcd` que borra los DNS → incidencias en [10-incidencies](../docs/10-incidencies.md).
+- **¿Por qué sin escritorio?** Un servidor no lo necesita: arranca con ~230 MB de RAM usados y tiene menos paquetes que actualizar y menos superficie de ataque.
+
+### Red
+
+`/etc/network/interfaces` (copia anterior en `interfaces.antes-lan23`):
+
+```
+auto enp0s3
+iface enp0s3 inet static
+    address 192.168.23.21/24
+    gateway 192.168.23.1
+```
+
+DNS en `/etc/resolv.conf.head`: `192.168.23.20` (DC) y `192.168.23.1` (MikroTik) de reserva.
+
+**Verificación** (los dos servidores): ping al gateway **0 % de pérdida, 0,3 ms**; ping a Internet `1.1.1.1` **0 % de pérdida, 15 ms**; resolución de `deb.debian.org` correcta, también **tras reiniciar**.
+
+#### Acceso desde el PC (sin tocar la red del aula)
+
+PC `127.0.0.1:2221/2222/8422` → reenvío de puertos de VirtualBox en el adaptador NAT del MikroTik → **`dst-nat`** del MikroTik → `.21:22`, `.22:22`, `.22:80`. Las reglas aceptan **solo** el tráfico que viene del PC (`src-address=10.0.2.2`), como las del resto de servidores. Copia de las reglas anteriores: [`mikrotik-nat-antes-srv2-srv3.json`](../evidencies/logs/mikrotik-nat-antes-srv2-srv3.json) y backup `antes-srv2-srv3` en el router.
+
+### Copias de seguridad
+
+| Qué | Cómo |
+|---|---|
+| Configuración (`/etc`: red, `fstab`, `mdadm.conf`, `drbd.d/r0.res`, Samba, Apache) | Igual que DEB13-SRV1-NFT: la copia nocturna del NAS se lleva `/etc` en un `.tgz` |
+| Datos de los RAID, de la carpeta compartida y del espejo DRBD | Ni el RAID ni DRBD **son una copia** (un borrado se replica al instante): los datos importantes se copian al NAS |
+| Sistema completo | Se reinstala en ~15 min con la instalación desatendida + `/etc` de la copia |
 
 ## 8. Clientes · W11-CLI `.51` y DEB13-CLI `.54`
 
@@ -266,6 +615,40 @@ Todas las imágenes se descargaron de la web oficial del fabricante y se comprob
 ![Propiedades del sistema: dominio asix23.lan](../evidencies/captures/w11-cli/02-propiedades-sistema-dominio-asix23.png)
 
 *Demuestra: en *Propiedades del sistema* el nombre completo del equipo es `W11-CLI.asix23.lan` y su dominio, `asix23.lan`.*
+
+### Unión al dominio
+
+```powershell
+Add-Computer -DomainName asix23.lan -OUPath "OU=Administracion,DC=asix23,DC=lan" -Credential ASIX23\Administrador
+Restart-Computer
+```
+
+Comprobación después del reinicio ([log](../evidencies/logs/w11-cli-dominio.txt)):
+
+```
+Domain       : asix23.lan
+PartOfDomain : True
+Test-ComputerSecureChannel → True        ← la relación de confianza con el DC funciona
+DC: \\WS2025-DC.asix23.lan   Dirección: \\192.168.23.20
+```
+
+En el DC: `CN=W11-CLI,OU=Administracion,DC=asix23,DC=lan`.
+
+### DEB13-CLI: red y cliente de pruebas
+
+#### Red (NetworkManager)
+
+```bash
+nmcli con mod "Wired connection 1" con-name LAN23 ipv4.method manual \
+  ipv4.addresses 192.168.23.54/24 ipv4.gateway 192.168.23.1 ipv4.dns 192.168.23.1 \
+  ipv4.dns-search asix23.lan ipv6.method disabled
+```
+
+Paquetes: `openssh-server sudo traceroute curl netcat-openbsd`, instalados **a través de MikroTik** (primera prueba real del NAT). `izan` está en el grupo `sudo`.
+
+#### Cliente de pruebas de los tres routers
+
+`scripts/canvi-gw.sh 1|2|3` cambia su gateway y su DNS. Con él se hicieron las pruebas de [MikroTik](../docs/06-installacio/mikrotik.md), [OPNsense](../docs/06-installacio/opnsense.md) y [Debian](../docs/06-installacio/debian-srv.md).
 
 ## 9. Actualizaciones y vías de recuperación
 
@@ -341,3 +724,57 @@ Cada copia va a una carpeta por equipo y fecha, se borran las de más de 14 día
 
 - **¿Contenedor o VM?** El contenedor comparte el kernel del nodo: arranca en segundos y gasta poca RAM, pero solo ejecuta Linux. La VM tiene su propio kernel, aísla más y permite migración en caliente (8 ms frente a ~84 s).
 - **¿Por qué las copias las recoge el NAS y no las envían los equipos?** Para que ningún equipo guarde credenciales del NAS: un atacante en un router no podría borrar las copias.
+
+### MikroTik
+
+- **¿Por qué la WAN es NAT de VirtualBox y no puente?** Porque la red del aula (172.16.222.0/24) es compartida: con puente, mi router aparecería en ella y podría causar conflictos. El enunciado permite NAT con IP por DHCP.
+- **¿Qué hace masquerade?** Cambia la IP privada de origen por la de la WAN para que las respuestas vuelvan al router.
+- **¿Por qué hay dos cadenas (input y forward)?** `input` = tráfico **para** el router; `forward` = tráfico que **atraviesa** el router.
+- **¿Por qué el bloqueo de Telnet sale varias veces en el log?** Por los reintentos del SYN, ya que el router descarta sin responder (*drop*, no *reject*).
+- **¿Cómo vuelvo atrás si una regla me deja sin acceso?** Desde la consola de la VM (no depende de la red): `/system backup load name=00-estado-inicial` o desactivar la regla con `/ip firewall filter disable <n>`.
+
+### OPNsense
+
+- **¿Qué diferencia hay entre MikroTik, OPNsense y Debian como router?** Los tres hacen lo mismo (NAT + filtrado); cambia la forma de gestionarlos: RouterOS por CLI o Winbox, OPNsense por web (basado en FreeBSD y pf) y Debian a mano con nftables.
+- **¿Por qué el orden de las reglas importa?** Porque las reglas `quick` se aplican en cuanto coinciden. Si "permitir todo" va primero, el bloqueo nunca se evalúa.
+- **¿Qué es la regla *anti-lockout*?** Una regla automática que siempre deja entrar a la web desde la LAN, para no quedarte fuera por error.
+
+### Debian nftables
+
+- **¿Qué diferencia hay entre `input` y `forward`?** `input` = paquetes dirigidos al propio Debian; `forward` = paquetes que pasan a través de él de una red a otra.
+- **¿Qué pasa si reinicio y no he hecho persistente `ip_forward`?** Vuelve a 0 y Debian deja de enrutar: la LAN se queda sin Internet aunque las reglas nftables estén bien.
+- **¿Por qué `inet` y no `ip`?** La familia `inet` aplica las mismas reglas a IPv4 e IPv6 a la vez. El NAT se hace en una tabla `ip` porque solo hacemos NAT de IPv4.
+- **¿Cómo sé que es Debian el que enruta y no MikroTik?** `traceroute`: el primer salto es 192.168.23.3. Además, el log aparece en el kernel de Debian.
+
+### TrueNAS
+
+- **¿Por qué un espejo y no un solo disco?** Con un solo disco, si se estropea perdemos todas las copias. El espejo aguanta la pérdida de un disco.
+- **¿Un espejo es una copia de seguridad?** **No.** Si borro un fichero, se borra en los dos discos. El espejo protege de fallos de **hardware**; la copia protege de **errores y borrados**. Por eso hacemos las dos cosas.
+- **¿Qué pasa si se cae el NAS?** Perdemos el destino de las copias, no los servicios. Los equipos siguen funcionando y las configuraciones también están en Git (`configs/`), que hace de segunda copia fuera del NAS.
+- **¿Por qué el NAS recoge y no los equipos envían?** Por seguridad: así ningún equipo necesita la contraseña del NAS.
+
+### Proxmox
+
+- **¿Por qué hace falta virtualización anidada?** Proxmox necesita VT-x para ejecutar VMs con KVM, y como él mismo es una VM de VirtualBox, VirtualBox tiene que "pasarle" VT-x.
+- **¿Qué pasa si apago un nodo?** Quedan 2 votos de 3 → sigue habiendo quórum y todo funciona (probado). Si caen **dos**, el que queda pierde el quórum y no deja cambiar nada; emergencia: `pvecm expected 1`.
+- **¿Por qué la VM migra sin cortes y el contenedor no?** KVM puede copiar la RAM en caliente mientras la VM sigue funcionando y solo la para unos milisegundos al final. LXC no tiene esa función en Proxmox: hay que parar, copiar y arrancar.
+- **¿Por qué el contenedor tardó más si es más ligero?** Porque tenía un disco de 4 GB que se copió entero; la VM de prueba tenía 2 GB y casi todo ceros.
+
+### Windows Server
+
+- **¿Por qué el DC usa 127.0.0.1 como DNS?** Porque él mismo es el servidor DNS del dominio. Si apuntara al router, no encontraría sus propios registros SRV (`_ldap._tcp.asix23.lan`).
+- **¿Para qué sirve el reenviador?** Para que los clientes, que solo preguntan al DC, puedan resolver también nombres de Internet.
+- **¿Qué es FSMO?** Cinco "roles maestros" que solo puede tener un DC a la vez (esquema, nombres de dominio, PDC, RID, infraestructura). Con un solo DC, los tiene todos.
+- **¿Qué pasa si se cae el DC?** Los usuarios ya conectados siguen trabajando (credenciales en caché), pero no se puede iniciar sesión con cuentas nuevas ni resolver nombres del dominio. Por eso en producción se ponen **dos DC**.
+
+### Servidores Debian
+
+- **¿Por qué IP fija y no DHCP?** Es un servidor: los clientes y el DNS tienen que encontrarlo siempre en la misma dirección. Además, en LAN23 no hay servidor DHCP.
+- **¿Qué diferencia hay entre un RAID y una copia de seguridad?** El RAID protege ante la avería de un disco; si alguien borra un archivo de la carpeta compartida, el RAID lo borra en todos los discos a la vez. Solo una copia (en el NAS) permite recuperarlo.
+- **¿Por qué `nofail` en el `fstab` de los RAID?** Para que, si un RAID no arranca, el servidor arranque igualmente (lección de la incidencia provocada del `fstab`).
+
+### Clientes
+
+- **¿Por qué W11 Pro y no Home?** Home no puede unirse a un dominio de Active Directory.
+- **¿Qué pasa si el cliente usa el router como DNS?** Navega bien, pero no encuentra el dominio: `Add-Computer` falla con *"no se pudo contactar con el dominio"*.
+- **¿Qué es el canal seguro?** Una contraseña de equipo que comparten el PC y el DC. Si se rompe (por ejemplo, al restaurar una copia antigua del PC), el equipo deja de poder iniciar sesiones de dominio y hay que repararlo con `Test-ComputerSecureChannel -Repair`.

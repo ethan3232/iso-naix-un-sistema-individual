@@ -75,6 +75,18 @@ Ejecución 3: escritura 391 MB/s · lectura 397 MB/s · 4K sync 348 IOPS
 
 ## Desarrollo
 
+### Cuellos de botella y soluciones
+
+| # | Cuello de botella | Evidencia | Solución propuesta | Coste |
+|---|---|---|---|---|
+| 1 | **Disco de las VMs por USB** | `lsblk` → `TRAN=usb`; el puente va a 5 Gb/s; **347 IOPS** en escritura 4K síncrona; en la Tasca 6 las escrituras caían a ~15 MB/s en **todos** los discos virtuales | El entorno **tiene que ir en el SSD de clase** (el NVMe de casa no se puede usar). Lo que sí se puede hacer: (a) conectar la caja a un puerto USB de **10 Gb/s** (el puente JMS583 lo admite); (b) reducir lo que escriben las VMs: VMs sin escritorio, un escenario cada vez y caché del host solo en las VMs sin datos importantes (c) a medio plazo, un SSD NVMe en caja USB de 10 Gb/s | 0 € |
+| 2 | **SSD Kingston A400** (sin DRAM, caché SLC pequeña) | En la Tasca 6 la escritura sostenida bajaba de ~400 a ~15–25 MB/s | Para muchas VMs a la vez, un SSD con DRAM o NVMe | ~60 € (NVMe de 1 TB) |
+| 3 | **RAM de 16 GB** | Escenarios limitados a ~10 GB de VMs | Ampliar a 32 GB (la B560M tiene 4 ranuras DDR4) | ~50 € |
+| 4 | CPU con 12 hilos (casa) | Con Proxmox anidado, cada nodo consume vCPU | Suficiente para 1 escenario; no es el límite principal | — |
+| 5 | **Clase:** el mismo disco por USB | Mismas IOPS que en casa (347–351) aunque el portátil es más potente | Igual que el nº 1: cable USB 3.2 Gen 2 (el puerto del portátil es de 20 Gb/s) | ~10 € |
+| 6 | **Clase:** temperatura del portátil | 61 ºC en reposo | Usarlo enchufado y sobre una superficie dura; no encender más escenarios de los necesarios | 0 € |
+| 7 | **Clase:** Internet del aula lento y con ICMP filtrado | ~14 Mb/s; `ping 1.1.1.1` sin respuesta | Descargar ISOs en casa y comprobar Internet de las VMs con `curl`/DNS, no solo con `ping` | 0 € |
+
 ### Comparativa clase vs. casa
 
 | | Clase | Casa | Consecuencia |

@@ -9,6 +9,8 @@ Esta carpeta organiza el proyecto **tarea por tarea**, tal como se entrega. Cada
 5. **Cómo comprobarlo** (los comandos para verificarlo en directo).
 6. **Preguntas probables de la defensa** con su respuesta.
 
+**Para Aules:** cada tarea tiene su PDF autónomo en [`entrega/tareas/`](../entrega/tareas) con esta ficha, el desarrollo completo de la documentación con todas las capturas y, como anexo, las salidas reales de los comandos.
+
 | Tarea | Ficha | Módulos | Estado |
 |---|---|---|:---:|
 | **Tasca 0** · Entorno de pruebas | [Tasca-0-entorno-de-pruebas.md](Tasca-0-entorno-de-pruebas.md) | FDM-RA1, FDM-RA4 | ✓ Apte · ✓ Apte+ |

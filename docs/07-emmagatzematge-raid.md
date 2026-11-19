@@ -66,6 +66,18 @@ Método: se escriben **100 MB aleatorios** en cada RAID y se guarda su **SHA256*
 | **RAID 5 + disco de reserva** | `--add-spare sdg` y se rompe `sdf` **sin tocar nada más** | ✓ La reserva entra **automáticamente** y se reconstruye en **21,2 s** | ✓ |
 | **Reinicio** | `systemctl reboot` | ✓ Los 3 RAID se montan solos | ✓ Los 3 SHA256 coinciden |
 
+![Los tres RAID activos en SRV2](../evidencies/captures/debian-servidors/01-srv2-tres-raid-activos.png)
+
+*Demuestra: los tres RAID (`md0` nivel 0, `md1` nivel 1 y `md5` nivel 5) están activos con todos sus discos (`[UU]`, `[UUU]`) y montados en `/srv`.*
+
+![RAID 5 degradado con los datos intactos](../evidencies/captures/debian-servidors/02-srv2-raid5-degradado.png)
+
+*Demuestra: con un disco menos el RAID 5 queda `clean, degraded` con 2 discos activos y el archivo de prueba sigue íntegro (`La suma coincide`).*
+
+![RAID 5 reconstruido](../evidencies/captures/debian-servidors/03-srv2-raid5-reconstruido.png)
+
+*Demuestra: al volver a añadir el disco empieza la reconstrucción (`recovery`) y en unos segundos el RAID vuelve a `clean` con los 3 discos en `active sync`.*
+
 **Observaciones de la prueba:**
 - En modo degradado el RAID 5 hizo **7 lecturas en 20 s** y el RAID 1 **22**. Con un disco menos, cada lectura del RAID 5 tiene que **recalcular los datos que faltan con la paridad** (XOR), así que va más lenta. En cambio, el RAID 1 sigue teniendo una copia completa.
 - La reconstrucción del RAID 1 (54 s) fue más lenta que la del RAID 5 (15 s). No es por el tipo de RAID: el disco nuevo del RAID 1 (`sdi`) era un VDI **sin estrenar** y VirtualBox tenía que hacer crecer el fichero mientras escribía. Ver el apartado 4.
@@ -160,6 +172,14 @@ mount /dev/drbd0 /srv/espejo
 | 6 | SRV2 vuelve | Entra como **secundario**, sin *split-brain*. Solo copia **206 MB** (50 MB nuevos + 156 MB que marca por precaución por haber caído siendo primario) | **25 s** (no el disco entero) |
 | 7 | Cambio controlado de vuelta: SRV3 `umount` + `secondary`, SRV2 `primary` + `mount` | ✓ Los 2 ficheros con su SHA256 correcto | **2,6 s** |
 | 8 | Reinicio de SRV3 | Se reconecta solo: `Connected Primary/Secondary UpToDate/UpToDate` | — |
+
+![DRBD primario en SRV2](../evidencies/captures/debian-servidors/06-srv2-drbd-primario.png)
+
+*Demuestra: SRV2 es primario, los dos discos están `UpToDate` y la replicación está establecida; el espejo está montado y conserva los archivos escritos en las pruebas de caída.*
+
+![DRBD secundario en SRV3](../evidencies/captures/debian-servidors/07-srv3-drbd-secundario.png)
+
+*Demuestra: SRV3 es secundario y tiene una copia al día (`UpToDate`), pero no monta el disco: solo el primario puede usarlo.*
 
 ### 7.4 Caso de uso en la empresa
 

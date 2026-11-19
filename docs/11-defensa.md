@@ -1,4 +1,4 @@
-# 12 · Preparación de la Tasca 8 (caso práctico individual · 25/11/2026)
+# 11 · Preparación de la Tasca 8 (caso práctico individual · 25/11/2026)
 
 En el examen, el profesorado provocará un fallo en mi entorno y yo tendré que **acotar el impacto → formular una hipótesis → consultar el [plan de contingencia](09-contingencia.md) → aplicarlo → comprobar que se recupera la función**. Se valora el razonamiento y **no perder datos**, no la rapidez.
 

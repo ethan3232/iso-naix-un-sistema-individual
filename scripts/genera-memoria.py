@@ -12,7 +12,7 @@ Pasos: Markdown -> HTML con estilo (paleta de diagrames/estilo.py) -> PDF con Ch
 Se imprime dos veces: la primera para saber en qué página empieza cada capítulo y
 la segunda con esos números en el índice.
 Se omiten las secciones "Preguntas probables de la defensa" (son la preparación del examen)
-y docs/12-defensa.md.
+y docs/11-defensa.md.
 """
 import html
 import re

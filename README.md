@@ -85,7 +85,7 @@ Todos los ítems **Apte** y **Apte+** de las tareas individuales están completa
 | T6 · Apte+ | RAID en espejo entre 2 equipos + caso de uso | [07 §7 · DRBD](docs/07-emmagatzematge-raid.md#7-apte-raid-en-espejo-entre-dos-equipos) |
 | T7 · Apte | Línea base, carga, qué VM satura qué, cuántas VMs | [08 §1–4](docs/08-rendiment.md) |
 | T7 · Apte+ | 2 optimizaciones con antes/después | [08 §5](docs/08-rendiment.md#5-apte-dos-optimizaciones-antes-y-después) |
-| Transversal | Predicciones · contingencia RTO/RPO · Tasca 8 | [00](docs/00-prediccions.md) · [09](docs/09-contingencia.md) · [12](docs/12-defensa.md) |
+| Transversal | Predicciones · contingencia RTO/RPO · Tasca 8 | [00](docs/00-prediccions.md) · [09](docs/09-contingencia.md) · [11](docs/11-defensa.md) |
 
 ## 5. Documentación
 
@@ -102,7 +102,7 @@ Todos los ítems **Apte** y **Apte+** de las tareas individuales están completa
 | [08 · Rendimiento](docs/08-rendiment.md) | Línea base, cada VM, carga por recurso, cuántas VMs, 2 optimizaciones |
 | [09 · Contingencia](docs/09-contingencia.md) | RTO/RPO y recuperaciones probadas |
 | [10 · Incidencias](docs/10-incidencies.md) | 26 problemas reales y cómo se resolvieron |
-| [12 · Defensa](docs/12-defensa.md) | Guía de intervención para la Tasca 8 y banco de preguntas |
+| [11 · Defensa](docs/11-defensa.md) | Guía de intervención para la Tasca 8 y banco de preguntas |
 
 <details>
 <summary><b>Guías de instalación por máquina</b></summary>

@@ -47,24 +47,64 @@ PC `127.0.0.1:2221/2222/8422` → reenvío de puertos de VirtualBox en el adapta
 
 ## 3. Servicio
 
-- **SRV3**: Apache activo; desde el PC `http://127.0.0.1:8422` → **HTTP 200**.
-- **SRV2**: los 3 RAID montados en `/srv/raid0`, `/srv/raid1` y `/srv/raid5` (pruebas en [07](../07-emmagatzematge-raid.md)).
+### 3.1 SRV2: RAID y servidor de ficheros (Samba)
 
-## 3b. Espejo por red (DRBD) entre SRV2 y SRV3
+Los 3 RAID están montados en `/srv/raid0`, `/srv/raid1` y `/srv/raid5` (pruebas completas en [07](../07-emmagatzematge-raid.md)).
 
-Recurso `r0` → `/dev/drbd0` montado en `/srv/espejo` en el **primario** (SRV2). Estado: `cat /proc/drbd` (`Connected Primary/Secondary UpToDate/UpToDate`). Montaje, pruebas de caída y caso de uso en [07 §7](../07-emmagatzematge-raid.md).
+![Los tres RAID activos en SRV2](../../evidencies/captures/debian-servidors/01-srv2-tres-raid-activos.png)
 
-> El espejo **no se monta en el `fstab`**: solo lo monta el nodo que es primario, a mano (o con Pacemaker en producción).
+*Demuestra: los tres RAID (`md0` nivel 0, `md1` nivel 1 y `md5` nivel 5) están activos con todos sus discos (`[UU]`, `[UUU]`) y montados en `/srv`.*
+
+Fallo controlado del RAID 5 (se marca `sdh` como estropeado, se quita y se vuelve a añadir):
+
+![RAID 5 degradado con los datos intactos](../../evidencies/captures/debian-servidors/02-srv2-raid5-degradado.png)
+
+*Demuestra: con un disco menos el RAID 5 queda `clean, degraded` con 2 discos activos y el archivo de prueba sigue íntegro (`La suma coincide`).*
+
+![RAID 5 reconstruido](../../evidencies/captures/debian-servidors/03-srv2-raid5-reconstruido.png)
+
+*Demuestra: al volver a añadir el disco empieza la reconstrucción (`recovery`) y en unos segundos el RAID vuelve a `clean` con los 3 discos en `active sync`.*
+
+**Recurso compartido `compartida`** (añadido el 19/11/2026): carpeta de la empresa sobre el RAID 1 (`/srv/raid1/compartida`), solo para usuarios autorizados (`valid users = izan`, usuario de Samba creado con `smbpasswd -a`). Configuración en [`configs/samba/smb-compartida.conf`](../../configs/samba/smb-compartida.conf); copia del archivo anterior en `/etc/samba/smb.conf.antes-2026-11-19`.
+
+![Recurso Samba en SRV2](../../evidencies/captures/debian-servidors/04-srv2-samba-compartida.png)
+
+*Demuestra: el recurso `[compartida]` está definido, el servicio `smbd` está activo y un usuario autenticado puede listar los archivos de la carpeta.*
+
+- **¿Por qué sobre el RAID 1?** Es el que protege los datos ante la avería de un disco con el montaje más sencillo (2 discos). El RAID 0 no tolera ningún fallo.
+
+### 3.2 SRV3: servidor web (intranet)
+
+Apache con una página de intranet sencilla en `/var/www/html/index.html` ([`configs/apache/index.html`](../../configs/apache/index.html); la página original de Debian se guardó como `index.html.debian-original`). Desde el PC: `http://127.0.0.1:8422` → **HTTP 200**.
+
+![Apache sirviendo la intranet en SRV3](../../evidencies/captures/debian-servidors/05-srv3-apache-intranet.png)
+
+*Demuestra: Apache está activo, escucha en el puerto 80 y sirve la página de la intranet en `192.168.23.22`.*
+
+### 3.3 Espejo por red (DRBD) entre SRV2 y SRV3
+
+Recurso `r0` → `/dev/drbd0` montado en `/srv/espejo` en el **primario** (SRV2). Montaje, pruebas de caída y caso de uso en [07 §7](../07-emmagatzematge-raid.md).
+
+![DRBD primario en SRV2](../../evidencies/captures/debian-servidors/06-srv2-drbd-primario.png)
+
+*Demuestra: SRV2 es primario, los dos discos están `UpToDate` y la replicación está establecida; el espejo está montado y conserva los archivos escritos en las pruebas de caída.*
+
+![DRBD secundario en SRV3](../../evidencies/captures/debian-servidors/07-srv3-drbd-secundario.png)
+
+*Demuestra: SRV3 es secundario y tiene una copia al día (`UpToDate`), pero no monta el disco: solo el primario puede usarlo.*
+
+> El espejo **no se monta en el `fstab`**: solo lo monta el nodo que es primario, a mano (`drbdadm primary r0 && mount /dev/drbd0 /srv/espejo`) o con Pacemaker en producción.
 
 ## 4. Copias de seguridad
 
 | Qué | Cómo |
 |---|---|
-| Configuración (`/etc`: red, `fstab`, `mdadm.conf`, `drbd.d/r0.res`, Apache) | Igual que DEB13-SRV1-NFT: la copia nocturna del NAS se lleva `/etc` en un `.tgz` |
-| Datos de los RAID y del espejo DRBD | Ni el RAID ni DRBD **son una copia** (un borrado se replica al instante): los datos importantes se copian al NAS |
+| Configuración (`/etc`: red, `fstab`, `mdadm.conf`, `drbd.d/r0.res`, Samba, Apache) | Igual que DEB13-SRV1-NFT: la copia nocturna del NAS se lleva `/etc` en un `.tgz` |
+| Datos de los RAID, de la carpeta compartida y del espejo DRBD | Ni el RAID ni DRBD **son una copia** (un borrado se replica al instante): los datos importantes se copian al NAS |
 | Sistema completo | Se reinstala en ~15 min con la instalación desatendida + `/etc` de la copia |
 
 ## Preguntas probables de la defensa
 
 - **¿Por qué IP fija y no DHCP?** Es un servidor: los clientes y el DNS tienen que encontrarlo siempre en la misma dirección. Además, en LAN23 no hay servidor DHCP.
+- **¿Qué diferencia hay entre un RAID y una copia de seguridad?** El RAID protege ante la avería de un disco; si alguien borra un archivo de la carpeta compartida, el RAID lo borra en todos los discos a la vez. Solo una copia (en el NAS) permite recuperarlo.
 - **¿Por qué `nofail` en el `fstab` de los RAID?** Para que, si un RAID no arranca, el servidor arranque igualmente (lección de la incidencia provocada del `fstab`).

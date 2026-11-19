@@ -7,7 +7,7 @@ set -euo pipefail
 host=$1; shift
 TTY=${TTY:-tty3}
 PASS=$("$HOME/iso-lab/ssh/askpass.sh")
-guion="T=/dev/$TTY; chvt ${TTY#tty}"'
+guion="T=/dev/$TTY; systemctl stop getty@$TTY 2>/dev/null; chvt ${TTY#tty}; sleep 1"'
 export TERM=linux
 setterm --blank poke > $T 2>/dev/null
 setfont -C $T Lat15-TerminusBold24x12 2>/dev/null || true

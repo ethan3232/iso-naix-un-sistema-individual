@@ -15,7 +15,12 @@ fi
 # 2) Ninguna contraseña puede aparecer en las líneas añadidas
 mapfile -t claves < <(awk -F'|' '/^\| /{gsub(/^ +| +$/,"",$6); print $6}' "$priv" \
   | grep -vE '^(Contraseña|-+|)$' | sort -u)
-anadido=$(git diff --cached -U0 --text | grep -a '^+' | grep -av '^+++' || true)
+# Archivos de texto: líneas añadidas. Archivos binarios: no se miran sus bytes (comprimidos, darían falsos
+# positivos con contraseñas cortas), pero de los PDF se extrae el TEXTO con pdftotext y se comprueba entero.
+texto=$(git diff --cached --numstat | awk '$1!="-"{print $3}')
+binarios=$(git diff --cached --numstat --diff-filter=AM | awk '$1=="-"{print $3}')
+anadido=$( { [ -n "$texto" ] && git diff --cached -U0 -- $texto | grep -a '^+' | grep -av '^+++'
+  for b in $binarios; do case "$b" in *.pdf) git show ":$b" | pdftotext - - ;; esac; done; } 2>/dev/null || true)
 for c in "${claves[@]}"; do
   if grep -aqwF -- "$c" <<<"$anadido"; then
     echo "❌ El commit contiene una contraseña de CREDENCIALES-PRIVADAS.md. Cámbiala por ******** y vuelve a intentarlo."

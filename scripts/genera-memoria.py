@@ -106,6 +106,7 @@ def capitulo_html(i: int, archivo: str, color: str):
     texto = ajusta_enlaces(texto, ruta.parent)
     titulo = re.search(r"^# +(.+)$", texto, flags=re.M)
     titulo = titulo.group(1).strip() if titulo else ruta.stem
+    titulo = re.sub(r"^\d\d · ", "", titulo)  # el número ya va en la marca del capítulo
     texto = re.sub(r"^# +.+$", "", texto, count=1, flags=re.M)
     cuerpo = markdown.markdown(texto, extensions=["tables", "fenced_code", "sane_lists", "attr_list", "md_in_html"])
     titulo_html = markdown.markdown(titulo).removeprefix("<p>").removesuffix("</p>")

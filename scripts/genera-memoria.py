@@ -56,7 +56,7 @@ CAPITULOS = [
     ("docs/08-rendiment.md", "pve"),
     ("docs/09-contingencia.md", "drbd"),
     ("docs/10-incidencies.md", "com"),
-    ]
+]
 
 # Símbolos que se sustituyen por texto o por un signo tipográfico (no emoji)
 SUSTITUCIONES = {"✅": "✓", "✔️": "✓", "✔": "✓", "❌": "✗", "🚫": "✗", "⬜": "Pendiente", "🟡": "En curso",

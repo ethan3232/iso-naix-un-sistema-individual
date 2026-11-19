@@ -98,10 +98,10 @@ Todos los ítems **Apte** y **Apte+** de las tareas individuales están completa
 | [04 · Diseño](docs/04-disseny.md) | Esquema lógico, interfaces, clúster |
 | [05 · Recursos](docs/05-recursos.md) | Tabla de VMs, RAM simultánea, escenarios |
 | [06 · Instalación](docs/06-installacio/README.md) | **Una guía por máquina** (ver abajo) |
-| | [07 · RAID](docs/07-emmagatzematge-raid.md) | RAID 0, 1 y 5, fallo y reconstrucción · **espejo por red DRBD** |
-| | [08 · Rendimiento](docs/08-rendiment.md) | Línea base, cada VM, carga por recurso, cuántas VMs, 2 optimizaciones |
+| [07 · RAID](docs/07-emmagatzematge-raid.md) | RAID 0, 1 y 5, fallo y reconstrucción · **espejo por red DRBD** |
+| [08 · Rendimiento](docs/08-rendiment.md) | Línea base, cada VM, carga por recurso, cuántas VMs, 2 optimizaciones |
 | [09 · Contingencia](docs/09-contingencia.md) | RTO/RPO y recuperaciones probadas |
-| [10 · Incidencias](docs/10-incidencies.md) | 27 problemas reales y cómo se resolvieron |
+| [10 · Incidencias](docs/10-incidencies.md) | 26 problemas reales y cómo se resolvieron |
 | [12 · Defensa](docs/12-defensa.md) | Guía de intervención para la Tasca 8 y banco de preguntas |
 
 <details>

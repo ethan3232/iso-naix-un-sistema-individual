@@ -23,7 +23,7 @@ VBoxManage modifyvm PMX1 --nicpromisc1 allow-all # las VMs internas usan sus pro
 
 ## 2. Instalación
 
-PMX1 ya estaba instalado, pero **no se conocía la contraseña de root** → se reinstaló (decisión de izan, [incidencia 10](../10-incidencies.md)). PMX2 y PMX3 se instalaron nuevos (el 3.er nodo se añadió después, a petición del profesorado: el diseño de referencia tiene **tres nodos**). Instalador **Terminal UI** con:
+PMX1 ya estaba instalado, pero **no se conocía la contraseña de root** → se reinstaló ([incidencia 10](../10-incidencies.md)). PMX2 y PMX3 se instalaron nuevos (el 3.er nodo se añadió después, a petición del profesorado: el diseño de referencia tiene **tres nodos**). Instalador **Terminal UI** con:
 
 | Opción | Valor | Por qué |
 |---|---|---|

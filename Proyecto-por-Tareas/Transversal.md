@@ -1,4 +1,4 @@
-# Transversal · Predicciones, plan de contingencia
+# Transversal · Predicciones y plan de contingencia
 
 ## 1. Predicciones (antes de investigar)
 
